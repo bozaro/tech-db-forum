@@ -43,20 +43,49 @@ paths:
       summary: Создание нового пользователя
       description: |
         Создание нового пользователя в базе данных.
+      parameters:
+        - name: profile
+          in: body
+          description: Данные пользовательского профиля.
+          required: true
+          schema:
+            $ref: '#/definitions/UserDetail'
       responses:
-        202:
+        201:
           description: |
             Пользователь успешно создан.
             Возвращает данные созданного пользователя.
           schema:
-            $ref: '#/definitions/User'
+            $ref: '#/definitions/UserDetail'
         409:
           description: |
             Пользователь уже присутсвует в базе данных.
             Возвращает данные ранее созданного пользователя.
           schema:
-            $ref: '#/definitions/User'
-  /user/{nickname}:
+            $ref: '#/definitions/UserDetail'
+    put:
+      summary: Добавление новых пользователей
+      tags:
+      - performance
+      description: |
+        Массовое добавление пользователей в базу.
+      parameters:
+        - name: prefiles
+          in: body
+          description: Данные пользовательских профилей.
+          required: true
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/UserDetail'
+      responses:
+        200:
+          description: |
+            Пользователи созданы успешно.
+        409:
+          description: |
+            Хотя бы один пользователь уже присутсвует в базе данных.
+  /user/{nickname}/profile:
     get:
       summary: Получение информации о пользователе
       description: |
@@ -76,6 +105,81 @@ paths:
         404:
           description: |
             Пользователь отсутсвует в системе.
+    post:
+      summary: Изменение данных о пользователе
+      description: |
+        Изменение информации в профиле пользователя.
+      parameters:
+        - name: nickname
+          in: path
+          description: Идентификатор пользователя.
+          required: true
+          type: string
+        - name: profile
+          in: body
+          description: Изменения профиля пользователя.
+          required: true
+          schema:
+            $ref: '#/definitions/UserProfile'
+      responses:
+        200:
+          description: |
+            Актуальная информация о пользователе после изменения профиля.
+          schema:
+            $ref: '#/definitions/UserDetail'
+        404:
+          description: |
+            Пользователь отсутсвует в системе.
+  /user/{nickname}/follow/{following}:
+    post:
+      summary: Подписка на пользователя
+      description: |
+        Добавление подписки на другого пользователя.
+      parameters:
+        - name: nickname
+          in: path
+          description: |
+            Идентификатор пользователя, который оформляет подписку.
+          required: true
+          type: string
+        - name: following
+          in: path
+          description: |
+            Идентификатор пользователя, на которого осуществляется подписка.
+          required: true
+          type: string
+      responses:
+        200:
+          description: Подписка уже существует.
+        202:
+          description: Оформлена новая подписка.
+        404:
+          description: Как минимум один из пользователей не найден.
+  /user/{nickname}/unfollow/{following}:
+    post:
+      summary: Отписка от пользователя
+      description: |
+        Удаление подписки на другого пользователя.
+      parameters:
+        - name: nickname
+          in: path
+          description: |
+            Идентификатор пользователя, который оформил подписку.
+          required: true
+          type: string
+        - name: following
+          in: path
+          description: |
+            Идентификатор пользователя, на которого оформлена подписка.
+          required: true
+          type: string
+      responses:
+        200:
+          description: Подписка уже отсутсвует.
+        202:
+          description: Подписка успешно удалена.
+        404:
+          description: Как минимум один из пользователей не найден.
 definitions:
   Status:
     type: object
@@ -96,27 +200,43 @@ definitions:
         type: number
         format: int64
         description: Кол-во сообщений в базе данных.
-  User:
+  UserProfile:
     type: object
+    description: |
+      Редактируемая информация о пользователе.
     properties:
-      nickname:
-        type: string
-        format: identity
-        description: Имя пользователя (уникальное поле).
       fullname:
         type: string
         description: Полное имя пользователя.
-      email:
-        type: string
-        format: email
-        description: Почтовый адрес пользователя (уникальное поле).
       about:
         type: string
         format: text
         description: Описание пользователя.
-  UserFull:
+  UserDetail:
+    type: object
+    description: |
+      Полная информация непосредственно о самом пользователе.
     allOf:
-    - $ref: '#/definitions/User'
+    - $ref: '#/definitions/UserProfile'
+    - type: object
+      properties:
+        nickname:
+          type: string
+          format: identity
+          description: |
+            Имя пользователя (уникальное поле).
+            Данное поле допускает только латиницу, цифры и знак подчеркивания.
+            Сравнение имени регистронезависимо.
+        email:
+          type: string
+          format: email
+          description: Почтовый адрес пользователя (уникальное поле).
+  UserFull:
+    description: |
+      Полная информация непосредственно о самом пользователе и связанных с ним
+      объектах.
+    allOf:
+    - $ref: '#/definitions/UserDetail'
     - type: object
       properties:
         followers:
