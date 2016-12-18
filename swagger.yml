@@ -31,6 +31,51 @@ paths:
             Кол-во записей в базе данных, включая помеченные как "удалённые".
           schema:
             $ref: '#/definitions/Status'
+          examples:
+            application/json: {
+              "user": 1000,
+              "forum": 100,
+              "thread": 1000,
+              "post": 1000000
+            }
+  /user/create:
+    post:
+      summary: Создание нового пользователя
+      description: |
+        Создание нового пользователя в базе данных.
+      responses:
+        202:
+          description: |
+            Пользователь успешно создан.
+            Возвращает данные созданного пользователя.
+          schema:
+            $ref: '#/definitions/User'
+        409:
+          description: |
+            Пользователь уже присутсвует в базе данных.
+            Возвращает данные ранее созданного пользователя.
+          schema:
+            $ref: '#/definitions/User'
+  /user/{nickname}:
+    get:
+      summary: Получение информации о пользователе
+      description: |
+        Получение информации о пользователе форума по его имени.
+      parameters:
+        - name: nickname
+          in: path
+          description: Идентификатор пользователя.
+          required: true
+          type: string
+      responses:
+        200:
+          description: |
+            Информация о пользователе.
+          schema:
+            $ref: '#/definitions/UserFull'
+        404:
+          description: |
+            Пользователь отсутсвует в системе.
 definitions:
   Status:
     type: object
@@ -51,3 +96,42 @@ definitions:
         type: number
         format: int64
         description: Кол-во сообщений в базе данных.
+  User:
+    type: object
+    properties:
+      nickname:
+        type: string
+        format: identity
+        description: Имя пользователя (уникальное поле).
+      fullname:
+        type: string
+        description: Полное имя пользователя.
+      email:
+        type: string
+        format: email
+        description: Почтовый адрес пользователя (уникальное поле).
+      about:
+        type: string
+        format: text
+        description: Описание пользователя.
+  UserFull:
+    allOf:
+    - $ref: '#/definitions/User'
+    - type: object
+      properties:
+        followers:
+          type: array
+          description: Имена пользователей, который следят за текущим пользователем.
+          items:
+            type: string
+        following:
+          type: array
+          description: Имена пользователей, за которым следит текущий пользователь.
+          items:
+            type: string
+        subscriptions:
+          type: array
+          description: Идентификаторы постов за которыми следит текущий пользователь.
+          items:
+            type: number
+            format: int64
