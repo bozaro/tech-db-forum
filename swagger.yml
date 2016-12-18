@@ -1,0 +1,53 @@
+swagger: '2.0'
+info:
+  title: Форумы
+  description: |
+    Тестовое задание для реализации проекта "Форумы" на курсе по базам данных в
+    Технопарке Mail.ru (https://park.mail.ru).
+  version: "1.0.0"
+schemes:
+  - http
+  - https
+basePath: /api
+produces:
+  - application/json
+paths:
+  /service/clear:
+    post:
+      summary: Очистка всех данных в базе
+      description: |
+        Безвозвратное удаление всей пользовательской информации из базы данных.
+      responses:
+        200:
+          description: Очистка базы успешно завершена
+  /service/status:
+    get:
+      summary: Получение инфомарции о базе данных
+      description: |
+        Получение инфомарции о базе данных.
+      responses:
+        200:
+          description: |
+            Кол-во записей в базе данных, включая помеченные как "удалённые".
+          schema:
+            $ref: '#/definitions/Status'
+definitions:
+  Status:
+    type: object
+    properties:
+      user:
+        type: number
+        format: int32
+        description: Кол-во пользователей в базе данных.
+      forum:
+        type: number
+        format: int32
+        description: Кол-во разделов в базе данных.
+      thread:
+        type: number
+        format: int32
+        description: Кол-во веток обсуждения в базе данных.
+      post:
+        type: number
+        format: int64
+        description: Кол-во сообщений в базе данных.
