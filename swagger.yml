@@ -6,11 +6,11 @@ info:
     Технопарке Mail.ru (https://park.mail.ru).
   version: "1.0.0"
 schemes:
-  - http
-  - https
+- http
+- https
 basePath: /api
 produces:
-  - application/json
+- application/json
 paths:
   /service/clear:
     post:
@@ -44,12 +44,12 @@ paths:
       description: |
         Создание нового пользователя в базе данных.
       parameters:
-        - name: profile
-          in: body
-          description: Данные пользовательского профиля.
-          required: true
-          schema:
-            $ref: '#/definitions/UserDetail'
+      - name: profile
+        in: body
+        description: Данные пользовательского профиля.
+        required: true
+        schema:
+          $ref: '#/definitions/UserDetail'
       responses:
         201:
           description: |
@@ -71,14 +71,14 @@ paths:
       description: |
         Массовое добавление пользователей в базу.
       parameters:
-        - name: prefiles
-          in: body
-          description: Данные пользовательских профилей.
-          required: true
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/UserDetail'
+      - name: prefiles
+        in: body
+        description: Данные пользовательских профилей.
+        required: true
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/UserDetail'
       responses:
         200:
           description: |
@@ -94,14 +94,14 @@ paths:
       description: |
         Массовое добавление подписки обного пользователя на другого.
       parameters:
-        - name: pairs
-          in: body
-          description: Данные пользовательских профилей.
-          required: true
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/FollowPair'
+      - name: pairs
+        in: body
+        description: Данные пользовательских профилей.
+        required: true
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/FollowPair'
       responses:
         200:
           description: |
@@ -116,11 +116,11 @@ paths:
       description: |
         Получение информации о пользователе форума по его имени.
       parameters:
-        - name: nickname
-          in: path
-          description: Идентификатор пользователя.
-          required: true
-          type: string
+      - name: nickname
+        in: path
+        description: Идентификатор пользователя.
+        required: true
+        type: string
       responses:
         200:
           description: |
@@ -135,17 +135,17 @@ paths:
       description: |
         Изменение информации в профиле пользователя.
       parameters:
-        - name: nickname
-          in: path
-          description: Идентификатор пользователя.
-          required: true
-          type: string
-        - name: profile
-          in: body
-          description: Изменения профиля пользователя.
-          required: true
-          schema:
-            $ref: '#/definitions/UserProfile'
+      - name: nickname
+        in: path
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+      - name: profile
+        in: body
+        description: Изменения профиля пользователя.
+        required: true
+        schema:
+          $ref: '#/definitions/UserProfile'
       responses:
         200:
           description: |
@@ -161,18 +161,18 @@ paths:
       description: |
         Добавление подписки на другого пользователя.
       parameters:
-        - name: nickname
-          in: path
-          description: |
-            Идентификатор пользователя, который оформляет подписку.
-          required: true
-          type: string
-        - name: following
-          in: path
-          description: |
-            Идентификатор пользователя, на которого осуществляется подписка.
-          required: true
-          type: string
+      - name: nickname
+        in: path
+        description: |
+          Идентификатор пользователя, который оформляет подписку.
+        required: true
+        type: string
+      - name: following
+        in: path
+        description: |
+          Идентификатор пользователя, на которого осуществляется подписка.
+        required: true
+        type: string
       responses:
         200:
           description: Подписка уже существует.
@@ -186,18 +186,18 @@ paths:
       description: |
         Удаление подписки на другого пользователя.
       parameters:
-        - name: nickname
-          in: path
-          description: |
-            Идентификатор пользователя, который оформил подписку.
-          required: true
-          type: string
-        - name: following
-          in: path
-          description: |
-            Идентификатор пользователя, на которого оформлена подписка.
-          required: true
-          type: string
+      - name: nickname
+        in: path
+        description: |
+          Идентификатор пользователя, который оформил подписку.
+        required: true
+        type: string
+      - name: following
+        in: path
+        description: |
+          Идентификатор пользователя, на которого оформлена подписка.
+        required: true
+        type: string
       responses:
         200:
           description: Подписка уже отсутсвует.
