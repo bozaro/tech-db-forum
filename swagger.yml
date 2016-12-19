@@ -216,38 +216,76 @@ paths:
         description: Данные форума.
         required: true
         schema:
-          $ref: '#/definitions/ForumBase'
+          $ref: '#/definitions/Forum'
       responses:
         201:
           description: |
             Форум успешно создан.
             Возвращает данные созданного форума.
           schema:
-            $ref: '#/definitions/ForumDetail'
+            $ref: '#/definitions/Forum'
         409:
           description: |
             Форум уже присутсвует в базе данных.
             Возвращает данные ранее созданного форума.
           schema:
-            $ref: '#/definitions/ForumDetail'
-  /forum/{id}:
+            $ref: '#/definitions/Forum'
+  /forum/{slug}:
     get:
       summary: Получение информации о форуме
       description: |
         Получение информации о форуме по его идентификаторе.
       parameters:
-      - name: id
+      - name: slug
         in: path
         description: Идентификатор форума.
         required: true
-        type: number
-        format: int32
+        type: string
+        format: identity
       responses:
         200:
           description: |
             Информация о форуме.
           schema:
-            $ref: '#/definitions/ForumDetail'
+            $ref: '#/definitions/Forum'
+        404:
+          description: |
+            Форум отсутсвует в системе.
+  /forum/{slug}/users:
+    get:
+      summary: Пользователи данного форума
+      description: |
+        Получение списка пользователей, у которых есть пост в данном форуме.
+
+        Пользователи выводятся отсортированные по nickname в порядке возрастания.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор форума.
+        required: true
+        type: string
+        format: identity
+      - name: limit
+        in: query
+        type: number
+        format: int32
+        default: 100
+        description: Максимальное кол-во возвращаемых записей.
+      - name: since
+        in: query
+        type: string
+        format: identity
+        description: |
+          Идентификатор пользователя, с которого будут выводиться пользоватли
+          (пользователь с данным идентификатором в результат не попадает).
+      responses:
+        200:
+          description: |
+            Информация о пользователях форума.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/UserFull'
         404:
           description: |
             Форум отсутсвует в системе.
@@ -266,7 +304,7 @@ paths:
         schema:
           type: array
           items:
-            $ref: '#/definitions/ForumBase'
+            $ref: '#/definitions/Forum'
       responses:
         200:
           description: |
@@ -370,9 +408,9 @@ definitions:
         type: string
         format: identity
         description: Пользователь на которого подписан.
-  ForumBase:
+  Forum:
     description: |
-      Исходная информация о профиле.
+      Информация о форуме.
     type: object
     properties:
       title:
@@ -386,15 +424,3 @@ definitions:
         type: string
         format: identity
         description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
-  ForumDetail:
-    type: object
-    description: |
-      Полная информация непосредственно о самом форуме.
-    allOf:
-    - $ref: '#/definitions/ForumBase'
-    - type: object
-      properties:
-        id:
-          type: number
-          format: int32
-          description: Идентификатор форума.
