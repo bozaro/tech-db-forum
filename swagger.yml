@@ -86,30 +86,6 @@ paths:
         409:
           description: |
             Хотя бы один пользователь уже присутсвует в базе данных.
-  /batch/user/follow:
-    post:
-      summary: Добавление новых подписок пользователей
-      tags:
-      - performance
-      description: |
-        Массовое добавление подписки обного пользователя на другого.
-      parameters:
-      - name: pairs
-        in: body
-        description: Данные пользовательских профилей.
-        required: true
-        schema:
-          type: array
-          items:
-            $ref: '#/definitions/FollowPair'
-      responses:
-        200:
-          description: |
-            Подписки созданы успешно.
-        409:
-          description: |
-            Хотя бы одна их подписок уже создана или не найден хоть один
-            пользователь в базе данных.
   /user/{nickname}/profile:
     get:
       summary: Получение информации о пользователе
@@ -126,7 +102,7 @@ paths:
           description: |
             Информация о пользователе.
           schema:
-            $ref: '#/definitions/UserFull'
+            $ref: '#/definitions/UserDetail'
         404:
           description: |
             Пользователь отсутсвует в системе.
@@ -155,56 +131,6 @@ paths:
         404:
           description: |
             Пользователь отсутсвует в системе.
-  /user/{nickname}/follow/{following}:
-    post:
-      summary: Подписка на пользователя
-      description: |
-        Добавление подписки на другого пользователя.
-      parameters:
-      - name: nickname
-        in: path
-        description: |
-          Идентификатор пользователя, который оформляет подписку.
-        required: true
-        type: string
-      - name: following
-        in: path
-        description: |
-          Идентификатор пользователя, на которого осуществляется подписка.
-        required: true
-        type: string
-      responses:
-        200:
-          description: Подписка уже существует.
-        202:
-          description: Оформлена новая подписка.
-        404:
-          description: Как минимум один из пользователей не найден.
-  /user/{nickname}/unfollow/{following}:
-    post:
-      summary: Отписка от пользователя
-      description: |
-        Удаление подписки на другого пользователя.
-      parameters:
-      - name: nickname
-        in: path
-        description: |
-          Идентификатор пользователя, который оформил подписку.
-        required: true
-        type: string
-      - name: following
-        in: path
-        description: |
-          Идентификатор пользователя, на которого оформлена подписка.
-        required: true
-        type: string
-      responses:
-        200:
-          description: Подписка уже отсутсвует.
-        202:
-          description: Подписка успешно удалена.
-        404:
-          description: Как минимум один из пользователей не найден.
   /forum/create:
     post:
       summary: Создание форума
@@ -285,7 +211,7 @@ paths:
           schema:
             type: array
             items:
-              $ref: '#/definitions/UserFull'
+              $ref: '#/definitions/UserDetail'
         404:
           description: |
             Форум отсутсвует в системе.
@@ -320,6 +246,83 @@ paths:
         409:
           description: |
             Хотя бы один форум уже присутсвует в базе данных.
+  /forum/{slug}/create:
+    post:
+      summary: Создание ветки
+      description: |
+        Добавление новой ветки обсуждения на форум.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор форума.
+        required: true
+        type: string
+        format: identity
+      - name: thread
+        in: body
+        description: Данные ветки обсуждения.
+        required: true
+        schema:
+          $ref: '#/definitions/ThreadBase'
+      responses:
+        201:
+          description: |
+            Ветка обсуждения успешно создана.
+            Возвращает данные созданной ветки обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+        409:
+          description: |
+            Ветка обсуждения уже присутсвует в базе данных.
+            Возвращает данные ранее созданной ветки обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+  /thread/{slug}/details:
+    get:
+      summary: Получение информации о ветке обсуждения
+      description: |
+        Получение информации о ветке обсуждения по его имени.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+      responses:
+        200:
+          description: |
+            Информация о ветке обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+        404:
+          description: |
+            Ветка обсуждения отсутсвует в форуме.
+    post:
+      summary: Обновление ветки
+      description: |
+        Обновление ветки обсуждения на форуме.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+        format: identity
+      - name: thread
+        in: body
+        description: Данные ветки обсуждения.
+        required: true
+        schema:
+          $ref: '#/definitions/ThreadBase'
+      responses:
+        200:
+          description: |
+            Информация о ветке обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+        404:
+          description: |
+            Ветка обсуждения отсутсвует в форуме.
 definitions:
   Status:
     type: object
@@ -371,43 +374,6 @@ definitions:
           type: string
           format: email
           description: Почтовый адрес пользователя (уникальное поле).
-  UserFull:
-    description: |
-      Полная информация непосредственно о самом пользователе и связанных с ним
-      объектах.
-    allOf:
-    - $ref: '#/definitions/UserDetail'
-    - type: object
-      properties:
-        followers:
-          type: array
-          description: Имена пользователей, который следят за текущим пользователем.
-          items:
-            type: string
-        following:
-          type: array
-          description: Имена пользователей, за которым следит текущий пользователь.
-          items:
-            type: string
-        subscriptions:
-          type: array
-          description: Идентификаторы постов за которыми следит текущий пользователь.
-          items:
-            type: number
-            format: int64
-  FollowPair:
-    description: |
-      Пара подписки для массового добавления записей.
-    type: object
-    properties:
-      follower:
-        type: string
-        format: identity
-        description: Пользователь который подписан.
-      following:
-        type: string
-        format: identity
-        description: Пользователь на которого подписан.
   Forum:
     description: |
       Информация о форуме.
@@ -424,3 +390,35 @@ definitions:
         type: string
         format: identity
         description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
+  ThreadBase:
+    description: |
+      Ветка обсуждения на форуме.
+    type: object
+    properties:
+      title:
+        type: string
+        description: Заголовок ветки обсуждения.
+      user:
+        type: string
+        format: identity
+        description: Пользователь, отвечающий за данную тему.
+      message:
+        type: string
+        format: text
+        description: Описание ветки обсуждения.
+      slug:
+        type: string
+        format: identity
+        description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
+  ThreadFull:
+    type: object
+    description: |
+      Полная информация о ветке обсужения на форуме.
+    allOf:
+    - $ref: '#/definitions/ThreadBase'
+    - type: object
+      properties:
+        created:
+          type: string
+          format: date-time
+          description: Дата создания ветки на форуме.
