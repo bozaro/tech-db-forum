@@ -405,17 +405,43 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
+  /post/{slug}/create:
+    post:
+      summary: Создание нового поста
+      description: |
+        Добавление новой нового поста в ветку обсуждения на форум.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+        format: identity
+      - name: post
+        in: body
+        description: Данные поста.
+        required: true
+        schema:
+          $ref: '#/definitions/PostBase'
+      responses:
+        201:
+          description: |
+            Пост успешно создан.
+            Возвращает данные созданного поста.
+          schema:
+            $ref: '#/definitions/PostFull'
+        404:
+          description: |
+            Ветка обсуждения отсутствует в базе данных
 # /thread
 #   listPosts.md *
 # /post
-#   create.md
 #   details.md
 #   list.md
 #   update.md
 #   vote.md
 # /forum
 #   listPosts.md
-#   listThreads.md
 #   listUsers.md *
 definitions:
   Status:
@@ -492,10 +518,10 @@ definitions:
       title:
         type: string
         description: Заголовок ветки обсуждения.
-      user:
+      author:
         type: string
         format: identity
-        description: Пользователь, отвечающий за данную тему.
+        description: Пользователь, создавший данную тему.
       message:
         type: string
         format: text
@@ -516,3 +542,36 @@ definitions:
           type: string
           format: date-time
           description: Дата создания ветки на форуме.
+  PostBase:
+    description: |
+      Сообщение на форуме.
+    type: object
+    properties:
+      parent:
+        type: number
+        format: int64
+        description: Идентификатор родительского сообщения.
+      author:
+        type: string
+        format: identity
+        description: Автор, написавший данное сообщение.
+      message:
+        type: string
+        format: text
+        description: Описание ветки обсуждения.
+  PostFull:
+    type: object
+    description: |
+      Полная информация о сообщении.
+    allOf:
+    - $ref: '#/definitions/PostBase'
+    - type: object
+      properties:
+        id:
+          type: number
+          format: int64
+          description: Идентификатор данного сообщения.
+        created:
+          type: string
+          format: date-time
+          description: Дата создания сообщения на форуме.
