@@ -215,6 +215,51 @@ paths:
         404:
           description: |
             Форум отсутсвует в системе.
+  /forum/{slug}/threads:
+    get:
+      summary: Список ветвей обсужления форума
+      description: |
+        Получение списка ветвей обсужления данного форума.
+
+        Ветви обсуждения выводятся отсортированные по дате создания.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор форума.
+        required: true
+        type: string
+        format: identity
+      - name: limit
+        in: query
+        type: number
+        format: int32
+        default: 100
+        description: Максимальное кол-во возвращаемых записей.
+      - name: since
+        in: query
+        type: string
+        format: date-time
+        description: |
+          Дата создания ветви обсуждения, с которой будут выводиться записи
+          (ветвь обсуждения с указанной датой попадает в результат выборки).
+      - name: order
+        in: query
+        type: string
+        default: asc
+        enum:
+        - asc
+        - desc
+      responses:
+        200:
+          description: |
+            Информация о пользователях форума.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ThreadFull'
+        404:
+          description: |
+            Форум отсутсвует в системе.
   /batch/forum/create:
     post:
       summary: Добавление новых форумов
@@ -323,6 +368,55 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
+  /thread/{slug}/vote:
+    post:
+      summary: Проголосовать за ветвь обсуждения
+      description: |
+        Изменение голоса за ветвь обсуждения.
+        Один пользователь учитывается только один раз и может изменить своё
+        мнение.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+        format: identity
+      - name: user
+        in: formData
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+        format: identity
+      - name: vote
+        in: formData
+        description: Изменение голоса.
+        required: true
+        type: number
+        enum:
+        - -1
+        - 1
+      responses:
+        200:
+          description: |
+            Информация о ветке обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+        404:
+          description: |
+            Ветка обсуждения отсутсвует в форуме.
+# /thread
+#   listPosts.md *
+# /post
+#   create.md
+#   details.md
+#   list.md
+#   update.md
+#   vote.md
+# /forum
+#   listPosts.md
+#   listThreads.md
+#   listUsers.md *
 definitions:
   Status:
     type: object
