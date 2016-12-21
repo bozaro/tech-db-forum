@@ -245,6 +245,8 @@ paths:
       - name: order
         in: query
         type: string
+        description: |
+          Порядок сортировки (asc - по возрастанию, desc - по убыванию).
         default: asc
         enum:
         - asc
@@ -262,7 +264,7 @@ paths:
             Форум отсутсвует в системе.
   /forum/{slug}/posts:
     get:
-      summary: Пользователи данного форума
+      summary: Сообщения данного форума
       description: |
         Получение списка сообщений в данном форуме.
 
@@ -285,8 +287,8 @@ paths:
         type: string
         format: date-time
         description: |
-          Дата создания ветви обсуждения, с которой будут выводиться записи
-          (ветвь обсуждения с указанной датой попадает в результат выборки).
+          Дата создания сообщения, с которой будут выводиться записи
+          (сообщение с указанной датой попадает в результат выборки).
       - name: related
         in: query
         type: array
@@ -590,11 +592,72 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
+  /thread/{slug}/posts:
+    get:
+      summary: Сообщения данной ветви обсуждения
+      description: |
+        Получение списка сообщений в данной ветке форуме.
 
-# /thread
-#   listPosts.md *
-# /post
-#   list.md
+        Сообщения выводятся отсортированные по дате создания.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+        format: identity
+      - name: limit
+        in: query
+        type: number
+        format: int32
+        default: 100
+        description: Максимальное кол-во возвращаемых записей.
+      - name: since
+        in: query
+        type: string
+        format: date-time
+        description: |
+          Дата создания сообщения, с которой будут выводиться записи
+          (сообщение я с указанной датой попадает в результат выборки).
+      - name: sort
+        in: query
+        type: string
+        description: |
+          Вид сортировки:
+
+           * flat - по дате, комментарии выводятся простым списком по дате;
+           * tree - древовидный, комментарии выводятся отсортированные в дереве
+             по N штук;
+           * parent_tree - древовидные с пагинацией по родительским (parent_tree),
+             на странице N родительских комментов и все комментарии прикрепленные
+             к ним, в древвидном отображение.
+
+          Подробности: https://tech-mail.ru/blog/database/2027.html
+        default: flat
+        enum:
+        - flat
+        - tree
+        - parent_tree
+      - name: order
+        in: query
+        type: string
+        description: |
+          Порядок сортировки (asc - по возрастанию, desc - по убыванию).
+        enum:
+        - asc
+        - desc
+        default: asc
+      responses:
+        200:
+          description: |
+            Информация о сообщениях форума.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/PostFull'
+        404:
+          description: |
+            Ветка обсуждения отсутсвует в форуме.
 definitions:
   Status:
     type: object
