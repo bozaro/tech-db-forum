@@ -1,0 +1,839 @@
+swagger: '2.0'
+info:
+  title: Форумы
+  description: |
+    Тестовое задание для реализации проекта "Форумы" на курсе по базам данных в
+    Технопарке Mail.ru (https://park.mail.ru).
+  version: "1.0.0"
+schemes:
+- http
+- https
+basePath: /api
+produces:
+- application/json
+paths:
+  /service/clear:
+    post:
+      summary: Очистка всех данных в базе
+      description: |
+        Безвозвратное удаление всей пользовательской информации из базы данных.
+      responses:
+        200:
+          description: Очистка базы успешно завершена
+  /service/status:
+    get:
+      summary: Получение инфомарции о базе данных
+      description: |
+        Получение инфомарции о базе данных.
+      responses:
+        200:
+          description: |
+            Кол-во записей в базе данных, включая помеченные как "удалённые".
+          schema:
+            $ref: '#/definitions/Status'
+          examples:
+            application/json: {
+              "user": 1000,
+              "forum": 100,
+              "thread": 1000,
+              "post": 1000000
+            }
+  /user/create:
+    post:
+      summary: Создание нового пользователя
+      description: |
+        Создание нового пользователя в базе данных.
+      parameters:
+      - name: profile
+        in: body
+        description: Данные пользовательского профиля.
+        required: true
+        schema:
+          $ref: '#/definitions/UserDetail'
+      responses:
+        201:
+          description: |
+            Пользователь успешно создан.
+            Возвращает данные созданного пользователя.
+          schema:
+            $ref: '#/definitions/UserDetail'
+        409:
+          description: |
+            Пользователь уже присутсвует в базе данных.
+            Возвращает данные ранее созданного пользователя.
+          schema:
+            $ref: '#/definitions/UserDetail'
+  /batch/user/create:
+    post:
+      summary: Добавление новых пользователей
+      tags:
+      - performance
+      description: |
+        Массовое добавление пользователей в базу.
+      parameters:
+      - name: profiles
+        in: body
+        description: Данные пользовательских профилей.
+        required: true
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/UserDetail'
+      responses:
+        200:
+          description: |
+            Пользователи созданы успешно.
+        409:
+          description: |
+            Хотя бы один пользователь уже присутсвует в базе данных.
+  /user/{nickname}/profile:
+    get:
+      summary: Получение информации о пользователе
+      description: |
+        Получение информации о пользователе форума по его имени.
+      parameters:
+      - name: nickname
+        in: path
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+      responses:
+        200:
+          description: |
+            Информация о пользователе.
+          schema:
+            $ref: '#/definitions/UserDetail'
+        404:
+          description: |
+            Пользователь отсутсвует в системе.
+    post:
+      summary: Изменение данных о пользователе
+      description: |
+        Изменение информации в профиле пользователя.
+      parameters:
+      - name: nickname
+        in: path
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+      - name: profile
+        in: body
+        description: Изменения профиля пользователя.
+        required: true
+        schema:
+          $ref: '#/definitions/UserProfile'
+      responses:
+        200:
+          description: |
+            Актуальная информация о пользователе после изменения профиля.
+          schema:
+            $ref: '#/definitions/UserDetail'
+        404:
+          description: |
+            Пользователь отсутсвует в системе.
+  /forum/create:
+    post:
+      summary: Создание форума
+      description: |
+        Создание нового форума.
+      parameters:
+      - name: forum
+        in: body
+        description: Данные форума.
+        required: true
+        schema:
+          $ref: '#/definitions/ForumBase'
+      responses:
+        201:
+          description: |
+            Форум успешно создан.
+            Возвращает данные созданного форума.
+          schema:
+            $ref: '#/definitions/ForumFull'
+        409:
+          description: |
+            Форум уже присутсвует в базе данных.
+            Возвращает данные ранее созданного форума.
+          schema:
+            $ref: '#/definitions/ForumFull'
+  /forum/{slug}:
+    get:
+      summary: Получение информации о форуме
+      description: |
+        Получение информации о форуме по его идентификаторе.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор форума.
+        required: true
+        type: string
+        format: identity
+      responses:
+        200:
+          description: |
+            Информация о форуме.
+          schema:
+            $ref: '#/definitions/ForumFull'
+        404:
+          description: |
+            Форум отсутсвует в системе.
+  /forum/{slug}/users:
+    get:
+      summary: Пользователи данного форума
+      description: |
+        Получение списка пользователей, у которых есть пост в данном форуме.
+
+        Пользователи выводятся отсортированные по nickname в порядке возрастания.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор форума.
+        required: true
+        type: string
+        format: identity
+      - name: limit
+        in: query
+        type: number
+        format: int32
+        default: 100
+        description: Максимальное кол-во возвращаемых записей.
+      - name: since
+        in: query
+        type: string
+        format: identity
+        description: |
+          Идентификатор пользователя, с которого будут выводиться пользоватли
+          (пользователь с данным идентификатором в результат не попадает).
+      responses:
+        200:
+          description: |
+            Информация о пользователях форума.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/UserDetail'
+        404:
+          description: |
+            Форум отсутсвует в системе.
+  /forum/{slug}/threads:
+    get:
+      summary: Список ветвей обсужления форума
+      description: |
+        Получение списка ветвей обсужления данного форума.
+
+        Ветви обсуждения выводятся отсортированные по дате создания.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор форума.
+        required: true
+        type: string
+        format: identity
+      - name: limit
+        in: query
+        type: number
+        format: int32
+        default: 100
+        description: Максимальное кол-во возвращаемых записей.
+      - name: since
+        in: query
+        type: string
+        format: date-time
+        description: |
+          Дата создания ветви обсуждения, с которой будут выводиться записи
+          (ветвь обсуждения с указанной датой попадает в результат выборки).
+      - name: order
+        in: query
+        type: string
+        description: |
+          Порядок сортировки (asc - по возрастанию, desc - по убыванию).
+        default: asc
+        enum:
+        - asc
+        - desc
+      responses:
+        200:
+          description: |
+            Информация о пользователях форума.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ThreadFull'
+        404:
+          description: |
+            Форум отсутсвует в системе.
+  /forum/{slug}/posts:
+    get:
+      summary: Сообщения данного форума
+      description: |
+        Получение списка сообщений в данном форуме.
+
+        Сообщения выводятся отсортированные по дате создания.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор форума.
+        required: true
+        type: string
+        format: identity
+      - name: limit
+        in: query
+        type: number
+        format: int32
+        default: 100
+        description: Максимальное кол-во возвращаемых записей.
+      - name: since
+        in: query
+        type: string
+        format: date-time
+        description: |
+          Дата создания сообщения, с которой будут выводиться записи
+          (сообщение с указанной датой попадает в результат выборки).
+      - name: related
+        in: query
+        type: array
+        description: |
+          Включение полной информации о соответвующем объекте сообщения.
+
+          Если тип объекта не указан, то полная информация об этих объектах не
+          передаётся.
+        default: []
+        items:
+          type: string
+          enum:
+          - user
+          - forum
+          - thread
+      responses:
+        200:
+          description: |
+            Информация о сообщениях форума.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/PostFull'
+        404:
+          description: |
+            Форум отсутсвует в системе.
+  /batch/forum/create:
+    post:
+      summary: Добавление новых форумов
+      tags:
+      - performance
+      description: |
+        Массовое добавление Форумов в базу.
+      parameters:
+      - name: forums
+        in: body
+        description: Данные форумов.
+        required: true
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/ForumBase'
+      responses:
+        200:
+          description: |
+            Форумы созданы успешно.
+          schema:
+            description: |
+              Список идентификаторов созданных форумов в том же порядке, в
+              котором были перечислены данные форумов в `forums`.
+            type: array
+            items:
+              type: number
+              format: int32
+        409:
+          description: |
+            Хотя бы один форум уже присутсвует в базе данных.
+  /forum/{slug}/create:
+    post:
+      summary: Создание ветки
+      description: |
+        Добавление новой ветки обсуждения на форум.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор форума.
+        required: true
+        type: string
+        format: identity
+      - name: thread
+        in: body
+        description: Данные ветки обсуждения.
+        required: true
+        schema:
+          $ref: '#/definitions/ThreadBase'
+      responses:
+        201:
+          description: |
+            Ветка обсуждения успешно создана.
+            Возвращает данные созданной ветки обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+        409:
+          description: |
+            Ветка обсуждения уже присутсвует в базе данных.
+            Возвращает данные ранее созданной ветки обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+  /thread/{slug}/details:
+    get:
+      summary: Получение информации о ветке обсуждения
+      description: |
+        Получение информации о ветке обсуждения по его имени.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+      responses:
+        200:
+          description: |
+            Информация о ветке обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+        404:
+          description: |
+            Ветка обсуждения отсутсвует в форуме.
+    post:
+      summary: Обновление ветки
+      description: |
+        Обновление ветки обсуждения на форуме.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+        format: identity
+      - name: thread
+        in: body
+        description: Данные ветки обсуждения.
+        required: true
+        schema:
+          $ref: '#/definitions/ThreadBase'
+      responses:
+        200:
+          description: |
+            Информация о ветке обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+        404:
+          description: |
+            Ветка обсуждения отсутсвует в форуме.
+  /thread/{slug}/vote:
+    post:
+      summary: Проголосовать за ветвь обсуждения
+      description: |
+        Изменение голоса за ветвь обсуждения.
+
+        Один пользователь учитывается только один раз и может изменить своё
+        мнение.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+        format: identity
+      - name: user
+        in: formData
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+        format: identity
+      - name: vote
+        in: formData
+        description: Изменение голоса.
+        required: true
+        type: number
+        enum:
+        - -1
+        - 1
+      responses:
+        200:
+          description: |
+            Информация о ветке обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+        404:
+          description: |
+            Ветка обсуждения отсутсвует в форуме.
+  /thread/{slug}/create:
+    post:
+      summary: Создание нового поста
+      description: |
+        Добавление новой нового поста в ветку обсуждения на форум.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+        format: identity
+      - name: post
+        in: body
+        description: Данные поста.
+        required: true
+        schema:
+          $ref: '#/definitions/PostBase'
+      responses:
+        201:
+          description: |
+            Пост успешно создан.
+            Возвращает данные созданного поста.
+          schema:
+            $ref: '#/definitions/PostDetail'
+        404:
+          description: |
+            Ветка обсуждения отсутствует в базе данных
+  /post/{id}/vote:
+    post:
+      summary: Проголосовать за ветвь обсуждения
+      description: |
+        Изменение голоса за сообщение обсуждения.
+
+        Один пользователь учитывается только один раз и может изменить своё
+        мнение.
+      parameters:
+      - name: id
+        in: path
+        description: Идентификатор сообщения.
+        required: true
+        type: string
+        format: identity
+      - name: user
+        in: formData
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+        format: identity
+      - name: vote
+        in: formData
+        description: Изменение голоса.
+        required: true
+        type: number
+        enum:
+        - -1
+        - 1
+      responses:
+        200:
+          description: |
+            Информация о сообщении.
+          schema:
+            $ref: '#/definitions/PostDetail'
+        404:
+          description: |
+            Сообщение отсутсвует в форуме.
+  /post/{id}/update:
+    post:
+      summary: Изменение сообщения
+      description: |
+        Изменение сообщения на форуме.
+
+        Если сообщение поменяло текст, то оно должно получить отметку `isEdited`.
+      parameters:
+      - name: id
+        in: path
+        description: Идентификатор сообщения.
+        required: true
+        type: string
+        format: identity
+      - name: user
+        in: formData
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+        format: identity
+      responses:
+        200:
+          description: |
+            Информация о сообщении.
+          schema:
+            $ref: '#/definitions/PostDetail'
+        404:
+          description: |
+            Сообщение отсутсвует в форуме.
+  /post/{id}/details:
+    get:
+      summary: Получение информации о ветке обсуждения
+      description: |
+        Получение информации о ветке обсуждения по его имени.
+      parameters:
+      - name: id
+        in: path
+        description: Идентификатор сообщения.
+        required: true
+        type: number
+        format: int64
+      - name: related
+        in: query
+        type: array
+        description: |
+          Включение полной информации о соответвующем объекте сообщения.
+
+          Если тип объекта не указан, то полная информация об этих объектах не
+          передаётся.
+        default: []
+        items:
+          type: string
+          enum:
+          - user
+          - forum
+          - thread
+      responses:
+        200:
+          description: |
+            Информация о ветке обсуждения.
+          schema:
+            $ref: '#/definitions/PostFull'
+        404:
+          description: |
+            Ветка обсуждения отсутсвует в форуме.
+  /thread/{slug}/posts:
+    get:
+      summary: Сообщения данной ветви обсуждения
+      description: |
+        Получение списка сообщений в данной ветке форуме.
+
+        Сообщения выводятся отсортированные по дате создания.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+        format: identity
+      - name: limit
+        in: query
+        type: number
+        format: int32
+        default: 100
+        description: Максимальное кол-во возвращаемых записей.
+      - name: since
+        in: query
+        type: string
+        format: date-time
+        description: |
+          Дата создания сообщения, с которой будут выводиться записи
+          (сообщение я с указанной датой попадает в результат выборки).
+      - name: sort
+        in: query
+        type: string
+        description: |
+          Вид сортировки:
+
+           * flat - по дате, комментарии выводятся простым списком по дате;
+           * tree - древовидный, комментарии выводятся отсортированные в дереве
+             по N штук;
+           * parent_tree - древовидные с пагинацией по родительским (parent_tree),
+             на странице N родительских комментов и все комментарии прикрепленные
+             к ним, в древвидном отображение.
+
+          Подробности: https://tech-mail.ru/blog/database/2027.html
+        default: flat
+        enum:
+        - flat
+        - tree
+        - parent_tree
+      - name: order
+        in: query
+        type: string
+        description: |
+          Порядок сортировки (asc - по возрастанию, desc - по убыванию).
+        enum:
+        - asc
+        - desc
+        default: asc
+      responses:
+        200:
+          description: |
+            Информация о сообщениях форума.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/PostFull'
+        404:
+          description: |
+            Ветка обсуждения отсутсвует в форуме.
+definitions:
+  Status:
+    type: object
+    properties:
+      user:
+        type: number
+        format: int32
+        description: Кол-во пользователей в базе данных.
+      forum:
+        type: number
+        format: int32
+        description: Кол-во разделов в базе данных.
+      thread:
+        type: number
+        format: int32
+        description: Кол-во веток обсуждения в базе данных.
+      post:
+        type: number
+        format: int64
+        description: Кол-во сообщений в базе данных.
+  UserProfile:
+    description: |
+      Редактируемая информация о пользователе.
+    type: object
+    properties:
+      fullname:
+        type: string
+        description: Полное имя пользователя.
+      about:
+        type: string
+        format: text
+        description: Описание пользователя.
+  UserDetail:
+    type: object
+    description: |
+      Полная информация непосредственно о самом пользователе.
+    allOf:
+    - $ref: '#/definitions/UserProfile'
+    - type: object
+      properties:
+        nickname:
+          type: string
+          format: identity
+          description: |
+            Имя пользователя (уникальное поле).
+            Данное поле допускает только латиницу, цифры и знак подчеркивания.
+            Сравнение имени регистронезависимо.
+        email:
+          type: string
+          format: email
+          description: Почтовый адрес пользователя (уникальное поле).
+  ForumBase:
+    description: |
+      Информация о форуме.
+    type: object
+    properties:
+      title:
+        type: string
+        description: Название форума.
+      user:
+        type: string
+        format: identity
+        description: Nickname пользователя, который отвечает за форум (уникальное поле).
+      slug:
+        type: string
+        format: identity
+        description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
+  ForumFull:
+    description: |
+      Полная информация о форуме.
+    type: object
+    allOf:
+    - $ref: '#/definitions/ForumBase'
+    - type: object
+      properties:
+        posts:
+          type: number
+          format: int64
+          description: |
+            Общее кол-во сообщений в данном форуме.
+        threads:
+          type: number
+          format: int32
+          description: |
+            Общее кол-во ветвей обсуждения в данном форуме.
+  ThreadBase:
+    description: |
+      Ветка обсуждения на форуме.
+    type: object
+    properties:
+      title:
+        type: string
+        description: Заголовок ветки обсуждения.
+      author:
+        type: string
+        format: identity
+        description: Пользователь, создавший данную тему.
+      message:
+        type: string
+        format: text
+        description: Описание ветки обсуждения.
+      slug:
+        type: string
+        format: identity
+        description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
+  ThreadFull:
+    type: object
+    description: |
+      Полная информация о ветке обсужения на форуме.
+    allOf:
+    - $ref: '#/definitions/ThreadBase'
+    - type: object
+      properties:
+        created:
+          type: string
+          format: date-time
+          description: Дата создания ветки на форуме.
+  PostBase:
+    description: |
+      Сообщение на форуме.
+    type: object
+    properties:
+      parent:
+        type: number
+        format: int64
+        description: Идентификатор родительского сообщения.
+      author:
+        type: string
+        format: identity
+        description: Автор, написавший данное сообщение.
+      message:
+        type: string
+        format: text
+        description: Описание ветки обсуждения.
+  PostDetail:
+    type: object
+    description: |
+      Полная информация о сообщении.
+    allOf:
+    - $ref: '#/definitions/PostBase'
+    - type: object
+      properties:
+        id:
+          type: number
+          format: int64
+          description: Идентификатор данного сообщения.
+        isEdited:
+          type: boolean
+          description: Истина, если данное сообщение было изменено.
+        votes:
+          type: number
+          format: int32
+          description: Кол-во голосов непосредственно за данную ветку форума.
+        forum:
+          type: string
+          format: identity
+          description: Идентификатор форума данного сообещния.
+        thread:
+          type: string
+          format: identity
+          description: Идентификатор ветви обсуждения данного сообещния.
+        created:
+          type: string
+          format: date-time
+          description: Дата создания сообщения на форуме.
+  PostFull:
+    type: object
+    description: |
+      Полная информация о сообщении, включая связанные объекты.
+    allOf:
+    - $ref: '#/definitions/PostDetail'
+    - type: object
+      properties:
+        authorInfo:
+          $ref: '#/definitions/UserDetail'
+        threadInfo:
+          $ref: '#/definitions/ThreadFull'
+        forumInfo:
+          $ref: '#/definitions/ForumFull'
