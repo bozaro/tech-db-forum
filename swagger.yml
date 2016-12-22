@@ -12,62 +12,38 @@ basePath: /api
 produces:
 - application/json
 paths:
-  /service/clear:
+  /batch/forum/create:
     post:
-      summary: Очистка всех данных в базе
+      summary: Добавление новых форумов
       description: |
-        Безвозвратное удаление всей пользовательской информации из базы данных.
-      responses:
-        200:
-          description: Очистка базы успешно завершена
-  /service/status:
-    get:
-      summary: Получение инфомарции о базе данных
-      description: |
-        Получение инфомарции о базе данных.
-      responses:
-        200:
-          description: |
-            Кол-во записей в базе данных, включая помеченные как "удалённые".
-          schema:
-            $ref: '#/definitions/Status'
-          examples:
-            application/json: {
-              "user": 1000,
-              "forum": 100,
-              "thread": 1000,
-              "post": 1000000
-            }
-  /user/create:
-    post:
-      summary: Создание нового пользователя
-      description: |
-        Создание нового пользователя в базе данных.
+        Массовое добавление Форумов в базу.
       parameters:
-      - name: profile
+      - name: forums
         in: body
-        description: Данные пользовательского профиля.
+        description: Данные форумов.
         required: true
         schema:
-          $ref: '#/definitions/UserDetail'
+          type: array
+          items:
+            $ref: '#/definitions/ForumBase'
       responses:
-        201:
+        200:
           description: |
-            Пользователь успешно создан.
-            Возвращает данные созданного пользователя.
+            Форумы созданы успешно.
           schema:
-            $ref: '#/definitions/UserDetail'
+            description: |
+              Список идентификаторов созданных форумов в том же порядке, в
+              котором были перечислены данные форумов в `forums`.
+            type: array
+            items:
+              type: number
+              format: int32
         409:
           description: |
-            Пользователь уже присутсвует в базе данных.
-            Возвращает данные ранее созданного пользователя.
-          schema:
-            $ref: '#/definitions/UserDetail'
+            Хотя бы один форум уже присутсвует в базе данных.
   /batch/user/create:
     post:
       summary: Добавление новых пользователей
-      tags:
-      - performance
       description: |
         Массовое добавление пользователей в базу.
       parameters:
@@ -86,51 +62,6 @@ paths:
         409:
           description: |
             Хотя бы один пользователь уже присутсвует в базе данных.
-  /user/{nickname}/profile:
-    get:
-      summary: Получение информации о пользователе
-      description: |
-        Получение информации о пользователе форума по его имени.
-      parameters:
-      - name: nickname
-        in: path
-        description: Идентификатор пользователя.
-        required: true
-        type: string
-      responses:
-        200:
-          description: |
-            Информация о пользователе.
-          schema:
-            $ref: '#/definitions/UserDetail'
-        404:
-          description: |
-            Пользователь отсутсвует в системе.
-    post:
-      summary: Изменение данных о пользователе
-      description: |
-        Изменение информации в профиле пользователя.
-      parameters:
-      - name: nickname
-        in: path
-        description: Идентификатор пользователя.
-        required: true
-        type: string
-      - name: profile
-        in: body
-        description: Изменения профиля пользователя.
-        required: true
-        schema:
-          $ref: '#/definitions/UserProfile'
-      responses:
-        200:
-          description: |
-            Актуальная информация о пользователе после изменения профиля.
-          schema:
-            $ref: '#/definitions/UserDetail'
-        404:
-          description: |
-            Пользователь отсутсвует в системе.
   /forum/create:
     post:
       summary: Создание форума
@@ -156,7 +87,7 @@ paths:
             Возвращает данные ранее созданного форума.
           schema:
             $ref: '#/definitions/ForumFull'
-  /forum/{slug}:
+  /forum/{slug}/details:
     get:
       summary: Получение информации о форуме
       description: |
@@ -174,6 +105,89 @@ paths:
             Информация о форуме.
           schema:
             $ref: '#/definitions/ForumFull'
+        404:
+          description: |
+            Форум отсутсвует в системе.
+  /forum/{slug}/create:
+    post:
+      summary: Создание ветки
+      description: |
+        Добавление новой ветки обсуждения на форум.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор форума.
+        required: true
+        type: string
+        format: identity
+      - name: thread
+        in: body
+        description: Данные ветки обсуждения.
+        required: true
+        schema:
+          $ref: '#/definitions/ThreadBase'
+      responses:
+        201:
+          description: |
+            Ветка обсуждения успешно создана.
+            Возвращает данные созданной ветки обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+        409:
+          description: |
+            Ветка обсуждения уже присутсвует в базе данных.
+            Возвращает данные ранее созданной ветки обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+  /forum/{slug}/posts:
+    get:
+      summary: Сообщения данного форума
+      description: |
+        Получение списка сообщений в данном форуме.
+
+        Сообщения выводятся отсортированные по дате создания.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор форума.
+        required: true
+        type: string
+        format: identity
+      - name: limit
+        in: query
+        type: number
+        format: int32
+        default: 100
+        description: Максимальное кол-во возвращаемых записей.
+      - name: since
+        in: query
+        type: string
+        format: date-time
+        description: |
+          Дата создания сообщения, с которой будут выводиться записи
+          (сообщение с указанной датой попадает в результат выборки).
+      - name: related
+        in: query
+        type: array
+        description: |
+          Включение полной информации о соответвующем объекте сообщения.
+
+          Если тип объекта не указан, то полная информация об этих объектах не
+          передаётся.
+        items:
+          type: string
+          enum:
+          - user
+          - forum
+          - thread
+      responses:
+        200:
+          description: |
+            Информация о сообщениях форума.
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/PostFull'
         404:
           description: |
             Форум отсутсвует в системе.
@@ -262,33 +276,18 @@ paths:
         404:
           description: |
             Форум отсутсвует в системе.
-  /forum/{slug}/posts:
+  /post/{id}/details:
     get:
-      summary: Сообщения данного форума
+      summary: Получение информации о ветке обсуждения
       description: |
-        Получение списка сообщений в данном форуме.
-
-        Сообщения выводятся отсортированные по дате создания.
+        Получение информации о ветке обсуждения по его имени.
       parameters:
-      - name: slug
+      - name: id
         in: path
-        description: Идентификатор форума.
+        description: Идентификатор сообщения.
         required: true
-        type: string
-        format: identity
-      - name: limit
-        in: query
         type: number
-        format: int32
-        default: 100
-        description: Максимальное кол-во возвращаемых записей.
-      - name: since
-        in: query
-        type: string
-        format: date-time
-        description: |
-          Дата создания сообщения, с которой будут выводиться записи
-          (сообщение с указанной датой попадает в результат выборки).
+        format: int64
       - name: related
         in: query
         type: array
@@ -306,76 +305,133 @@ paths:
       responses:
         200:
           description: |
-            Информация о сообщениях форума.
+            Информация о ветке обсуждения.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/PostFull'
+            $ref: '#/definitions/PostFull'
         404:
           description: |
-            Форум отсутсвует в системе.
-  /batch/forum/create:
+            Ветка обсуждения отсутсвует в форуме.
+  /post/{id}/update:
     post:
-      summary: Добавление новых форумов
-      tags:
-      - performance
+      summary: Изменение сообщения
       description: |
-        Массовое добавление Форумов в базу.
+        Изменение сообщения на форуме.
+
+        Если сообщение поменяло текст, то оно должно получить отметку `isEdited`.
       parameters:
-      - name: forums
-        in: body
-        description: Данные форумов.
-        required: true
-        schema:
-          type: array
-          items:
-            $ref: '#/definitions/ForumBase'
-      responses:
-        200:
-          description: |
-            Форумы созданы успешно.
-          schema:
-            description: |
-              Список идентификаторов созданных форумов в том же порядке, в
-              котором были перечислены данные форумов в `forums`.
-            type: array
-            items:
-              type: number
-              format: int32
-        409:
-          description: |
-            Хотя бы один форум уже присутсвует в базе данных.
-  /forum/{slug}/create:
-    post:
-      summary: Создание ветки
-      description: |
-        Добавление новой ветки обсуждения на форум.
-      parameters:
-      - name: slug
+      - name: id
         in: path
-        description: Идентификатор форума.
+        description: Идентификатор сообщения.
         required: true
         type: string
         format: identity
-      - name: thread
+      - name: user
+        in: formData
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+        format: identity
+      responses:
+        200:
+          description: |
+            Информация о сообщении.
+          schema:
+            $ref: '#/definitions/PostDetail'
+        404:
+          description: |
+            Сообщение отсутсвует в форуме.
+  /post/{id}/vote:
+    post:
+      summary: Проголосовать за ветвь обсуждения
+      description: |
+        Изменение голоса за сообщение обсуждения.
+
+        Один пользователь учитывается только один раз и может изменить своё
+        мнение.
+      parameters:
+      - name: id
+        in: path
+        description: Идентификатор сообщения.
+        required: true
+        type: string
+        format: identity
+      - name: user
+        in: formData
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+        format: identity
+      - name: vote
+        in: formData
+        description: Изменение голоса.
+        required: true
+        type: number
+        enum:
+        - -1
+        - 1
+      responses:
+        200:
+          description: |
+            Информация о сообщении.
+          schema:
+            $ref: '#/definitions/PostDetail'
+        404:
+          description: |
+            Сообщение отсутсвует в форуме.
+  /service/clear:
+    post:
+      summary: Очистка всех данных в базе
+      description: |
+        Безвозвратное удаление всей пользовательской информации из базы данных.
+      responses:
+        200:
+          description: Очистка базы успешно завершена
+  /service/status:
+    get:
+      summary: Получение инфомарции о базе данных
+      description: |
+        Получение инфомарции о базе данных.
+      responses:
+        200:
+          description: |
+            Кол-во записей в базе данных, включая помеченные как "удалённые".
+          schema:
+            $ref: '#/definitions/Status'
+          examples:
+            application/json: {
+              "user": 1000,
+              "forum": 100,
+              "thread": 1000,
+              "post": 1000000
+            }
+  /thread/{slug}/create:
+    post:
+      summary: Создание нового поста
+      description: |
+        Добавление новой нового поста в ветку обсуждения на форум.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+        format: identity
+      - name: post
         in: body
-        description: Данные ветки обсуждения.
+        description: Данные поста.
         required: true
         schema:
-          $ref: '#/definitions/ThreadBase'
+          $ref: '#/definitions/PostBase'
       responses:
         201:
           description: |
-            Ветка обсуждения успешно создана.
-            Возвращает данные созданной ветки обсуждения.
+            Пост успешно создан.
+            Возвращает данные созданного поста.
           schema:
-            $ref: '#/definitions/ThreadFull'
-        409:
+            $ref: '#/definitions/PostDetail'
+        404:
           description: |
-            Ветка обсуждения уже присутсвует в базе данных.
-            Возвращает данные ранее созданной ветки обсуждения.
-          schema:
-            $ref: '#/definitions/ThreadFull'
+            Ветка обсуждения отсутствует в базе данных
   /thread/{slug}/details:
     get:
       summary: Получение информации о ветке обсуждения
@@ -419,174 +475,6 @@ paths:
             Информация о ветке обсуждения.
           schema:
             $ref: '#/definitions/ThreadFull'
-        404:
-          description: |
-            Ветка обсуждения отсутсвует в форуме.
-  /thread/{slug}/vote:
-    post:
-      summary: Проголосовать за ветвь обсуждения
-      description: |
-        Изменение голоса за ветвь обсуждения.
-
-        Один пользователь учитывается только один раз и может изменить своё
-        мнение.
-      parameters:
-      - name: slug
-        in: path
-        description: Идентификатор ветки обсуждения.
-        required: true
-        type: string
-        format: identity
-      - name: user
-        in: formData
-        description: Идентификатор пользователя.
-        required: true
-        type: string
-        format: identity
-      - name: vote
-        in: formData
-        description: Изменение голоса.
-        required: true
-        type: number
-        enum:
-        - -1
-        - 1
-      responses:
-        200:
-          description: |
-            Информация о ветке обсуждения.
-          schema:
-            $ref: '#/definitions/ThreadFull'
-        404:
-          description: |
-            Ветка обсуждения отсутсвует в форуме.
-  /thread/{slug}/create:
-    post:
-      summary: Создание нового поста
-      description: |
-        Добавление новой нового поста в ветку обсуждения на форум.
-      parameters:
-      - name: slug
-        in: path
-        description: Идентификатор ветки обсуждения.
-        required: true
-        type: string
-        format: identity
-      - name: post
-        in: body
-        description: Данные поста.
-        required: true
-        schema:
-          $ref: '#/definitions/PostBase'
-      responses:
-        201:
-          description: |
-            Пост успешно создан.
-            Возвращает данные созданного поста.
-          schema:
-            $ref: '#/definitions/PostDetail'
-        404:
-          description: |
-            Ветка обсуждения отсутствует в базе данных
-  /post/{id}/vote:
-    post:
-      summary: Проголосовать за ветвь обсуждения
-      description: |
-        Изменение голоса за сообщение обсуждения.
-
-        Один пользователь учитывается только один раз и может изменить своё
-        мнение.
-      parameters:
-      - name: id
-        in: path
-        description: Идентификатор сообщения.
-        required: true
-        type: string
-        format: identity
-      - name: user
-        in: formData
-        description: Идентификатор пользователя.
-        required: true
-        type: string
-        format: identity
-      - name: vote
-        in: formData
-        description: Изменение голоса.
-        required: true
-        type: number
-        enum:
-        - -1
-        - 1
-      responses:
-        200:
-          description: |
-            Информация о сообщении.
-          schema:
-            $ref: '#/definitions/PostDetail'
-        404:
-          description: |
-            Сообщение отсутсвует в форуме.
-  /post/{id}/update:
-    post:
-      summary: Изменение сообщения
-      description: |
-        Изменение сообщения на форуме.
-
-        Если сообщение поменяло текст, то оно должно получить отметку `isEdited`.
-      parameters:
-      - name: id
-        in: path
-        description: Идентификатор сообщения.
-        required: true
-        type: string
-        format: identity
-      - name: user
-        in: formData
-        description: Идентификатор пользователя.
-        required: true
-        type: string
-        format: identity
-      responses:
-        200:
-          description: |
-            Информация о сообщении.
-          schema:
-            $ref: '#/definitions/PostDetail'
-        404:
-          description: |
-            Сообщение отсутсвует в форуме.
-  /post/{id}/details:
-    get:
-      summary: Получение информации о ветке обсуждения
-      description: |
-        Получение информации о ветке обсуждения по его имени.
-      parameters:
-      - name: id
-        in: path
-        description: Идентификатор сообщения.
-        required: true
-        type: number
-        format: int64
-      - name: related
-        in: query
-        type: array
-        description: |
-          Включение полной информации о соответвующем объекте сообщения.
-
-          Если тип объекта не указан, то полная информация об этих объектах не
-          передаётся.
-        items:
-          type: string
-          enum:
-          - user
-          - forum
-          - thread
-      responses:
-        200:
-          description: |
-            Информация о ветке обсуждения.
-          schema:
-            $ref: '#/definitions/PostFull'
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
@@ -656,6 +544,119 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
+  /thread/{slug}/vote:
+    post:
+      summary: Проголосовать за ветвь обсуждения
+      description: |
+        Изменение голоса за ветвь обсуждения.
+
+        Один пользователь учитывается только один раз и может изменить своё
+        мнение.
+      parameters:
+      - name: slug
+        in: path
+        description: Идентификатор ветки обсуждения.
+        required: true
+        type: string
+        format: identity
+      - name: user
+        in: formData
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+        format: identity
+      - name: vote
+        in: formData
+        description: Изменение голоса.
+        required: true
+        type: number
+        enum:
+        - -1
+        - 1
+      responses:
+        200:
+          description: |
+            Информация о ветке обсуждения.
+          schema:
+            $ref: '#/definitions/ThreadFull'
+        404:
+          description: |
+            Ветка обсуждения отсутсвует в форуме.
+  /user/{nickname}/create:
+    post:
+      summary: Создание нового пользователя
+      description: |
+        Создание нового пользователя в базе данных.
+      parameters:
+      - name: nickname
+        in: path
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+      - name: profile
+        in: body
+        description: Данные пользовательского профиля.
+        required: true
+        schema:
+          $ref: '#/definitions/UserDetail'
+      responses:
+        201:
+          description: |
+            Пользователь успешно создан.
+            Возвращает данные созданного пользователя.
+          schema:
+            $ref: '#/definitions/UserDetail'
+        409:
+          description: |
+            Пользователь уже присутсвует в базе данных.
+            Возвращает данные ранее созданного пользователя.
+          schema:
+            $ref: '#/definitions/UserDetail'
+  /user/{nickname}/profile:
+    get:
+      summary: Получение информации о пользователе
+      description: |
+        Получение информации о пользователе форума по его имени.
+      parameters:
+      - name: nickname
+        in: path
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+      responses:
+        200:
+          description: |
+            Информация о пользователе.
+          schema:
+            $ref: '#/definitions/UserDetail'
+        404:
+          description: |
+            Пользователь отсутсвует в системе.
+    post:
+      summary: Изменение данных о пользователе
+      description: |
+        Изменение информации в профиле пользователя.
+      parameters:
+      - name: nickname
+        in: path
+        description: Идентификатор пользователя.
+        required: true
+        type: string
+      - name: profile
+        in: body
+        description: Изменения профиля пользователя.
+        required: true
+        schema:
+          $ref: '#/definitions/UserProfile'
+      responses:
+        200:
+          description: |
+            Актуальная информация о пользователе после изменения профиля.
+          schema:
+            $ref: '#/definitions/UserDetail'
+        404:
+          description: |
+            Пользователь отсутсвует в системе.
 definitions:
   Status:
     type: object
