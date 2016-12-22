@@ -297,7 +297,6 @@ paths:
 
           Если тип объекта не указан, то полная информация об этих объектах не
           передаётся.
-        default: []
         items:
           type: string
           enum:
@@ -576,7 +575,6 @@ paths:
 
           Если тип объекта не указан, то полная информация об этих объектах не
           передаётся.
-        default: []
         items:
           type: string
           enum:
@@ -654,7 +652,7 @@ paths:
           schema:
             type: array
             items:
-              $ref: '#/definitions/PostFull'
+              $ref: '#/definitions/PostDetail'
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
