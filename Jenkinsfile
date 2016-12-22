@@ -1,5 +1,4 @@
 /*
-sudo apt install python-yaml
 sudo apt install ghp-import
 */
 node  ('linux') {
@@ -15,13 +14,23 @@ node  ('linux') {
       userRemoteConfigs: scm.userRemoteConfigs
     ])
   }
+  stage ('Prepare') {
+    sh """
+export GOPATH="\$PWD"
+export PATH="\$GOPATH/bin:\$PATH"
+go get github.com/bronze1man/yaml2json
+"""
+  }
   stage ('Build') {
     sh """
+export GOPATH="\$PWD"
+export PATH="\$GOPATH/bin:\$PATH"
+
 # Generage swagger.json from swagger.yml
 mkdir -p target
 rm -fR target/doc/
 cp -r swagger-ui/dist target/doc
-python -c 'import sys, yaml, json; json.dump(yaml.load(sys.stdin), sys.stdout, indent=4)' < swagger.yml > target/doc/swagger.json
+yaml2json < swagger.yml > target/doc/swagger.json
 sed -i 's/http:.*swagger.json/swagger.json/' target/doc/index.html
 ghp-import -n target/doc
 """
