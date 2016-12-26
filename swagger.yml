@@ -1,6 +1,6 @@
 swagger: '2.0'
 info:
-  title: Форумы
+  title: forum
   description: |
     Тестовое задание для реализации проекта "Форумы" на курсе по базам данных в
     Технопарке Mail.ru (https://park.mail.ru).
