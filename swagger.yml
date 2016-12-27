@@ -398,12 +398,10 @@ paths:
           schema:
             $ref: '#/definitions/Status'
           examples:
-            application/json: {
-              "user": 1000,
-              "forum": 100,
-              "thread": 1000,
-              "post": 1000000
-            }
+            user: 1000
+            forum: 100
+            thread: 1000
+            post: 1000000
   /thread/{slug}/create:
     post:
       summary: Создание нового поста
