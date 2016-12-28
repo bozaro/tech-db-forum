@@ -397,11 +397,6 @@ paths:
             Кол-во записей в базе данных, включая помеченные как "удалённые".
           schema:
             $ref: '#/definitions/Status'
-          examples:
-            user: 1000
-            forum: 100
-            thread: 1000
-            post: 1000000
   /thread/{slug}/create:
     post:
       summary: Создание нового поста
@@ -591,12 +586,13 @@ paths:
         description: Идентификатор пользователя.
         required: true
         type: string
+        example: j.sparrow
       - name: profile
         in: body
         description: Данные пользовательского профиля.
         required: true
         schema:
-          $ref: '#/definitions/UserDetail'
+          $ref: '#/definitions/UserProfile'
       responses:
         201:
           description: |
@@ -621,6 +617,7 @@ paths:
         description: Идентификатор пользователя.
         required: true
         type: string
+        example: j.sparrow
       responses:
         200:
           description: |
@@ -640,6 +637,7 @@ paths:
         description: Идентификатор пользователя.
         required: true
         type: string
+        example: j.sparrow
       - name: profile
         in: body
         description: Изменения профиля пользователя.
@@ -663,18 +661,22 @@ definitions:
         type: number
         format: int32
         description: Кол-во пользователей в базе данных.
+        example: 1000
       forum:
         type: number
         format: int32
         description: Кол-во разделов в базе данных.
+        example: 100
       thread:
         type: number
         format: int32
         description: Кол-во веток обсуждения в базе данных.
+        example: 1000
       post:
         type: number
         format: int64
         description: Кол-во сообщений в базе данных.
+        example: 1000000
   UserProfile:
     description: |
       Редактируемая информация о пользователе.
@@ -683,10 +685,17 @@ definitions:
       fullname:
         type: string
         description: Полное имя пользователя.
+        example: Captain Jack Sparrow
       about:
         type: string
         format: text
         description: Описание пользователя.
+        example: This is the day you will always remember as the day that you almost caught Captain Jack Sparrow!
+      email:
+        type: string
+        format: email
+        description: Почтовый адрес пользователя (уникальное поле).
+        example: captaina@blackpearl.sea
   UserDetail:
     type: object
     description: |
@@ -702,10 +711,7 @@ definitions:
             Имя пользователя (уникальное поле).
             Данное поле допускает только латиницу, цифры и знак подчеркивания.
             Сравнение имени регистронезависимо.
-        email:
-          type: string
-          format: email
-          description: Почтовый адрес пользователя (уникальное поле).
+          example: j.sparrow
   ForumBase:
     description: |
       Информация о форуме.
