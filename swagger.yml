@@ -4,7 +4,7 @@ info:
   description: |
     Тестовое задание для реализации проекта "Форумы" на курсе по базам данных в
     Технопарке Mail.ru (https://park.mail.ru).
-  version: "1.0.0"
+  version: "0.1.0"
 schemes:
 - http
 - https
@@ -56,7 +56,7 @@ paths:
         schema:
           type: array
           items:
-            $ref: '#/definitions/UserDetail'
+            $ref: '#/definitions/User'
       responses:
         200:
           description: |
@@ -227,7 +227,7 @@ paths:
           schema:
             type: array
             items:
-              $ref: '#/definitions/UserDetail'
+              $ref: '#/definitions/User'
         404:
           description: |
             Форум отсутсвует в системе.
@@ -593,20 +593,22 @@ paths:
         description: Данные пользовательского профиля.
         required: true
         schema:
-          $ref: '#/definitions/UserProfile'
+          $ref: '#/definitions/User'
       responses:
         201:
           description: |
             Пользователь успешно создан.
             Возвращает данные созданного пользователя.
           schema:
-            $ref: '#/definitions/UserDetail'
+            $ref: '#/definitions/User'
         409:
           description: |
             Пользователь уже присутсвует в базе данных.
-            Возвращает данные ранее созданного пользователя.
+            Возвращает данные ранее созданных пользователей с тем же nickname-ом иои email-ом.
           schema:
-            $ref: '#/definitions/UserDetail'
+            type: array
+            items:
+              $ref: '#/definitions/User'
   /user/{nickname}/profile:
     get:
       summary: Получение информации о пользователе
@@ -623,7 +625,7 @@ paths:
           description: |
             Информация о пользователе.
           schema:
-            $ref: '#/definitions/UserDetail'
+            $ref: '#/definitions/User'
         404:
           description: |
             Пользователь отсутсвует в системе.
@@ -642,13 +644,13 @@ paths:
         description: Изменения профиля пользователя.
         required: true
         schema:
-          $ref: '#/definitions/UserProfile'
+          $ref: '#/definitions/User'
       responses:
         200:
           description: |
             Актуальная информация о пользователе после изменения профиля.
           schema:
-            $ref: '#/definitions/UserDetail'
+            $ref: '#/definitions/User'
         404:
           description: |
             Пользователь отсутсвует в системе.
@@ -676,11 +678,20 @@ definitions:
         format: int64
         description: Кол-во сообщений в базе данных.
         example: 1000000
-  UserProfile:
+  User:
     description: |
-      Редактируемая информация о пользователе.
+      Информация о пользователе.
     type: object
     properties:
+      nickname:
+        type: string
+        format: identity
+        readOnly: true
+        description: |
+          Имя пользователя (уникальное поле).
+          Данное поле допускает только латиницу, цифры и знак подчеркивания.
+          Сравнение имени регистронезависимо.
+        example: j.sparrow
       fullname:
         type: string
         description: Полное имя пользователя.
@@ -695,22 +706,6 @@ definitions:
         format: email
         description: Почтовый адрес пользователя (уникальное поле).
         example: captaina@blackpearl.sea
-  UserDetail:
-    type: object
-    description: |
-      Полная информация непосредственно о самом пользователе.
-    allOf:
-    - $ref: '#/definitions/UserProfile'
-    - type: object
-      properties:
-        nickname:
-          type: string
-          format: identity
-          description: |
-            Имя пользователя (уникальное поле).
-            Данное поле допускает только латиницу, цифры и знак подчеркивания.
-            Сравнение имени регистронезависимо.
-          example: j.sparrow
   ForumBase:
     description: |
       Информация о форуме.
@@ -834,7 +829,7 @@ definitions:
     - type: object
       properties:
         authorInfo:
-          $ref: '#/definitions/UserDetail'
+          $ref: '#/definitions/User'
         threadInfo:
           $ref: '#/definitions/ThreadFull'
         forumInfo:
