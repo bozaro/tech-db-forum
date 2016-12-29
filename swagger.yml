@@ -9,6 +9,8 @@ schemes:
 - http
 - https
 basePath: /api
+consumes:
+- application/json
 produces:
 - application/json
 paths:
@@ -586,7 +588,6 @@ paths:
         description: Идентификатор пользователя.
         required: true
         type: string
-        example: j.sparrow
       - name: profile
         in: body
         description: Данные пользовательского профиля.
@@ -617,7 +618,6 @@ paths:
         description: Идентификатор пользователя.
         required: true
         type: string
-        example: j.sparrow
       responses:
         200:
           description: |
@@ -637,7 +637,6 @@ paths:
         description: Идентификатор пользователя.
         required: true
         type: string
-        example: j.sparrow
       - name: profile
         in: body
         description: Изменения профиля пользователя.
