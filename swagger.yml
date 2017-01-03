@@ -83,6 +83,9 @@ paths:
             Возвращает данные созданного форума.
           schema:
             $ref: '#/definitions/ForumFull'
+        404:
+          description: |
+            Владелец форума не найден.
         409:
           description: |
             Форум уже присутсвует в базе данных.
@@ -717,14 +720,17 @@ definitions:
       title:
         type: string
         description: Название форума.
+        example: Pirate stories
       user:
         type: string
         format: identity
         description: Nickname пользователя, который отвечает за форум (уникальное поле).
+        example: j.sparrow
       slug:
         type: string
         format: identity
         description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
+        example: pirate-stories
   ForumFull:
     description: |
       Полная информация о форуме.
@@ -738,11 +744,13 @@ definitions:
           format: int64
           description: |
             Общее кол-во сообщений в данном форуме.
+          example: 200000
         threads:
           type: number
           format: int32
           description: |
             Общее кол-во ветвей обсуждения в данном форуме.
+          example: 200
   Thread:
     description: |
       Ветка обсуждения на форуме.
@@ -755,10 +763,12 @@ definitions:
         type: string
         format: identity
         description: Пользователь, создавший данную тему.
+        example: j.sparrow
       message:
         type: string
         format: text
         description: Описание ветки обсуждения.
+        example: An urgent need to reveal the hiding place of Davy Jones. Who is willing to help in this matter?
       slug:
         type: string
         format: identity
@@ -777,15 +787,18 @@ definitions:
       parent:
         type: number
         format: int64
-        description: Идентификатор родительского сообщения.
+        description: Идентификатор родительского сообщения (0 - корневое сообщение обсуждения).
+        default: 0
       author:
         type: string
         format: identity
         description: Автор, написавший данное сообщение.
+        example: j.sparrow
       message:
         type: string
         format: text
-        description: Описание ветки обсуждения.
+        description: Собственно сообщение форума.
+        example: We should be afraid of the Kraken.
   PostDetail:
     type: object
     description: |
@@ -804,7 +817,7 @@ definitions:
         votes:
           type: number
           format: int32
-          description: Кол-во голосов непосредственно за данную ветку форума.
+          description: Кол-во голосов непосредственно за данное сообщение форума.
         forum:
           type: string
           format: identity
