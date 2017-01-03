@@ -27,7 +27,7 @@ paths:
         schema:
           type: array
           items:
-            $ref: '#/definitions/ForumBase'
+            $ref: '#/definitions/Forum'
       responses:
         200:
           description: |
@@ -75,14 +75,14 @@ paths:
         description: Данные форума.
         required: true
         schema:
-          $ref: '#/definitions/ForumBase'
+          $ref: '#/definitions/Forum'
       responses:
         201:
           description: |
             Форум успешно создан.
             Возвращает данные созданного форума.
           schema:
-            $ref: '#/definitions/ForumFull'
+            $ref: '#/definitions/Forum'
         404:
           description: |
             Владелец форума не найден.
@@ -91,7 +91,7 @@ paths:
             Форум уже присутсвует в базе данных.
             Возвращает данные ранее созданного форума.
           schema:
-            $ref: '#/definitions/ForumFull'
+            $ref: '#/definitions/Forum'
   /forum/{slug}/details:
     get:
       summary: Получение информации о форуме
@@ -109,7 +109,7 @@ paths:
           description: |
             Информация о форуме.
           schema:
-            $ref: '#/definitions/ForumFull'
+            $ref: '#/definitions/Forum'
         404:
           description: |
             Форум отсутсвует в системе.
@@ -138,6 +138,9 @@ paths:
             Возвращает данные созданной ветки обсуждения.
           schema:
             $ref: '#/definitions/Thread'
+        404:
+          description: |
+            Автор ветки или форум не найдены.
         409:
           description: |
             Ветка обсуждения уже присутсвует в базе данных.
@@ -712,7 +715,10 @@ definitions:
         format: email
         description: Почтовый адрес пользователя (уникальное поле).
         example: captaina@blackpearl.sea
-  ForumBase:
+    required:
+    - fullname
+    - email
+  Forum:
     description: |
       Информация о форуме.
     type: object
@@ -731,26 +737,24 @@ definitions:
         format: identity
         description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
         example: pirate-stories
-  ForumFull:
-    description: |
-      Полная информация о форуме.
-    type: object
-    allOf:
-    - $ref: '#/definitions/ForumBase'
-    - type: object
-      properties:
-        posts:
-          type: number
-          format: int64
-          description: |
-            Общее кол-во сообщений в данном форуме.
-          example: 200000
-        threads:
-          type: number
-          format: int32
-          description: |
-            Общее кол-во ветвей обсуждения в данном форуме.
-          example: 200
+      posts:
+        type: number
+        format: int64
+        readOnly: true
+        description: |
+          Общее кол-во сообщений в данном форуме.
+        example: 200000
+      threads:
+        type: number
+        format: int32
+        readOnly: true
+        description: |
+          Общее кол-во ветвей обсуждения в данном форуме.
+        example: 200
+    required:
+    - title
+    - user
+    - slug
   Thread:
     description: |
       Ветка обсуждения на форуме.
@@ -759,11 +763,17 @@ definitions:
       title:
         type: string
         description: Заголовок ветки обсуждения.
+        example: Davy Jones cache
       author:
         type: string
         format: identity
         description: Пользователь, создавший данную тему.
         example: j.sparrow
+      forum:
+        type: string
+        format: identity
+        description: Форум, в котором расположена данная ветка обсуждения.
+        example: pirate-stories
       message:
         type: string
         format: text
@@ -774,11 +784,16 @@ definitions:
         format: identity
         description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
         readOnly: true
+        example: jones-cache
       created:
         type: string
         format: date-time
         description: Дата создания ветки на форуме.
-        readOnly: true
+        example: 2017-01-01T00:00:00.000Z
+    required:
+    - title
+    - author
+    - message
   PostBase:
     description: |
       Сообщение на форуме.
@@ -843,4 +858,4 @@ definitions:
         threadInfo:
           $ref: '#/definitions/Thread'
         forumInfo:
-          $ref: '#/definitions/ForumFull'
+          $ref: '#/definitions/Forum'
