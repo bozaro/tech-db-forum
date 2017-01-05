@@ -166,6 +166,8 @@ paths:
         type: number
         format: int32
         default: 100
+        minimum: 1
+        maximum: 10000
         description: Максимальное кол-во возвращаемых записей.
       - name: since
         in: query
@@ -203,7 +205,7 @@ paths:
     get:
       summary: Пользователи данного форума
       description: |
-        Получение списка пользователей, у которых есть пост в данном форуме.
+        Получение списка пользователей, у которых есть пост или ветка обсуждения в данном форуме.
 
         Пользователи выводятся отсортированные по nickname в порядке возрастания.
       parameters:
@@ -218,6 +220,8 @@ paths:
         type: number
         format: int32
         default: 100
+        minimum: 1
+        maximum: 10000
         description: Максимальное кол-во возвращаемых записей.
       - name: since
         in: query
@@ -256,6 +260,8 @@ paths:
         type: number
         format: int32
         default: 100
+        minimum: 1
+        maximum: 10000
         description: Максимальное кол-во возвращаемых записей.
       - name: since
         in: query
@@ -405,13 +411,13 @@ paths:
             Кол-во записей в базе данных, включая помеченные как "удалённые".
           schema:
             $ref: '#/definitions/Status'
-  /thread/{slug}/create:
+  /thread/{slug_or_id}/create:
     post:
       summary: Создание нового поста
       description: |
         Добавление новой нового поста в ветку обсуждения на форум.
       parameters:
-      - name: slug
+      - name: slug_or_id
         in: path
         description: Идентификатор ветки обсуждения.
         required: true
@@ -433,13 +439,13 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутствует в базе данных
-  /thread/{slug}/details:
+  /thread/{slug_or_id}/details:
     get:
       summary: Получение информации о ветке обсуждения
       description: |
         Получение информации о ветке обсуждения по его имени.
       parameters:
-      - name: slug
+      - name: slug_or_id
         in: path
         description: Идентификатор ветки обсуждения.
         required: true
@@ -458,7 +464,7 @@ paths:
       description: |
         Обновление ветки обсуждения на форуме.
       parameters:
-      - name: slug
+      - name: slug_or_id
         in: path
         description: Идентификатор ветки обсуждения.
         required: true
@@ -479,7 +485,7 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
-  /thread/{slug}/posts:
+  /thread/{slug_or_id}/posts:
     get:
       summary: Сообщения данной ветви обсуждения
       description: |
@@ -487,7 +493,7 @@ paths:
 
         Сообщения выводятся отсортированные по дате создания.
       parameters:
-      - name: slug
+      - name: slug_or_id
         in: path
         description: Идентификатор ветки обсуждения.
         required: true
@@ -498,6 +504,8 @@ paths:
         type: number
         format: int32
         default: 100
+        minimum: 1
+        maximum: 10000
         description: Максимальное кол-во возвращаемых записей.
       - name: since
         in: query
@@ -545,7 +553,7 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
-  /thread/{slug}/vote:
+  /thread/{slug_or_id}/vote:
     post:
       summary: Проголосовать за ветвь обсуждения
       description: |
@@ -554,7 +562,7 @@ paths:
         Один пользователь учитывается только один раз и может изменить своё
         мнение.
       parameters:
-      - name: slug
+      - name: slug_or_id
         in: path
         description: Идентификатор ветки обсуждения.
         required: true
@@ -736,6 +744,7 @@ definitions:
         type: string
         format: identity
         description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
+        pattern: ^(\d|\w|-|_)*(\w|-|_)(\d|\w|-|_)*$
         example: pirate-stories
       posts:
         type: number
@@ -790,6 +799,7 @@ definitions:
         description: |
           Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
           В данной структуре slug опционален и не может быть числом.
+        pattern: ^(\d|\w|-|_)*(\w|-|_)(\d|\w|-|_)*$
         readOnly: true
         example: jones-cache
       created:
