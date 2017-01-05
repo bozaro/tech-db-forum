@@ -230,6 +230,15 @@ paths:
         description: |
           Идентификатор пользователя, с которого будут выводиться пользоватли
           (пользователь с данным идентификатором в результат не попадает).
+      - name: order
+        in: query
+        type: string
+        description: |
+          Порядок сортировки (asc - по возрастанию, desc - по убыванию).
+        enum:
+        - asc
+        - desc
+        default: asc
       responses:
         200:
           description: |
