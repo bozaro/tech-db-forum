@@ -436,6 +436,13 @@ paths:
         required: true
         type: string
         format: identity
+      - name: parent
+        in: query
+        description: Идентификатор родительского поста.
+        type: number
+        format: int64
+        required: false
+        default: 0
       - name: post
         in: body
         description: Данные поста.
@@ -451,7 +458,10 @@ paths:
             $ref: '#/definitions/Post'
         404:
           description: |
-            Ветка обсуждения отсутствует в базе данных
+            Ветка обсуждения отсутствует в базе данных.
+        409:
+          description: |
+            Родитель и текущий пост относятся к разным веткам обсуждения.
   /thread/{slug_or_id}/details:
     get:
       summary: Получение информации о ветке обсуждения
@@ -837,8 +847,9 @@ definitions:
       parent:
         type: number
         format: int64
-        description: Идентификатор родительского сообщения (0 - корневое сообщение обсуждения).
-        default: 0
+        description: |
+          Идентификатор родительского сообщения (0 - корневое сообщение обсуждения).
+        readOnly: true
       author:
         type: string
         format: identity
