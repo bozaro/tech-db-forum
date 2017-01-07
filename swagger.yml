@@ -17,6 +17,8 @@ paths:
   /batch/forum/create:
     post:
       summary: Добавление новых форумов
+      tags:
+      - draft
       description: |
         Массовое добавление Форумов в базу.
       parameters:
@@ -46,6 +48,8 @@ paths:
   /batch/user/create:
     post:
       summary: Добавление новых пользователей
+      tags:
+      - draft
       description: |
         Массовое добавление пользователей в базу.
       parameters:
@@ -359,7 +363,7 @@ paths:
           description: |
             Информация о сообщении.
           schema:
-            $ref: '#/definitions/PostDetail'
+            $ref: '#/definitions/Post'
         404:
           description: |
             Сообщение отсутсвует в форуме.
@@ -397,7 +401,7 @@ paths:
           description: |
             Информация о сообщении.
           schema:
-            $ref: '#/definitions/PostDetail'
+            $ref: '#/definitions/Post'
         404:
           description: |
             Сообщение отсутсвует в форуме.
@@ -437,14 +441,14 @@ paths:
         description: Данные поста.
         required: true
         schema:
-          $ref: '#/definitions/PostBase'
+          $ref: '#/definitions/Post'
       responses:
         201:
           description: |
             Пост успешно создан.
             Возвращает данные созданного поста.
           schema:
-            $ref: '#/definitions/PostDetail'
+            $ref: '#/definitions/Post'
         404:
           description: |
             Ветка обсуждения отсутствует в базе данных
@@ -558,7 +562,7 @@ paths:
           schema:
             type: array
             items:
-              $ref: '#/definitions/PostDetail'
+              $ref: '#/definitions/Post'
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
@@ -820,11 +824,16 @@ definitions:
     - title
     - author
     - message
-  PostBase:
+  Post:
     description: |
-      Сообщение на форуме.
+      Сообщение внутри ветки обсуждения на форуме.
     type: object
     properties:
+      id:
+        type: number
+        format: int64
+        description: Идентификатор данного сообщения.
+        readOnly: true
       parent:
         type: number
         format: int64
@@ -840,43 +849,39 @@ definitions:
         format: text
         description: Собственно сообщение форума.
         example: We should be afraid of the Kraken.
-  PostDetail:
-    type: object
-    description: |
-      Полная информация о сообщении.
-    allOf:
-    - $ref: '#/definitions/PostBase'
-    - type: object
-      properties:
-        id:
-          type: number
-          format: int64
-          description: Идентификатор данного сообщения.
-        isEdited:
-          type: boolean
-          description: Истина, если данное сообщение было изменено.
-        votes:
-          type: number
-          format: int32
-          description: Кол-во голосов непосредственно за данное сообщение форума.
-        forum:
-          type: string
-          format: identity
-          description: Идентификатор форума данного сообещния.
-        thread:
-          type: string
-          format: identity
-          description: Идентификатор ветви обсуждения данного сообещния.
-        created:
-          type: string
-          format: date-time
-          description: Дата создания сообщения на форуме.
+      isEdited:
+        type: boolean
+        description: Истина, если данное сообщение было изменено.
+        readOnly: true
+      votes:
+        type: number
+        format: int32
+        description: Кол-во голосов непосредственно за данное сообщение форума.
+        readOnly: true
+      forum:
+        type: string
+        format: identity
+        description: Идентификатор форума (slug) данного сообещния.
+        readOnly: true
+      thread:
+        type: number
+        format: int32
+        description: Идентификатор ветви (id) обсуждения данного сообещния.
+        readOnly: true
+      created:
+        type: string
+        format: date-time
+        description: Дата создания сообщения на форуме.
+        readOnly: true
+    required:
+    - author
+    - message
   PostFull:
     type: object
     description: |
       Полная информация о сообщении, включая связанные объекты.
     allOf:
-    - $ref: '#/definitions/PostDetail'
+    - $ref: '#/definitions/Post'
     - type: object
       properties:
         authorInfo:
