@@ -367,44 +367,6 @@ paths:
         404:
           description: |
             Сообщение отсутсвует в форуме.
-  /post/{id}/vote:
-    post:
-      summary: Проголосовать за ветвь обсуждения
-      description: |
-        Изменение голоса за сообщение обсуждения.
-
-        Один пользователь учитывается только один раз и может изменить своё
-        мнение.
-      parameters:
-      - name: id
-        in: path
-        description: Идентификатор сообщения.
-        required: true
-        type: string
-        format: identity
-      - name: user
-        in: formData
-        description: Идентификатор пользователя.
-        required: true
-        type: string
-        format: identity
-      - name: vote
-        in: formData
-        description: Изменение голоса.
-        required: true
-        type: number
-        enum:
-        - -1
-        - 1
-      responses:
-        200:
-          description: |
-            Информация о сообщении.
-          schema:
-            $ref: '#/definitions/Post'
-        404:
-          description: |
-            Сообщение отсутсвует в форуме.
   /service/clear:
     post:
       summary: Очистка всех данных в базе
@@ -816,6 +778,11 @@ definitions:
         format: text
         description: Описание ветки обсуждения.
         example: An urgent need to reveal the hiding place of Davy Jones. Who is willing to help in this matter?
+      votes:
+        type: number
+        format: int32
+        description: Кол-во голосов непосредственно за данное сообщение форума.
+        readOnly: true
       slug:
         type: string
         format: identity
@@ -863,11 +830,6 @@ definitions:
       isEdited:
         type: boolean
         description: Истина, если данное сообщение было изменено.
-        readOnly: true
-      votes:
-        type: number
-        format: int32
-        description: Кол-во голосов непосредственно за данное сообщение форума.
         readOnly: true
       forum:
         type: string
