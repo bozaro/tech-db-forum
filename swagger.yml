@@ -338,7 +338,6 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
-  /post/{id}/update:
     post:
       summary: Изменение сообщения
       description: |
