@@ -891,13 +891,14 @@ definitions:
     type: object
     description: |
       Полная информация о сообщении, включая связанные объекты.
-    allOf:
-    - $ref: '#/definitions/Post'
-    - type: object
-      properties:
-        authorInfo:
-          $ref: '#/definitions/User'
-        threadInfo:
-          $ref: '#/definitions/Thread'
-        forumInfo:
-          $ref: '#/definitions/Forum'
+    properties:
+      post:
+        $ref: '#/definitions/Post'
+      author:
+        $ref: '#/definitions/User'
+      thread:
+        $ref: '#/definitions/Thread'
+      forum:
+        $ref: '#/definitions/Forum'
+    required:
+    - post
