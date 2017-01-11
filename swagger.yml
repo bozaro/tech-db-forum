@@ -10,6 +10,7 @@ schemes:
 - https
 basePath: /api
 consumes:
+- application/x-www-form-urlencoded
 - application/json
 produces:
 - application/json
@@ -552,7 +553,7 @@ paths:
         required: true
         type: string
         format: identity
-      - name: user
+      - name: nickname
         in: formData
         description: Идентификатор пользователя.
         required: true
@@ -563,6 +564,7 @@ paths:
         description: Изменение голоса.
         required: true
         type: number
+        format: int32
         enum:
         - -1
         - 1
