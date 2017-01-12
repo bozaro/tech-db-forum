@@ -406,7 +406,7 @@ paths:
         description: Данные ветки обсуждения.
         required: true
         schema:
-          $ref: '#/definitions/Thread'
+          $ref: '#/definitions/ThreadUpdate'
       responses:
         200:
           description: |
@@ -705,6 +705,7 @@ definitions:
         type: number
         format: int32
         description: Идентификатор ветки обсуждения.
+        readOnly: true
         example: 42
       title:
         type: string
@@ -719,6 +720,7 @@ definitions:
         type: string
         format: identity
         description: Форум, в котором расположена данная ветка обсуждения.
+        readOnly: true
         example: pirate-stories
       message:
         type: string
@@ -748,6 +750,21 @@ definitions:
     - title
     - author
     - message
+  ThreadUpdate:
+    description: |
+      Сообщение для обновления ветки обсуждения на форуме.
+      Пустые параметры остаются без изменений.
+    type: object
+    properties:
+      title:
+        type: string
+        description: Заголовок ветки обсуждения.
+        example: Davy Jones cache
+      message:
+        type: string
+        format: text
+        description: Описание ветки обсуждения.
+        example: An urgent need to reveal the hiding place of Davy Jones. Who is willing to help in this matter?
   Post:
     description: |
       Сообщение внутри ветки обсуждения на форуме.
