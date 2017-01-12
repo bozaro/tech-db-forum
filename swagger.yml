@@ -152,60 +152,6 @@ paths:
             Возвращает данные ранее созданной ветки обсуждения.
           schema:
             $ref: '#/definitions/Thread'
-  /forum/{slug}/posts:
-    get:
-      summary: Сообщения данного форума
-      description: |
-        Получение списка сообщений в данном форуме.
-
-        Сообщения выводятся отсортированные по дате создания.
-      parameters:
-      - name: slug
-        in: path
-        description: Идентификатор форума.
-        required: true
-        type: string
-        format: identity
-      - name: limit
-        in: query
-        type: number
-        format: int32
-        default: 100
-        minimum: 1
-        maximum: 10000
-        description: Максимальное кол-во возвращаемых записей.
-      - name: since
-        in: query
-        type: string
-        format: date-time
-        description: |
-          Дата создания сообщения, с которой будут выводиться записи
-          (сообщение с указанной датой попадает в результат выборки).
-      - name: related
-        in: query
-        type: array
-        description: |
-          Включение полной информации о соответвующем объекте сообщения.
-
-          Если тип объекта не указан, то полная информация об этих объектах не
-          передаётся.
-        items:
-          type: string
-          enum:
-          - user
-          - forum
-          - thread
-      responses:
-        200:
-          description: |
-            Информация о сообщениях форума.
-          schema:
-            type: array
-            items:
-              $ref: '#/definitions/PostFull'
-        404:
-          description: |
-            Форум отсутсвует в системе.
   /forum/{slug}/users:
     get:
       summary: Пользователи данного форума
