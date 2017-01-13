@@ -10,7 +10,6 @@ schemes:
 - https
 basePath: /api
 consumes:
-- application/x-www-form-urlencoded
 - application/json
 produces:
 - application/json
@@ -298,12 +297,12 @@ paths:
         required: true
         type: string
         format: identity
-      - name: user
-        in: formData
-        description: Идентификатор пользователя.
+      - name: post
+        in: body
+        description: Изменения сообщения.
         required: true
-        type: string
-        format: identity
+        schema:
+          $ref: '#/definitions/PostUpdate'
       responses:
         200:
           description: |
@@ -499,21 +498,12 @@ paths:
         required: true
         type: string
         format: identity
-      - name: nickname
-        in: formData
-        description: Идентификатор пользователя.
-        required: true
-        type: string
-        format: identity
       - name: vote
-        in: formData
-        description: Изменение голоса.
+        in: body
+        description: Информация о голосовании пользователя.
         required: true
-        type: number
-        format: int32
-        enum:
-        - -1
-        - 1
+        schema:
+          $ref: '#/definitions/Vote'
       responses:
         200:
           description: |
@@ -813,6 +803,17 @@ definitions:
     required:
     - author
     - message
+  PostUpdate:
+    description: |
+      Сообщение для обновления сообщения внутри ветки на форуме.
+      Пустые параметры остаются без изменений.
+    type: object
+    properties:
+      message:
+        type: string
+        format: text
+        description: Собственно сообщение форума.
+        example: We should be afraid of the Kraken.
   PostFull:
     type: object
     description: |
@@ -828,3 +829,22 @@ definitions:
         $ref: '#/definitions/Forum'
     required:
     - post
+  Vote:
+    type: object
+    description: |
+      Информация о голосовании пользователя.
+    properties:
+      nickname:
+        type: string
+        format: identity
+        description: Идентификатор пользователя.
+      voice:
+        type: number
+        format: int32
+        description: Отданный голос.
+        enum:
+        - -1
+        - 1
+    required:
+    - nickname
+    - voice
