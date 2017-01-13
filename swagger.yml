@@ -645,9 +645,6 @@ definitions:
         format: email
         description: Почтовый адрес пользователя (уникальное поле).
         example: captaina@blackpearl.sea
-    required:
-    - fullname
-    - email
   Forum:
     description: |
       Информация о форуме.
@@ -682,10 +679,6 @@ definitions:
         description: |
           Общее кол-во ветвей обсуждения в данном форуме.
         example: 200
-    required:
-    - title
-    - user
-    - slug
   Thread:
     description: |
       Ветка обсуждения на форуме.
@@ -736,10 +729,6 @@ definitions:
         format: date-time
         description: Дата создания ветки на форуме.
         example: 2017-01-01T00:00:00.000Z
-    required:
-    - title
-    - author
-    - message
   ThreadUpdate:
     description: |
       Сообщение для обновления ветки обсуждения на форуме.
@@ -800,9 +789,6 @@ definitions:
         format: date-time
         description: Дата создания сообщения на форуме.
         readOnly: true
-    required:
-    - author
-    - message
   PostUpdate:
     description: |
       Сообщение для обновления сообщения внутри ветки на форуме.
@@ -827,8 +813,6 @@ definitions:
         $ref: '#/definitions/Thread'
       forum:
         $ref: '#/definitions/Forum'
-    required:
-    - post
   Vote:
     type: object
     description: |
@@ -845,6 +829,3 @@ definitions:
         enum:
         - -1
         - 1
-    required:
-    - nickname
-    - voice
