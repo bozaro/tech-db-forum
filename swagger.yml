@@ -457,7 +457,7 @@ paths:
              на странице N родительских комментов и все комментарии прикрепленные
              к ним, в древвидном отображение.
 
-          Подробности: https://tech-mail.ru/blog/database/2027.html
+          Подробности: https://park.mail.ru/blog/topic/view/1191/
         default: flat
         enum:
         - flat
