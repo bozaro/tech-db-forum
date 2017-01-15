@@ -295,8 +295,8 @@ paths:
         in: path
         description: Идентификатор сообщения.
         required: true
-        type: string
-        format: identity
+        type: number
+        format: int64
       - name: post
         in: body
         description: Изменения сообщения.
