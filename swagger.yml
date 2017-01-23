@@ -21,6 +21,7 @@ paths:
       - draft
       description: |
         Массовое добавление Форумов в базу.
+      operationId: batchForumCreate
       parameters:
       - name: forums
         in: body
@@ -52,6 +53,7 @@ paths:
       - draft
       description: |
         Массовое добавление пользователей в базу.
+      operationId: batchUserCreate
       parameters:
       - name: profiles
         in: body
@@ -73,6 +75,7 @@ paths:
       summary: Создание форума
       description: |
         Создание нового форума.
+      operationId: forumCreate
       parameters:
       - name: forum
         in: body
@@ -102,6 +105,7 @@ paths:
       description: |
         Получение информации о форуме по его идентификаторе.
       consumes: []
+      operationId: forumGetOne
       parameters:
       - name: slug
         in: path
@@ -123,6 +127,7 @@ paths:
       summary: Создание ветки
       description: |
         Добавление новой ветки обсуждения на форум.
+      operationId: threadCreate
       parameters:
       - name: slug
         in: path
@@ -160,6 +165,7 @@ paths:
 
         Пользователи выводятся отсортированные по nickname в порядке возрастания.
       consumes: []
+      operationId: forumGetUsers
       parameters:
       - name: slug
         in: path
@@ -206,6 +212,7 @@ paths:
 
         Ветви обсуждения выводятся отсортированные по дате создания.
       consumes: []
+      operationId: forumGetThreads
       parameters:
       - name: slug
         in: path
@@ -250,6 +257,7 @@ paths:
       description: |
         Получение информации о ветке обсуждения по его имени.
       consumes: []
+      operationId: postGetOne
       parameters:
       - name: id
         in: path
@@ -286,6 +294,7 @@ paths:
         Изменение сообщения на форуме.
 
         Если сообщение поменяло текст, то оно должно получить отметку `isEdited`.
+      operationId: postUpdate
       parameters:
       - name: id
         in: path
@@ -333,6 +342,7 @@ paths:
       summary: Создание нового поста
       description: |
         Добавление новой нового поста в ветку обсуждения на форум.
+      operationId: postCreate
       parameters:
       - name: slug_or_id
         in: path
@@ -372,6 +382,7 @@ paths:
       description: |
         Получение информации о ветке обсуждения по его имени.
       consumes: []
+      operationId: threadGetOne
       parameters:
       - name: slug_or_id
         in: path
@@ -391,6 +402,7 @@ paths:
       summary: Обновление ветки
       description: |
         Обновление ветки обсуждения на форуме.
+      operationId: threadUpdate
       parameters:
       - name: slug_or_id
         in: path
@@ -421,6 +433,7 @@ paths:
 
         Сообщения выводятся отсортированные по дате создания.
       consumes: []
+      operationId: threadGetPosts
       parameters:
       - name: slug_or_id
         in: path
@@ -486,6 +499,7 @@ paths:
 
         Один пользователь учитывается только один раз и может изменить своё
         мнение.
+      operationId: threadVote
       parameters:
       - name: slug_or_id
         in: path
@@ -513,6 +527,7 @@ paths:
       summary: Создание нового пользователя
       description: |
         Создание нового пользователя в базе данных.
+      operationId: userCreate
       parameters:
       - name: nickname
         in: path
@@ -546,6 +561,7 @@ paths:
       description: |
         Получение информации о пользователе форума по его имени.
       consumes: []
+      operationId: userGetOne
       parameters:
       - name: nickname
         in: path
@@ -565,6 +581,7 @@ paths:
       summary: Изменение данных о пользователе
       description: |
         Изменение информации в профиле пользователя.
+      operationId: userUpdate
       parameters:
       - name: nickname
         in: path
