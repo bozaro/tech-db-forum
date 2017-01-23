@@ -101,6 +101,7 @@ paths:
       summary: Получение информации о форуме
       description: |
         Получение информации о форуме по его идентификаторе.
+      consumes: []
       parameters:
       - name: slug
         in: path
@@ -158,6 +159,7 @@ paths:
         Получение списка пользователей, у которых есть пост или ветка обсуждения в данном форуме.
 
         Пользователи выводятся отсортированные по nickname в порядке возрастания.
+      consumes: []
       parameters:
       - name: slug
         in: path
@@ -180,15 +182,11 @@ paths:
         description: |
           Идентификатор пользователя, с которого будут выводиться пользоватли
           (пользователь с данным идентификатором в результат не попадает).
-      - name: order
+      - name: desc
         in: query
-        type: string
+        type: boolean
         description: |
-          Порядок сортировки (asc - по возрастанию, desc - по убыванию).
-        enum:
-        - asc
-        - desc
-        default: asc
+          Флаг сортировки по убыванию.
       responses:
         200:
           description: |
@@ -207,6 +205,7 @@ paths:
         Получение списка ветвей обсужления данного форума.
 
         Ветви обсуждения выводятся отсортированные по дате создания.
+      consumes: []
       parameters:
       - name: slug
         in: path
@@ -229,15 +228,11 @@ paths:
         description: |
           Дата создания ветви обсуждения, с которой будут выводиться записи
           (ветвь обсуждения с указанной датой попадает в результат выборки).
-      - name: order
+      - name: desc
         in: query
-        type: string
+        type: boolean
         description: |
-          Порядок сортировки (asc - по возрастанию, desc - по убыванию).
-        default: asc
-        enum:
-        - asc
-        - desc
+          Флаг сортировки по убыванию.
       responses:
         200:
           description: |
@@ -254,6 +249,7 @@ paths:
       summary: Получение информации о ветке обсуждения
       description: |
         Получение информации о ветке обсуждения по его имени.
+      consumes: []
       parameters:
       - name: id
         in: path
@@ -325,6 +321,7 @@ paths:
       summary: Получение инфомарции о базе данных
       description: |
         Получение инфомарции о базе данных.
+      consumes: []
       responses:
         200:
           description: |
@@ -374,6 +371,7 @@ paths:
       summary: Получение информации о ветке обсуждения
       description: |
         Получение информации о ветке обсуждения по его имени.
+      consumes: []
       parameters:
       - name: slug_or_id
         in: path
@@ -422,6 +420,7 @@ paths:
         Получение списка сообщений в данной ветке форуме.
 
         Сообщения выводятся отсортированные по дате создания.
+      consumes: []
       parameters:
       - name: slug_or_id
         in: path
@@ -463,15 +462,11 @@ paths:
         - flat
         - tree
         - parent_tree
-      - name: order
+      - name: desc
         in: query
-        type: string
+        type: boolean
         description: |
-          Порядок сортировки (asc - по возрастанию, desc - по убыванию).
-        enum:
-        - asc
-        - desc
-        default: asc
+          Флаг сортировки по убыванию.
       responses:
         200:
           description: |
@@ -550,6 +545,7 @@ paths:
       summary: Получение информации о пользователе
       description: |
         Получение информации о пользователе форума по его имени.
+      consumes: []
       parameters:
       - name: nickname
         in: path
