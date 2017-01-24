@@ -62,13 +62,18 @@ func AreEqual(data []byte, expected interface{}) bool {
 	log.Println("================")
 	log.Println(reflect.TypeOf(expected))
 	log.Println(reflect.TypeOf(actual))
+	log.Println("----------------")
+	log.Println(string(data))
+	d, _ := json.MarshalIndent(expected, "", "  ")
+	log.Println(string(d))
+	log.Println("++++++++++++++++")
 	if err := json.Unmarshal(data, actual); err != nil {
 		log.Println(err)
 		return false
 	}
 	log.Println(actual)
 	log.Println(expected)
-	return true
+	return reflect.DeepEqual(actual, expected)
 }
 
 func (self *CheckerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
