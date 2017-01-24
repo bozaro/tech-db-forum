@@ -27,7 +27,7 @@ func RandomNickname() string {
 
 func RandomUser() models.User {
 	return models.User{
-		About:    "",
+		About:    randomdata.Paragraph(),
 		Email:    RandomEmail(),
 		Fullname: randomdata.FullName(-1),
 		Nickname: RandomNickname(),
