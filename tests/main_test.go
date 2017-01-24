@@ -3,9 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/bozaro/tech-db-forum/client"
-	"github.com/bozaro/tech-db-forum/client/operations"
-	"github.com/bozaro/tech-db-forum/models"
+	"github.com/bozaro/tech-db-forum/tests/client"
+	"github.com/bozaro/tech-db-forum/tests/client/operations"
+	"github.com/bozaro/tech-db-forum/tests/models"
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/stretchr/testify/assert"
@@ -154,7 +154,7 @@ func TestUserCreateSimple(t *testing.T) {
 		WithContext(Expected(t, 409, &[]models.User{expected_user})))
 }
 
-// go:generate swagger generate client --target . --spec swagger.yml
+//go:generate swagger generate client --target . --spec ../swagger.yml
 func TestMain(m *testing.M) {
 	cfg := client.DefaultTransportConfig().WithHost("localhost:5000").WithSchemes([]string{"http"})
 	transport := httptransport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
