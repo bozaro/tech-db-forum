@@ -322,6 +322,7 @@ paths:
       summary: Очистка всех данных в базе
       description: |
         Безвозвратное удаление всей пользовательской информации из базы данных.
+      operationId: clear
       responses:
         200:
           description: Очистка базы успешно завершена
@@ -331,6 +332,7 @@ paths:
       description: |
         Получение инфомарции о базе данных.
       consumes: []
+      operationId: status
       responses:
         200:
           description: |
