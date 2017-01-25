@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/ventu-io/go-shortid"
-	"github.com/go-openapi/strfmt"
 	"github.com/Pallinder/go-randomdata"
 	"github.com/bozaro/tech-db-forum/tests/models"
+	"github.com/go-openapi/strfmt"
+	"github.com/ventu-io/go-shortid"
 	"strings"
 )
 

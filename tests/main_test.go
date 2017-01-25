@@ -3,11 +3,13 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/bozaro/tech-db-forum/tests/client"
 	"github.com/bozaro/tech-db-forum/tests/client/operations"
 	"github.com/bozaro/tech-db-forum/tests/models"
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
+	"github.com/sergi/go-diff/diffmatchpatch"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 	"io/ioutil"
@@ -69,6 +71,14 @@ func (self *CheckerTransport) Submit(operation *runtime.ClientOperation) (interf
 	return self.t.Submit(operation)
 }
 
+func ToJson(obj interface{}) string {
+	data, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
+}
+
 func AreEqual(data []byte, expected interface{}, prepare Filter) bool {
 	if expected == nil {
 		return true
@@ -78,7 +88,19 @@ func AreEqual(data []byte, expected interface{}, prepare Filter) bool {
 		log.Println(err)
 		return false
 	}
-	return reflect.DeepEqual(prepare(actual), prepare(expected))
+
+	expected_json := ToJson(prepare(expected))
+	actual_json := ToJson(prepare(actual))
+	if expected_json == actual_json {
+		return true
+	}
+
+	dmp := diffmatchpatch.New()
+	diffs := dmp.DiffMain(expected_json, actual_json, false)
+	fmt.Println("====>")
+	fmt.Println(dmp.DiffPrettyText(diffs))
+	fmt.Println("====<")
+	return false
 }
 
 func (self *CheckerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -100,8 +122,8 @@ func (self *CheckerRoundTripper) RoundTrip(req *http.Request) (*http.Response, e
 		if (res.StatusCode != self.code) || !AreEqual(body, self.body, self.filter) {
 			log.Println("----------------")
 			log.Println(string(body))
-			d, _ := json.MarshalIndent(self.body, "", "  ")
-			log.Println(string(d))
+			expected_json, _ := json.MarshalIndent(self.body, "", "  ")
+			log.Println(string(expected_json))
 			log.Println("++++++++++++++++")
 
 			log.Println("Unexpected status code:", res.StatusCode, "!=", self.code, string(body))
