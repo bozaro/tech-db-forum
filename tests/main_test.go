@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/bozaro/tech-db-forum/tests/client"
 	"github.com/bozaro/tech-db-forum/tests/client/operations"
-	"github.com/bozaro/tech-db-forum/tests/models"
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/sergi/go-diff/diffmatchpatch"
@@ -17,7 +16,6 @@ import (
 	"net/http"
 	"os"
 	"reflect"
-	"sort"
 	"testing"
 )
 
@@ -127,6 +125,7 @@ func (self *CheckerRoundTripper) RoundTrip(req *http.Request) (*http.Response, e
 			log.Println("++++++++++++++++")
 
 			log.Println("Unexpected status code:", res.StatusCode, "!=", self.code, string(body))
+			assert.Fail(self.t, "Ops...")
 		}
 
 		if res.Body != nil {
@@ -160,50 +159,6 @@ func Expected(t *testing.T, statusCode int, body interface{}, prepare Filter) co
 func TestStatusSmoke(t *testing.T) {
 	c.Operations.Status(operations.NewStatusParams().
 		WithContext(Expected(t, 200, nil, nil)))
-}
-
-func CreateUser(t *testing.T) models.User {
-	expected_user := RandomUser()
-	user := expected_user
-	user.Nickname = ""
-
-	_, err := c.Operations.UserCreate(operations.NewUserCreateParams().
-		WithNickname(expected_user.Nickname).
-		WithProfile(&user).
-		WithContext(Expected(t, 201, &expected_user, nil)))
-	assert.Nil(t, err)
-
-	return expected_user
-}
-
-func TestUserCreateSimple(t *testing.T) {
-	CreateUser(t)
-}
-
-func TestUserCreateConflict(t *testing.T) {
-	user1 := CreateUser(t)
-	user2 := CreateUser(t)
-	for i := 1; i <= 3; i++ {
-		conflict_user := RandomUser()
-		expected := []models.User{}
-		if (i & 1) != 0 {
-			conflict_user.Email = user1.Email
-			expected = append(expected, user1)
-		}
-		if (i & 2) != 0 {
-			conflict_user.Nickname = user2.Nickname
-			expected = append(expected, user2)
-		}
-		nickname := conflict_user.Nickname
-		c.Operations.UserCreate(operations.NewUserCreateParams().
-			WithNickname(nickname).
-			WithProfile(&conflict_user).
-			WithContext(Expected(t, 409, &expected, func(users interface{}) interface{} {
-				result := UserByNickname(reflect.ValueOf(users).Elem().Interface().([]models.User))
-				sort.Sort(result)
-				return result
-			})))
-	}
 }
 
 //go:generate swagger generate client --target . --spec ../swagger.yml

@@ -24,8 +24,8 @@ func RandomNickname() string {
 	return lorem.Word(1, 10) + "." + sid.MustGenerate()
 }
 
-func RandomUser() models.User {
-	return models.User{
+func RandomUser() *models.User {
+	return &models.User{
 		About:    lorem.Paragraph(1, 10),
 		Email:    RandomEmail(),
 		Fullname: randomdata.FullName(-1),
