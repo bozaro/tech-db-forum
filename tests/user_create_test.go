@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func CreateUser(t *testing.T, user *models.User) models.User {
+func CreateUser(t *testing.T, user *models.User) *models.User {
 	if user == nil {
 		user = RandomUser()
 	}
@@ -25,7 +25,7 @@ func CreateUser(t *testing.T, user *models.User) models.User {
 		WithContext(Expected(t, 201, user, nil)))
 	assert.Nil(t, err)
 
-	return *user
+	return user
 }
 
 func TestUserCreateSimple(t *testing.T) {
@@ -60,30 +60,30 @@ func TestUserCreateConflict(t *testing.T) {
 		switch modify % 4 {
 		case 1:
 			conflict_user.Email = user1.Email
-			expected = append(expected, user1)
+			expected = append(expected, *user1)
 		case 2:
 			conflict_user.Email = strfmt.Email(strings.ToLower(user1.Email.String()))
-			expected = append(expected, user1)
+			expected = append(expected, *user1)
 		case 3:
 			conflict_user.Email = strfmt.Email(strings.ToUpper(user1.Email.String()))
-			expected = append(expected, user1)
+			expected = append(expected, *user1)
 		}
 		modify /= 4
 		// Nickname
 		switch modify % 5 {
 		case 1:
 			conflict_user.Nickname = user2.Nickname
-			expected = append(expected, user2)
+			expected = append(expected, *user2)
 		case 2:
 			conflict_user.Nickname = strings.ToLower(user2.Nickname)
-			expected = append(expected, user2)
+			expected = append(expected, *user2)
 		case 3:
 			conflict_user.Nickname = strings.ToUpper(user2.Nickname)
-			expected = append(expected, user2)
+			expected = append(expected, *user2)
 		case 4:
 			conflict_user.Nickname = user1.Nickname
 			if len(expected) == 0 {
-				expected = append(expected, user1)
+				expected = append(expected, *user1)
 			}
 		default:
 		}
