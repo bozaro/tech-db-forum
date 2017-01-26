@@ -20,11 +20,12 @@ type Checker struct {
 }
 
 type CheckerTransport struct {
-	t runtime.ClientTransport
+	t      runtime.ClientTransport
+	report *Report
 }
 
 func (self *CheckerTransport) Submit(operation *runtime.ClientOperation) (interface{}, error) {
-	tracker := NewValidator(operation.Context)
+	tracker := NewValidator(operation.Context, self.report)
 	operation.Client = &http.Client{Transport: tracker}
 	return self.t.Submit(operation)
 }
@@ -35,22 +36,26 @@ func Register(checker Checker) {
 	checks = append(checks, checker)
 }
 
-func RunCheck(check Checker) string {
+func RunCheck(check Checker, report *Report) {
+	report.result = REPORT_SUCCESS
 	cfg := client.DefaultTransportConfig().WithHost("localhost:5000").WithSchemes([]string{"http"})
 	transport := http_transport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println(r)
+			report.AddError(r)
 		}
 	}()
-	check.FnCheck(client.New(&CheckerTransport{transport}, nil))
-	return "OK"
+	check.FnCheck(client.New(&CheckerTransport{transport, report}, nil))
 }
 
 func Run() {
 	for _, check := range checks {
 		log.Printf("=== RUN:  %s", check.Name)
-		r := RunCheck(check)
-		log.Printf("--- DONE: %s (%s)", check.Name, r)
+		report := Report{}
+		RunCheck(check, &report)
+		if report.result != REPORT_SUCCESS {
+			report.Show()
+		}
+		log.Printf("--- DONE: %s (%d)", check.Name, report.result)
 	}
 }

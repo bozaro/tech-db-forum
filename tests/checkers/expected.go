@@ -22,6 +22,7 @@ const (
 type Filter func(interface{}) interface{}
 
 type Validator struct {
+	report *Report
 	code   int
 	body   interface{}
 	filter Filter
@@ -40,8 +41,8 @@ func Expected(statusCode int, body interface{}, prepare Filter) context.Context 
 
 }
 
-func NewValidator(ctx context.Context) *Validator {
-	v := Validator{}
+func NewValidator(ctx context.Context, report *Report) *Validator {
+	v := Validator{report: report}
 	if ctx != nil {
 		if ctx.Value(KEY_STATUS) != nil {
 			v.code = ctx.Value(KEY_STATUS).(int)
@@ -64,7 +65,7 @@ func NewValidator(ctx context.Context) *Validator {
 func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println(r)
+			self.report.AddError(r)
 		}
 	}()
 	if self.code != 0 {
@@ -79,7 +80,13 @@ func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 			}
 		}
 
-		if (res.StatusCode != self.code) || !AreEqual(body, self.body, self.filter) {
+		if res.StatusCode != self.code {
+			message := fmt.Sprintf("Unexpected status code: %d (expected %d)", res.StatusCode, self.code)
+			self.report.RoundTrip(req, res, self.Example(), &message)
+			self.report.result = REPORT_FAILED
+		}
+		delta := GetDelta(body, self.body, self.filter)
+		if (res.StatusCode != self.code) || (delta != "") {
 			log.Println("----------------")
 			log.Println(string(body))
 			expected_json, _ := json.MarshalIndent(self.body, "", "  ")
@@ -88,6 +95,10 @@ func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 
 			log.Println("Unexpected status code:", res.StatusCode, "!=", self.code, string(body))
 			panic("Ops...")
+			self.report.RoundTrip(req, res, self.Example(), &delta)
+			self.report.result = REPORT_FAILED
+		} else {
+			self.report.RoundTrip(req, res, nil, nil)
 		}
 
 		if res.Body != nil {
@@ -97,16 +108,27 @@ func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 	return true
 }
 
+func (self *Validator) Example() *http.Response {
+	if self.body == "" {
+		return nil
+	}
+	json_body := ToJson(self.body)
+	return &http.Response{
+		StatusCode: self.code,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(json_body))),
+	}
+}
+
 func (self *Validator) RoundTrip(req *http.Request) (*http.Response, error) {
 	log.Println(*req)
 	res, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
+		self.report.AddError(err)
 		return nil, err
 	}
 	if self.validate(req, res) {
 		return res, nil
 	}
-	fmt.Println("!!!!!!!!!!!!!!!!!!")
 	return nil, errors.New("Unexpected error")
 }
 
@@ -118,26 +140,28 @@ func ToJson(obj interface{}) string {
 	return string(data)
 }
 
-func AreEqual(data []byte, expected interface{}, prepare Filter) bool {
-	if expected == nil {
-		return true
+func GetDiff(actual string, expected string) string {
+	if actual == expected {
+		return ""
 	}
+	dmp := diffmatchpatch.New()
+	diffs := dmp.DiffMain(actual, expected, false)
+	return dmp.DiffPrettyText(diffs)
+}
+
+func GetDelta(data []byte, expected interface{}, prepare Filter) string {
+	if expected == nil {
+		return ""
+	}
+	expected_json := ToJson(prepare(expected))
 	var actual interface{} = reflect.New(reflect.TypeOf(expected).Elem()).Interface()
 	if err := json.Unmarshal(data, actual); err != nil {
-		log.Println(err)
-		return false
+		return GetDiff(string(data), expected_json)
 	}
 
-	expected_json := ToJson(prepare(expected))
 	actual_json := ToJson(prepare(actual))
 	if expected_json == actual_json {
-		return true
+		return ""
 	}
-
-	dmp := diffmatchpatch.New()
-	diffs := dmp.DiffMain(expected_json, actual_json, false)
-	fmt.Println("====>")
-	fmt.Println(dmp.DiffPrettyText(diffs))
-	fmt.Println("====<")
-	return false
+	return GetDiff(actual_json, expected_json)
 }
