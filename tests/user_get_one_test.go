@@ -8,10 +8,7 @@ import (
 
 func TestUserGetOneSimple(t *testing.T) {
 	user := CreateUser(t, nil)
-	_, err := c.Operations.UserGetOne(operations.NewUserGetOneParams().
-		WithNickname(user.Nickname).
-		WithContext(Expected(t, 200, user, nil)))
-	assert.Nil(t, err)
+	CheckUser(t, user)
 }
 
 func TestUserGetOneNotFound(t *testing.T) {

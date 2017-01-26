@@ -28,6 +28,13 @@ func CreateUser(t *testing.T, user *models.User) *models.User {
 	return user
 }
 
+func CheckUser(t *testing.T, user *models.User) {
+	_, err := c.Operations.UserGetOne(operations.NewUserGetOneParams().
+		WithNickname(user.Nickname).
+		WithContext(Expected(t, 200, user, nil)))
+	assert.Nil(t, err)
+}
+
 func TestUserCreateSimple(t *testing.T) {
 	CreateUser(t, nil)
 }
@@ -37,11 +44,7 @@ func TestUserCreateUnicode(t *testing.T) {
 	user.Fullname = "Маркиз О-де-Колóн"
 	user.About = "Бездельник третьего разряда 😋"
 	CreateUser(t, user)
-
-	_, err := c.Operations.UserGetOne(operations.NewUserGetOneParams().
-		WithNickname(user.Nickname).
-		WithContext(Expected(t, 200, user, nil)))
-	assert.Nil(t, err)
+	CheckUser(t, user)
 }
 
 func TestUserCreateConflict(t *testing.T) {
