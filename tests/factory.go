@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/Pallinder/go-randomdata"
 	"github.com/bozaro/tech-db-forum/tests/models"
+	"github.com/drhodes/golorem"
 	"github.com/go-openapi/strfmt"
 	"github.com/ventu-io/go-shortid"
-	"strings"
 )
 
 const ABC = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_."
@@ -17,17 +17,16 @@ func init() {
 }
 
 func RandomEmail() strfmt.Email {
-	email := strings.Split(randomdata.Email(), "@")[1]
-	return strfmt.Email(sid.MustGenerate() + "@" + email)
+	return strfmt.Email(RandomNickname() + "@" + lorem.Host())
 }
 
 func RandomNickname() string {
-	return sid.MustGenerate()
+	return lorem.Word(1, 10) + "." + sid.MustGenerate()
 }
 
 func RandomUser() models.User {
 	return models.User{
-		About:    randomdata.Paragraph(),
+		About:    lorem.Paragraph(1, 10),
 		Email:    RandomEmail(),
 		Fullname: randomdata.FullName(-1),
 		Nickname: RandomNickname(),

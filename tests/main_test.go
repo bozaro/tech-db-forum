@@ -201,7 +201,6 @@ func TestUserCreateConflict(t *testing.T) {
 			WithContext(Expected(t, 409, &expected, func(users interface{}) interface{} {
 				result := UserByNickname(reflect.ValueOf(users).Elem().Interface().([]models.User))
 				sort.Sort(result)
-				log.Println("==>", result)
 				return result
 			})))
 	}

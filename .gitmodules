@@ -136,3 +136,6 @@
 [submodule "vendor/github.com/stretchr/testify"]
 	path = vendor/github.com/stretchr/testify
 	url = https://github.com/stretchr/testify
+[submodule "tests/vendor/github.com/drhodes/golorem"]
+	path = tests/vendor/github.com/drhodes/golorem
+	url = https://github.com/drhodes/golorem
