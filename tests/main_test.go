@@ -26,15 +26,6 @@ const (
 	KEY_FILTER  = "expected-filter"
 )
 
-type Checker struct {
-	// Имя текущей проверки.
-	Name string
-	// Функция для текущей проверки.
-	FnCheck func(c *client.Forum)
-	// Тесты, без которых проверка не имеет смысл.
-	Deps []string
-}
-
 type Filter func(interface{}) interface{}
 
 type CheckerTransport struct {
@@ -150,11 +141,6 @@ func Expected(t *testing.T, statusCode int, body interface{}, prepare Filter) co
 	return ctx
 
 }
-
-/*func TestClearSmoke(t *testing.T) {
-	c.Operations.Clear(operations.NewClearParams().
-		WithContext(Expected(t, 200, nil)))
-}*/
 
 func TestStatusSmoke(t *testing.T) {
 	c.Operations.Status(operations.NewStatusParams().
