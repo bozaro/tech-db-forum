@@ -1,7 +1,6 @@
 package checkers
 
 import (
-	//"github.com/bozaro/tech-db-forum/tests/client/operations"
 	"github.com/bozaro/tech-db-forum/tests/client"
 	"github.com/bozaro/tech-db-forum/tests/client/operations"
 	"strings"
@@ -64,7 +63,8 @@ func CheckUserGetOneNocase(c *client.Forum) {
 }
 
 func CheckUserGetOneNocase_ERR(c *client.Forum) {
-	user := RandomUser()
+	user := CreateUser(c, nil)
+	user.Email = RandomEmail()
 	_, err := c.Operations.UserGetOne(operations.NewUserGetOneParams().
 		WithNickname(strings.ToLower(user.Nickname)).
 		WithContext(Expected(200, user, nil)))

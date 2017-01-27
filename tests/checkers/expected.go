@@ -8,7 +8,6 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"golang.org/x/net/context"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"reflect"
 )
@@ -78,19 +77,13 @@ func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 			message := fmt.Sprintf("Unexpected status code: %d (expected %d)", res.StatusCode, self.code)
 			self.report.RoundTrip(req, res, self.Example(req), &message)
 			self.report.result = REPORT_FAILED
+			return false
 		}
 		delta := GetDelta(body, self.body, self.filter)
 		if (res.StatusCode != self.code) || (delta != "") {
-			log.Println("----------------")
-			log.Println(string(body))
-			expected_json, _ := json.MarshalIndent(self.body, "", "  ")
-			log.Println(string(expected_json))
-			log.Println("++++++++++++++++")
-
-			log.Println("Unexpected status code:", res.StatusCode, "!=", self.code, string(body))
-			panic("Ops...")
 			self.report.RoundTrip(req, res, self.Example(req), &delta)
 			self.report.result = REPORT_FAILED
+			return false
 		} else {
 			self.report.RoundTrip(req, res, nil, nil)
 		}
@@ -116,11 +109,18 @@ func (self *Validator) Example(req *http.Request) *http.Response {
 }
 
 func (self *Validator) RoundTrip(req *http.Request) (*http.Response, error) {
-	log.Println(*req)
+	req_body, err := GetBody(&req.Body)
+	if err != nil {
+		self.report.AddError(err)
+		return nil, err
+	}
 	res, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
 		self.report.AddError(err)
 		return nil, err
+	}
+	if req.Body != nil {
+		req.Body = ioutil.NopCloser(bytes.NewReader(req_body))
 	}
 	if self.validate(req, res) {
 		return res, nil

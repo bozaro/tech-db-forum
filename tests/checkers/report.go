@@ -14,25 +14,38 @@ const (
 )
 
 func (self *Report) AddError(err interface{}) {
-	self.messages = append(self.messages, fmt.Sprint(err))
-	self.result = REPORT_FAILED
+	if self.result != REPORT_FAILED {
+		self.messages = append(self.messages, fmt.Sprint(err))
+		self.result = REPORT_FAILED
+	}
 }
 
 func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, message *string) {
-	log.Print("=== REQUEST ===")
-	log.Print(RequestToText(req))
-	if res != nil {
-		log.Print("=== RESPONSE ===")
-		log.Print(ResponseToText(res))
+	if self.result == REPORT_FAILED {
+		return
 	}
-	if example != nil {
-		log.Print("=== EXAMPLE ===")
-		log.Print(ResponseToText(example))
-	}
-	log.Print("---------------")
+	msg := ""
 	if message != nil {
-		self.AddError(message)
+		msg += "!!! ERROR:\n"
+		msg += *message
+		if !strings.HasSuffix(msg, "\n") {
+			msg += "\n"
+		}
 	}
+	msg += ">>> REQUEST:\n"
+	msg += RequestToText(req)
+	if res != nil {
+		msg += "<<< ACTUAL RESPONSE:\n"
+		msg += ResponseToText(res)
+	}
+	if message != nil {
+		if example != nil {
+			msg += "<<< EXPECTED RESPONSE EXAMPLE:\n"
+			msg += ResponseToText(example)
+		}
+		self.result = REPORT_FAILED
+	}
+	self.messages = append(self.messages, msg)
 }
 
 type Report struct {
