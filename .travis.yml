@@ -2,6 +2,6 @@ language: go
 sudo: false
 install:
 - go get -v github.com/go-swagger/go-swagger/cmd/swagger
-- go generate -x ./tests
+- go generate -x .
 script:
-- go test -c ./tests
+- go build -c .
