@@ -1,7 +1,7 @@
-package checkers
+package tests
 
 import (
-	"github.com/bozaro/tech-db-forum/tests/client"
+	"github.com/bozaro/tech-db-forum/client"
 	"github.com/go-openapi/runtime"
 	http_transport "github.com/go-openapi/runtime/client"
 	"log"

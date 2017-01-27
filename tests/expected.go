@@ -1,4 +1,4 @@
-package checkers
+package tests
 
 import (
 	"bytes"

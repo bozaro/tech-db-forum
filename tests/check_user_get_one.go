@@ -1,8 +1,8 @@
-package checkers
+package tests
 
 import (
-	"github.com/bozaro/tech-db-forum/tests/client"
-	"github.com/bozaro/tech-db-forum/tests/client/operations"
+	"github.com/bozaro/tech-db-forum/client"
+	"github.com/bozaro/tech-db-forum/client/operations"
 	"strings"
 )
 
