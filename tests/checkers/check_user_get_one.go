@@ -31,14 +31,6 @@ func init() {
 			"user_get_one_simple",
 		},
 	})
-	Register(Checker{
-		Name:        "user_get_one_nocase_err",
-		Description: "",
-		FnCheck:     CheckUserGetOneNocase_ERR,
-		Deps: []string{
-			"user_get_one_simple",
-		},
-	})
 }
 
 func CheckUserGetOneSimple(c *client.Forum) {
@@ -56,15 +48,6 @@ func CheckUserGetOneNotFound(c *client.Forum) {
 
 func CheckUserGetOneNocase(c *client.Forum) {
 	user := CreateUser(c, nil)
-	_, err := c.Operations.UserGetOne(operations.NewUserGetOneParams().
-		WithNickname(strings.ToLower(user.Nickname)).
-		WithContext(Expected(200, user, nil)))
-	CheckNil(err)
-}
-
-func CheckUserGetOneNocase_ERR(c *client.Forum) {
-	user := CreateUser(c, nil)
-	user.Email = RandomEmail()
 	_, err := c.Operations.UserGetOne(operations.NewUserGetOneParams().
 		WithNickname(strings.ToLower(user.Nickname)).
 		WithContext(Expected(200, user, nil)))
