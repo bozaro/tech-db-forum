@@ -4,4 +4,4 @@ install:
 - go get -v github.com/go-swagger/go-swagger/cmd/swagger
 - go generate -x .
 script:
-- go build -c .
+- go build .

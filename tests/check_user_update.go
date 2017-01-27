@@ -1,12 +1,12 @@
 package tests
 
 import (
+	"fmt"
 	"github.com/bozaro/tech-db-forum/client"
 	"github.com/bozaro/tech-db-forum/client/operations"
 	"github.com/bozaro/tech-db-forum/models"
 	"github.com/go-openapi/strfmt"
 	"strings"
-	"fmt"
 )
 
 func init() {

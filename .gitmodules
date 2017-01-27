@@ -139,3 +139,6 @@
 [submodule "tests/vendor/github.com/drhodes/golorem"]
 	path = tests/vendor/github.com/drhodes/golorem
 	url = https://github.com/drhodes/golorem
+[submodule "vendor/github.com/drhodes/golorem"]
+	path = vendor/github.com/drhodes/golorem
+	url = https://github.com/drhodes/golorem
