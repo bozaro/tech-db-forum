@@ -11,6 +11,7 @@ import (
 const ABC = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_."
 
 var sid *shortid.Shortid
+var slug *shortid.Shortid
 
 func init() {
 	sid = shortid.MustNew(0, ABC, 1)
@@ -30,5 +31,13 @@ func RandomUser() *models.User {
 		Email:    RandomEmail(),
 		Fullname: randomdata.FullName(-1),
 		Nickname: RandomNickname(),
+	}
+}
+
+func RandomForum() *models.Forum {
+	return &models.Forum{
+		Posts: 0,
+		Slug:  slug.MustGenerate(),
+		Title: lorem.Sentence(1, 10),
 	}
 }

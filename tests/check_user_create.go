@@ -18,7 +18,7 @@ func init() {
 		FnCheck:     CheckUserCreateSimple,
 	})
 	Register(Checker{
-		Name:        "user_creaet_unicode",
+		Name:        "user_create_unicode",
 		Description: "",
 		FnCheck:     CheckUserCreateUnicode,
 		Deps: []string{
