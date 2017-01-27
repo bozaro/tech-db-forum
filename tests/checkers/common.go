@@ -1,8 +1,11 @@
 package checkers
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/bozaro/tech-db-forum/tests/models"
+	"io"
+	"io/ioutil"
 	"reflect"
 )
 
@@ -29,4 +32,19 @@ func ObjectsAreEqual(expected, actual interface{}) bool {
 		return expected == actual
 	}
 	return reflect.DeepEqual(expected, actual)
+}
+
+func GetBody(stream *io.ReadCloser) ([]byte, error) {
+	if *stream == nil {
+		return []byte{}, nil
+	}
+	ibody := *stream
+	defer ibody.Close()
+	body, err := ioutil.ReadAll(ibody)
+	if err != nil {
+		return body, err
+	}
+	*stream = ioutil.NopCloser(bytes.NewReader(body))
+	return body, nil
+
 }

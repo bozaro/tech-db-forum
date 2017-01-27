@@ -69,20 +69,14 @@ func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 		}
 	}()
 	if self.code != 0 {
-		body := []byte{}
-		if res.Body != nil {
-			ibody := res.Body
-			defer ibody.Close()
-			var err error
-			body, err = ioutil.ReadAll(ibody)
-			if err != nil {
-				panic(err)
-			}
+		body, err := GetBody(&res.Body)
+		if err != nil {
+			panic(err)
 		}
 
 		if res.StatusCode != self.code {
 			message := fmt.Sprintf("Unexpected status code: %d (expected %d)", res.StatusCode, self.code)
-			self.report.RoundTrip(req, res, self.Example(), &message)
+			self.report.RoundTrip(req, res, self.Example(req), &message)
 			self.report.result = REPORT_FAILED
 		}
 		delta := GetDelta(body, self.body, self.filter)
@@ -95,27 +89,29 @@ func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 
 			log.Println("Unexpected status code:", res.StatusCode, "!=", self.code, string(body))
 			panic("Ops...")
-			self.report.RoundTrip(req, res, self.Example(), &delta)
+			self.report.RoundTrip(req, res, self.Example(req), &delta)
 			self.report.result = REPORT_FAILED
 		} else {
 			self.report.RoundTrip(req, res, nil, nil)
-		}
-
-		if res.Body != nil {
-			res.Body = ioutil.NopCloser(bytes.NewReader(body))
 		}
 	}
 	return true
 }
 
-func (self *Validator) Example() *http.Response {
+func (self *Validator) Example(req *http.Request) *http.Response {
 	if self.body == "" {
 		return nil
 	}
-	json_body := ToJson(self.body)
+	json_body := []byte(ToJson(self.body))
 	return &http.Response{
+		Proto:      req.Proto,
 		StatusCode: self.code,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(json_body))),
+		Status:     fmt.Sprintf("%d %s", self.code, http.StatusText(self.code)),
+		Header: http.Header{
+			"Content-Type":   []string{"application/json"},
+			"Content-Length": []string{fmt.Sprintf("%d", len(json_body))},
+		},
+		Body: ioutil.NopCloser(bytes.NewReader(json_body)),
 	}
 }
 

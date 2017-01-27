@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -18,6 +19,17 @@ func (self *Report) AddError(err interface{}) {
 }
 
 func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, message *string) {
+	log.Print("=== REQUEST ===")
+	log.Print(RequestToText(req))
+	if res != nil {
+		log.Print("=== RESPONSE ===")
+		log.Print(ResponseToText(res))
+	}
+	if example != nil {
+		log.Print("=== EXAMPLE ===")
+		log.Print(ResponseToText(example))
+	}
+	log.Print("---------------")
 	if message != nil {
 		self.AddError(message)
 	}
@@ -32,4 +44,42 @@ func (self *Report) Show() {
 	for _, message := range self.messages {
 		log.Println(message)
 	}
+}
+
+func RequestToText(req *http.Request) string {
+	msg := req.Method + " " + req.URL.String() + " " + req.Proto + "\n"
+	for key, vals := range req.Header {
+		for _, val := range vals {
+			msg += key + ": " + val + "\n"
+		}
+	}
+	msg += "\n"
+
+	body, err := GetBody(&req.Body)
+	if err == nil {
+		msg += string(body)
+	}
+	if !strings.HasSuffix(msg, "\n") {
+		msg += "\n"
+	}
+	return msg
+}
+
+func ResponseToText(res *http.Response) string {
+	msg := res.Proto + " " + res.Status + "\n"
+	for key, vals := range res.Header {
+		for _, val := range vals {
+			msg += key + ": " + val + "\n"
+		}
+	}
+	msg += "\n"
+
+	body, err := GetBody(&res.Body)
+	if err == nil {
+		msg += string(body)
+	}
+	if !strings.HasSuffix(msg, "\n") {
+		msg += "\n"
+	}
+	return msg
 }
