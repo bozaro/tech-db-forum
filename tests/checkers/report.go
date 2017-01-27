@@ -19,6 +19,11 @@ func (self *Report) AddError(err interface{}) {
 		self.result = REPORT_FAILED
 	}
 }
+func (self *Report) Checkpoint(message string) {
+	// todo: Сделать очистку
+	self.messages = []string{}
+	log.Println("  " + message)
+}
 
 func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, message *string) {
 	if self.result == REPORT_FAILED {

@@ -30,6 +30,10 @@ func (self *CheckerTransport) Submit(operation *runtime.ClientOperation) (interf
 	return self.t.Submit(operation)
 }
 
+func Checkpoint(c *client.Forum, message string) {
+	c.Transport.(*CheckerTransport).report.Checkpoint(message)
+}
+
 var checks []Checker
 
 func Register(checker Checker) {

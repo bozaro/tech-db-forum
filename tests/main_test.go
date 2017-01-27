@@ -147,7 +147,6 @@ func TestStatusSmoke(t *testing.T) {
 		WithContext(Expected(t, 200, nil, nil)))
 }
 
-//go:generate swagger generate client --target . --spec ../swagger.yml
 func TestMain(m *testing.M) {
 	cfg := client.DefaultTransportConfig().WithHost("localhost:5000").WithSchemes([]string{"http"})
 	transport := httptransport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
