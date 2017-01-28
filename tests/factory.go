@@ -8,12 +8,15 @@ import (
 	"github.com/ventu-io/go-shortid"
 )
 
-const ABC = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_."
+const ABC_NICK = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_."
+const ABC_SLUG = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-"
 
-var sid *shortid.Shortid
+var nick_id *shortid.Shortid
+var slug_id *shortid.Shortid
 
 func init() {
-	sid = shortid.MustNew(0, ABC, 1)
+	nick_id = shortid.MustNew(0, ABC_NICK, 1)
+	slug_id = shortid.MustNew(0, ABC_SLUG, 1)
 }
 
 func RandomEmail() strfmt.Email {
@@ -21,7 +24,7 @@ func RandomEmail() strfmt.Email {
 }
 
 func RandomNickname() string {
-	return lorem.Word(1, 10) + "." + sid.MustGenerate()
+	return lorem.Word(1, 10) + "." + nick_id.MustGenerate()
 }
 
 func RandomUser() *models.User {
@@ -30,5 +33,13 @@ func RandomUser() *models.User {
 		Email:    RandomEmail(),
 		Fullname: randomdata.FullName(-1),
 		Nickname: RandomNickname(),
+	}
+}
+
+func RandomForum() *models.Forum {
+	return &models.Forum{
+		Posts: 0,
+		Slug:  slug_id.MustGenerate(),
+		Title: lorem.Sentence(1, 10),
 	}
 }
