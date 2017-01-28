@@ -22,7 +22,7 @@ func init() {
 		Description: "",
 		FnCheck:     CheckUserCreateUnicode,
 		Deps: []string{
-			"user_create_simple",
+			"user_get_one_simple",
 		},
 	})
 	Register(Checker{

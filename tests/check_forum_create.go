@@ -13,13 +13,16 @@ func init() {
 		Name:        "forum_create_simple",
 		Description: "",
 		FnCheck:     CheckForumCreateSimple,
+		Deps: []string{
+			"user_get_one_simple",
+		},
 	})
 	Register(Checker{
 		Name:        "forum_create_unicode",
 		Description: "",
 		FnCheck:     CheckForumCreateUnicode,
 		Deps: []string{
-			"forum_create_simple",
+			"forum_get_one_simple",
 		},
 	})
 	Register(Checker{
@@ -35,7 +38,7 @@ func init() {
 		Description: "",
 		FnCheck:     CheckForumCreateUserCase,
 		Deps: []string{
-			"forum_create_simple",
+			"forum_get_one_simple",
 		},
 	})
 	Register(Checker{
