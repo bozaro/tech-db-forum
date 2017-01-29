@@ -6,7 +6,6 @@ import (
 	"github.com/drhodes/golorem"
 	"github.com/go-openapi/strfmt"
 	"github.com/ventu-io/go-shortid"
-	"time"
 )
 
 const ABC_NICK = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_."
@@ -46,18 +45,14 @@ func RandomForum() *models.Forum {
 }
 
 func RandomThread() *models.Thread {
-	slug := ""
-	if randomdata.Boolean() {
-		slug = slug_id.MustGenerate()
-	}
-	created := strfmt.NewDateTime()
-	if randomdata.Boolean() {
-		created = strfmt.DateTime(time.Now())
-	}
 	return &models.Thread{
-		Created: created,
 		Message: lorem.Paragraph(1, 20),
-		Slug:    slug,
+		Slug:    slug_id.MustGenerate(),
 		Title:   lorem.Sentence(1, 10),
+	}
+}
+func RandomPost() *models.Post {
+	return &models.Post{
+		Message: lorem.Paragraph(1, 20),
 	}
 }

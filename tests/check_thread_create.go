@@ -5,6 +5,8 @@ import (
 	"github.com/bozaro/tech-db-forum/client"
 	"github.com/bozaro/tech-db-forum/client/operations"
 	"github.com/bozaro/tech-db-forum/models"
+	"github.com/go-openapi/strfmt"
+	"time"
 )
 
 func init() {
@@ -37,16 +39,21 @@ func CreateThread(c *client.Forum, thread *models.Thread, forum *models.Forum, a
 
 	expected := *thread
 	expected.ID = 42
-	_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
+	check_create := !time.Time(expected.Created).IsZero()
+	result, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
 		WithSlug(thread.Forum).
 		WithThread(thread).
 		WithContext(Expected(201, &expected, func(data interface{}) interface{} {
-			data.(*models.Thread).ID = 0
-			return data
+			thread := data.(*models.Thread)
+			thread.ID = 0
+			if !check_create {
+				thread.Created = strfmt.NewDateTime()
+			}
+			return thread
 		})))
 	CheckNil(err)
 
-	return thread
+	return result.Payload
 }
 
 func CheckThread(c *client.Forum, thread *models.Thread) {
