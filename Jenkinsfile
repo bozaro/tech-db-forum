@@ -31,7 +31,7 @@ go get github.com/aktau/github-release
 """
   }
   stage ('Build') {
-    sh """#!/bin/bash
+    sh """#!/bin/bash -ex
 export GOPATH="\$PWD"
 export PATH="\$GOPATH/bin:\$PATH"
 
@@ -64,7 +64,10 @@ ghp-import -n target/doc
   if (env.BRANCH_NAME == 'master') {
     stage ('Publish') {
       withCredentials([usernamePassword(credentialsId: '88e000b8-d989-4f94-b919-1cc1352a5f96', passwordVariable: 'TOKEN', usernameVariable: 'LOGIN')]) {
-        sh 'git push -qf https://${TOKEN}@github.com/bozaro/tech-db-forum.git gh-pages'
+        sh """
+cd src/$goProject
+git push -qf https://\${TOKEN}@github.com/bozaro/tech-db-forum.git gh-pages
+"""
       }
     }
   }
