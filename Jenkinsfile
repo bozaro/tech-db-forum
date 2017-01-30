@@ -17,7 +17,7 @@ node  ('linux') {
       extensions: scm.extensions + [
         [$class: 'CleanCheckout'],
         [$class: 'RelativeTargetDirectory', relativeTargetDir: "src/$goProject"],
-        [$class: 'SubmoduleOption', disableSubmodules: false],
+        [$class: 'SubmoduleOption', disableSubmodules: false, recursiveSubmodules: false],
       ],
       userRemoteConfigs: scm.userRemoteConfigs
     ])
