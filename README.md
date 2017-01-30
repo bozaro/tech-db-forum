@@ -45,6 +45,8 @@ docker run -p 5000:5000 --name a.navrotskiy -t a.navrotskiy
  * запускается скрипт на Go, который будет проводить тестирование;
  * останавливается Docker-контейнер.
 
+Скомпилированную программу для тестирования можно найти по адресу: https://github.com/bozaro/tech-db-forum
+
 Для локальной сборки Go-скрипта достаточно выполнить команду:
 ```
 go get -u -v github.com/bozaro/tech-db-forum
