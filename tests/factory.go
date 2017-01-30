@@ -2,7 +2,7 @@ package tests
 
 import (
 	"github.com/Pallinder/go-randomdata"
-	"github.com/bozaro/tech-db-forum/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 	"github.com/drhodes/golorem"
 	"github.com/go-openapi/strfmt"
 	"github.com/ventu-io/go-shortid"
@@ -41,5 +41,18 @@ func RandomForum() *models.Forum {
 		Posts: 0,
 		Slug:  slug_id.MustGenerate(),
 		Title: lorem.Sentence(1, 10),
+	}
+}
+
+func RandomThread() *models.Thread {
+	return &models.Thread{
+		Message: lorem.Paragraph(1, 20),
+		Slug:    slug_id.MustGenerate(),
+		Title:   lorem.Sentence(1, 10),
+	}
+}
+func RandomPost() *models.Post {
+	return &models.Post{
+		Message: lorem.Paragraph(1, 20),
 	}
 }

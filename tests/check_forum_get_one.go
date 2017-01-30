@@ -1,8 +1,8 @@
 package tests
 
 import (
-	"github.com/bozaro/tech-db-forum/client"
-	"github.com/bozaro/tech-db-forum/client/operations"
+	"github.com/bozaro/tech-db-forum/generated/client"
+	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"strings"
 )
 

@@ -3,7 +3,7 @@ package tests
 import (
 	"bytes"
 	"fmt"
-	"github.com/bozaro/tech-db-forum/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 	"io"
 	"io/ioutil"
 	"reflect"
