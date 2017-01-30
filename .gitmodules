@@ -1,69 +1,6 @@
 [submodule "swagger-ui"]
 	path = swagger-ui
 	url = https://github.com/swagger-api/swagger-ui.git
-[submodule "tests/vendor/github.com/Pallinder/go-randomdata"]
-	path = tests/vendor/github.com/Pallinder/go-randomdata
-	url = https://github.com/Pallinder/go-randomdata
-[submodule "tests/vendor/github.com/PuerkitoBio/purell"]
-	path = tests/vendor/github.com/PuerkitoBio/purell
-	url = https://github.com/PuerkitoBio/purell
-[submodule "tests/vendor/github.com/PuerkitoBio/urlesc"]
-	path = tests/vendor/github.com/PuerkitoBio/urlesc
-	url = https://github.com/PuerkitoBio/urlesc
-[submodule "tests/vendor/github.com/asaskevich/govalidator"]
-	path = tests/vendor/github.com/asaskevich/govalidator
-	url = https://github.com/asaskevich/govalidator
-[submodule "tests/vendor/github.com/bozaro/tech-db-forum"]
-	path = tests/vendor/github.com/bozaro/tech-db-forum
-	url = https://github.com/bozaro/tech-db-forum
-[submodule "tests/vendor/github.com/go-openapi/analysis"]
-	path = tests/vendor/github.com/go-openapi/analysis
-	url = https://github.com/go-openapi/analysis
-[submodule "tests/vendor/github.com/go-openapi/errors"]
-	path = tests/vendor/github.com/go-openapi/errors
-	url = https://github.com/go-openapi/errors
-[submodule "tests/vendor/github.com/go-openapi/jsonpointer"]
-	path = tests/vendor/github.com/go-openapi/jsonpointer
-	url = https://github.com/go-openapi/jsonpointer
-[submodule "tests/vendor/github.com/go-openapi/jsonreference"]
-	path = tests/vendor/github.com/go-openapi/jsonreference
-	url = https://github.com/go-openapi/jsonreference
-[submodule "tests/vendor/github.com/go-openapi/loads"]
-	path = tests/vendor/github.com/go-openapi/loads
-	url = https://github.com/go-openapi/loads
-[submodule "tests/vendor/github.com/go-openapi/runtime"]
-	path = tests/vendor/github.com/go-openapi/runtime
-	url = https://github.com/go-openapi/runtime
-[submodule "tests/vendor/github.com/go-openapi/spec"]
-	path = tests/vendor/github.com/go-openapi/spec
-	url = https://github.com/go-openapi/spec
-[submodule "tests/vendor/github.com/go-openapi/strfmt"]
-	path = tests/vendor/github.com/go-openapi/strfmt
-	url = https://github.com/go-openapi/strfmt
-[submodule "tests/vendor/github.com/go-openapi/swag"]
-	path = tests/vendor/github.com/go-openapi/swag
-	url = https://github.com/go-openapi/swag
-[submodule "tests/vendor/github.com/go-openapi/validate"]
-	path = tests/vendor/github.com/go-openapi/validate
-	url = https://github.com/go-openapi/validate
-[submodule "tests/vendor/github.com/mailru/easyjson"]
-	path = tests/vendor/github.com/mailru/easyjson
-	url = https://github.com/mailru/easyjson
-[submodule "tests/vendor/github.com/mitchellh/mapstructure"]
-	path = tests/vendor/github.com/mitchellh/mapstructure
-	url = https://github.com/mitchellh/mapstructure
-[submodule "tests/vendor/github.com/ventu-io/go-shortid"]
-	path = tests/vendor/github.com/ventu-io/go-shortid
-	url = https://github.com/ventu-io/go-shortid
-[submodule "tests/vendor/golang.org/x/net"]
-	path = tests/vendor/golang.org/x/net
-	url = https://go.googlesource.com/net
-[submodule "tests/vendor/golang.org/x/text"]
-	path = tests/vendor/golang.org/x/text
-	url = https://go.googlesource.com/text
-[submodule "tests/vendor/gopkg.in/yaml.v2"]
-	path = tests/vendor/gopkg.in/yaml.v2
-	url = https://gopkg.in/yaml.v2
 [submodule "vendor/github.com/Pallinder/go-randomdata"]
 	path = vendor/github.com/Pallinder/go-randomdata
 	url = https://github.com/Pallinder/go-randomdata
@@ -136,9 +73,6 @@
 [submodule "vendor/github.com/stretchr/testify"]
 	path = vendor/github.com/stretchr/testify
 	url = https://github.com/stretchr/testify
-[submodule "tests/vendor/github.com/drhodes/golorem"]
-	path = tests/vendor/github.com/drhodes/golorem
-	url = https://github.com/drhodes/golorem
 [submodule "vendor/github.com/drhodes/golorem"]
 	path = vendor/github.com/drhodes/golorem
 	url = https://github.com/drhodes/golorem
