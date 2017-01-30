@@ -2,7 +2,7 @@ package tests
 
 import (
 	"github.com/Pallinder/go-randomdata"
-	"github.com/bozaro/tech-db-forum/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 	"github.com/drhodes/golorem"
 	"github.com/go-openapi/strfmt"
 	"github.com/ventu-io/go-shortid"
