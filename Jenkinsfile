@@ -1,6 +1,8 @@
 /*
 sudo apt install ghp-import
 */
+goProject = "github.com/bozaro/tech-db-forum"
+
 node  ('linux') {
   stage ('Checkout') {
     checkout([
@@ -9,6 +11,7 @@ node  ('linux') {
       doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
       extensions: scm.extensions + [
         [$class: 'CleanCheckout'],
+        [$class: 'RelativeTargetDirectory', relativeTargetDir: "src/$goProject"],
         [$class: 'SubmoduleOption', disableSubmodules: false],
       ],
       userRemoteConfigs: scm.userRemoteConfigs
@@ -19,12 +22,18 @@ node  ('linux') {
 export GOPATH="\$PWD"
 export PATH="\$GOPATH/bin:\$PATH"
 go get github.com/bronze1man/yaml2json
+go get github.com/aktau/github-release
 """
   }
   stage ('Build') {
     sh """
 export GOPATH="\$PWD"
 export PATH="\$GOPATH/bin:\$PATH"
+
+cd src/$goProject
+
+# Build application
+go build
 
 # Generage swagger.json from swagger.yml
 mkdir -p target
