@@ -56,7 +56,7 @@ done
 mkdir -p target
 rm -fR target/doc/
 cp -r swagger-ui/dist target/doc
-yaml2json < swagger.yml > target/doc/swagger.json
+(cat swagger.yml; echo host: tech-db-forum.bozaro.ru) | yaml2json > target/doc/swagger.json
 sed -i 's/http:.*swagger.json/swagger.json/' target/doc/index.html
 ghp-import -n target/doc
 """
