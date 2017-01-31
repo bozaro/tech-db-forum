@@ -39,14 +39,15 @@ cd src/$goProject
 
 # Build application
 go build
-GOOS=linux GOARCH=amd64   go build -o build/linux_amd64/tech-db-forum
-GOOS=linux GOARCH=386     go build -o build/linux_386/tech-db-forum
-GOOS=windows GOARCH=amd64 go build -o build/windows_amd64/tech-db-forum.exe
-GOOS=windows GOARCH=386   go build -o build/windows_386/tech-db-forum.exe
+GOOS=linux	GOARCH=amd64	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum
+GOOS=linux	GOARCH=386	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum
+GOOS=darwin	GOARCH=amd64	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum
+GOOS=darwin	GOARCH=386	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum
+GOOS=windows	GOARCH=amd64	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum.exe
+GOOS=windows	GOARCH=386	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum.exe
 
 for i in build/*/; do
   pushd \$i
-  strip *
   zip ../`basename \$i`.zip *
   popd
 done
