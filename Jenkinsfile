@@ -46,21 +46,16 @@ GOOS=darwin	GOARCH=386	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum
 GOOS=windows	GOARCH=amd64	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum.exe
 GOOS=windows	GOARCH=386	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum.exe
 
+rm -fR target/dist/
+mkdir -p target/dist/
 for i in build/*/; do
   pushd \$i
-  zip ../`basename \$i`.zip *
+  zip ../../target/dist/`basename \$i`.zip *
   popd
 done
-
-# Generage swagger.json from swagger.yml
-mkdir -p target
-rm -fR target/doc/
-cp -r swagger-ui/dist target/doc
-(cat swagger.yml; echo host: tech-db-forum.bozaro.ru) | yaml2json > target/doc/swagger.json
-sed -i 's/http:.*swagger.json/swagger.json/' target/doc/index.html
-ghp-import -n target/doc
+ghp-import -n target/dist
 """
-    archive "src/$goProject/build/*.zip"
+    archive "src/$goProject/target/dist/*.zip"
   }
   if (env.BRANCH_NAME == 'master') {
     stage ('Publish') {
@@ -85,7 +80,7 @@ export GOPATH="\$PWD"
 export PATH="\$GOPATH/bin:\$PATH"
 
 github-release info --tag \$TAG_NAME || github-release release --tag \$TAG_NAME --draft
-for i in src/$goProject/build/*.zip; do
+for i in src/$goProject/target/dist/*.zip; do
   github-release upload --tag \$TAG_NAME --file \$i --name `basename \$i`
 done
 """

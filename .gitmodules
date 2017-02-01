@@ -1,6 +1,3 @@
-[submodule "swagger-ui"]
-	path = swagger-ui
-	url = https://github.com/swagger-api/swagger-ui.git
 [submodule "vendor/github.com/Pallinder/go-randomdata"]
 	path = vendor/github.com/Pallinder/go-randomdata
 	url = https://github.com/Pallinder/go-randomdata
