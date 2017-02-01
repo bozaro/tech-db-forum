@@ -75,10 +75,12 @@ func CreatePost(c *client.Forum, post *models.Post, thread *models.Thread) *mode
 	return result.Payload
 }
 
-func CheckPost(c *client.Forum, thread *models.Thread) {
-	_, err := c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
-		WithSlugOrID(fmt.Sprintf("%d", thread.ID)).
-		WithContext(Expected(200, thread, nil)))
+func CheckPost(c *client.Forum, post *models.Post) {
+	_, err := c.Operations.PostGetOne(operations.NewPostGetOneParams().
+		WithID(post.ID).
+		WithContext(Expected(200, &models.PostFull{
+			Post: post,
+		}, nil)))
 	CheckNil(err)
 }
 
