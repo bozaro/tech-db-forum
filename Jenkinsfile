@@ -53,7 +53,8 @@ for i in build/*/; do
   zip ../../target/dist/`basename \$i`.zip *
   popd
 done
-git branch -f -D gh-pages || true
+git branch -fD gh-pages || true
+git branch -rd origin/gh-pages || true
 ghp-import -n target/dist
 """
     archive "src/$goProject/target/dist/*.zip"
