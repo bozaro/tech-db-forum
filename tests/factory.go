@@ -10,6 +10,7 @@ import (
 
 const ABC_NICK = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_."
 const ABC_SLUG = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-"
+const POST_FAKE_ID int64 = 2139800938
 const THREAD_FAKE_ID = "2139800939"
 
 var nick_id *shortid.Shortid
