@@ -18,6 +18,14 @@ func init() {
 			"forum_get_one_simple",
 		},
 	})
+	Register(Checker{
+		Name:        "thread_create_noslug",
+		Description: "",
+		FnCheck:     CheckThreadCreateNoSlug,
+		Deps: []string{
+			"forum_get_one_simple",
+		},
+	})
 }
 
 func CreateThread(c *client.Forum, thread *models.Thread, forum *models.Forum, author *models.User) *models.Thread {
@@ -65,4 +73,11 @@ func CheckThread(c *client.Forum, thread *models.Thread) {
 
 func CheckThreadCreateSimple(c *client.Forum) {
 	CreateThread(c, nil, nil, nil)
+}
+
+func CheckThreadCreateNoSlug(c *client.Forum) {
+	thread := RandomThread()
+	thread.Slug = ""
+	CreateThread(c, thread, nil, nil)
+	CreateThread(c, thread, nil, nil)
 }
