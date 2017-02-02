@@ -5,6 +5,7 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
+	"strings"
 )
 
 func init() {
@@ -94,10 +95,15 @@ func CheckThreadUpdatePart(c *client.Forum) {
 		modify := pass
 		// Slug or ID
 		id := expected.Slug
-		if (modify & 1) == 1 {
+		switch modify & 2 {
+		case 1:
 			id = fmt.Sprintf("%d", expected.ID)
+		case 2:
+			id = strings.ToLower(expected.Slug)
+		case 3:
+			id = strings.ToUpper(expected.Slug)
 		}
-		modify >>= 1
+		modify >>= 2
 		// Title
 		if (modify & 1) == 1 {
 			expected.Title = fake.Title
