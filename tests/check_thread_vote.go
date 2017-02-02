@@ -48,7 +48,7 @@ func CheckThreadVoteThreadNotFound(c *client.Forum) {
 	CheckIsType(operations.NewThreadVoteNotFound(), err)
 
 	_, err = c.Operations.ThreadVote(operations.NewThreadVoteParams().
-		WithSlugOrID(fmt.Sprintf("%d", 0x7f8ac56b)).
+		WithSlugOrID(THREAD_FAKE_ID).
 		WithVote(&models.Vote{
 			Nickname: user.Nickname,
 			Voice:    1,
