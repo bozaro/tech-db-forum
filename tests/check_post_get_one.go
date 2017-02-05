@@ -47,6 +47,7 @@ func CheckPostGetOneRelated(c *client.Forum) {
 
 		user := CreateUser(c, nil)
 		forum := CreateForum(c, nil, nil)
+		forum.Threads = 1
 		thread := CreateThread(c, nil, forum, nil)
 		temp := RandomPost()
 		temp.Author = user.Nickname
@@ -82,6 +83,7 @@ func CheckPostGetOneRelated(c *client.Forum) {
 		// Check
 		c.Operations.PostGetOne(operations.NewPostGetOneParams().
 			WithID(post.ID).
+			WithRelated(related).
 			WithContext(Expected(200, &expected, nil)))
 	}
 }

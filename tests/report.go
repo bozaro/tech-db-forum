@@ -20,9 +20,12 @@ func (self *Report) AddError(err interface{}) {
 	}
 }
 func (self *Report) Checkpoint(message string) {
-	// todo: Сделать очистку
-	self.messages = []string{}
-	log.Println("  " + message)
+	if self.result != REPORT_FAILED {
+		self.messages = []string{}
+		log.Println("  " + message)
+	} else {
+		panic("Test is already failed")
+	}
 }
 
 func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, message *string) {

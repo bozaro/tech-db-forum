@@ -72,7 +72,14 @@ func CheckThread(c *client.Forum, thread *models.Thread) {
 }
 
 func CheckThreadCreateSimple(c *client.Forum) {
-	CreateThread(c, nil, nil, nil)
+	var thread *models.Thread
+	// Ветка с датой
+	thread = RandomThread()
+	CreateThread(c, thread, nil, nil)
+	// Ветка без даты
+	thread = RandomThread()
+	thread.Created = strfmt.NewDateTime()
+	CreateThread(c, thread, nil, nil)
 }
 
 func CheckThreadCreateNoSlug(c *client.Forum) {

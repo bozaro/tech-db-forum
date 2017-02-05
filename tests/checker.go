@@ -52,7 +52,10 @@ func RunCheck(check Checker, report *Report) {
 	check.FnCheck(client.New(&CheckerTransport{transport, report}, nil))
 }
 
-func Run() {
+func Run() int {
+	total := 0
+	failed := 0
+	skipped := 0
 	for _, check := range checks {
 		log.Printf("=== RUN:  %s", check.Name)
 		report := Report{}
@@ -60,6 +63,20 @@ func Run() {
 		if report.result != REPORT_SUCCESS {
 			report.Show()
 		}
-		log.Printf("--- DONE: %s (%d)", check.Name, report.result)
+		var result string
+		total++
+		switch report.result {
+		case REPORT_SKIPPED:
+			skipped++
+			result = "SKIPPED"
+		case REPORT_SUCCESS:
+			result = "OK"
+		default:
+			failed++
+			result = "FAILED"
+		}
+		log.Printf("--- DONE: %s (%s)", check.Name, result)
 	}
+	log.Printf("RESULT: %d total, %d skipped, %d failed)", total, skipped, failed)
+	return failed
 }

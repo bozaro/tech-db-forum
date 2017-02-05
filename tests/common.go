@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"reflect"
+	"time"
 )
 
 type UserByNickname []models.User
@@ -14,6 +15,14 @@ type UserByNickname []models.User
 func (a UserByNickname) Len() int           { return len(a) }
 func (a UserByNickname) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a UserByNickname) Less(i, j int) bool { return a[i].Nickname < a[j].Nickname }
+
+type ThreadByCreated []models.Thread
+
+func (a ThreadByCreated) Len() int      { return len(a) }
+func (a ThreadByCreated) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ThreadByCreated) Less(i, j int) bool {
+	return time.Time(a[i].Created).Before(time.Time(a[j].Created))
+}
 
 func CheckNil(err interface{}) {
 	if err != nil {
