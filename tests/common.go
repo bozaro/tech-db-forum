@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -56,4 +57,19 @@ func GetBody(stream *io.ReadCloser) ([]byte, error) {
 	*stream = ioutil.NopCloser(bytes.NewReader(body))
 	return body, nil
 
+}
+
+func ModifyCase(modify *int, source string) string {
+	v := *modify % 3
+	*modify /= 3
+	switch v {
+	case 0:
+		return source
+	case 1:
+		return strings.ToLower(source)
+	case 2:
+		return strings.ToUpper(source)
+	default:
+		panic("Unexpected value")
+	}
 }

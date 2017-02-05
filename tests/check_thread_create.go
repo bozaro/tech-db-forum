@@ -6,6 +6,7 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
 	"github.com/go-openapi/strfmt"
+	"strings"
 	"time"
 )
 
@@ -19,11 +20,43 @@ func init() {
 		},
 	})
 	Register(Checker{
-		Name:        "thread_create_noslug",
+		Name:        "thread_create_nocase",
 		Description: "",
-		FnCheck:     CheckThreadCreateNoSlug,
+		FnCheck:     CheckThreadCreateNoCase,
 		Deps: []string{
-			"forum_get_one_simple",
+			"thread_create_simple",
+		},
+	})
+	Register(Checker{
+		Name:        "thread_create_noforum",
+		Description: "",
+		FnCheck:     CheckThreadCreateNoForum,
+		Deps: []string{
+			"thread_create_simple",
+		},
+	})
+	Register(Checker{
+		Name:        "thread_create_noauthor",
+		Description: "",
+		FnCheck:     CheckThreadCreateNoAuthor,
+		Deps: []string{
+			"thread_create_simple",
+		},
+	})
+	Register(Checker{
+		Name:        "thread_create_unicode",
+		Description: "",
+		FnCheck:     CheckThreadCreateUnicode,
+		Deps: []string{
+			"thread_create_simple",
+		},
+	})
+	Register(Checker{
+		Name:        "thread_create_conflict",
+		Description: "",
+		FnCheck:     CheckThreadCreateConflict,
+		Deps: []string{
+			"thread_create_simple",
 		},
 	})
 }
@@ -47,6 +80,9 @@ func CreateThread(c *client.Forum, thread *models.Thread, forum *models.Forum, a
 
 	expected := *thread
 	expected.ID = 42
+	if forum != nil {
+		expected.Forum = forum.Slug
+	}
 	check_create := !time.Time(expected.Created).IsZero()
 	result, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
 		WithSlug(thread.Forum).
@@ -72,19 +108,115 @@ func CheckThread(c *client.Forum, thread *models.Thread) {
 }
 
 func CheckThreadCreateSimple(c *client.Forum) {
-	var thread *models.Thread
-	// Ветка с датой
-	thread = RandomThread()
-	CreateThread(c, thread, nil, nil)
-	// Ветка без даты
-	thread = RandomThread()
-	thread.Created = strfmt.NewDateTime()
+	pass := 0
+	for true {
+		pass++
+		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
+
+		thread := RandomThread()
+		if thread.Slug == "" || time.Time(thread.Created).IsZero() {
+			panic("Incorrect test login")
+		}
+
+		modify := pass
+		// Slug
+		if (modify & 1) == 1 {
+			thread.Slug = ""
+		}
+		modify >>= 1
+		// Created
+		if (modify & 1) == 1 {
+			thread.Created = strfmt.NewDateTime()
+		}
+		modify >>= 1
+		// Done?
+		if modify != 0 {
+			break
+		}
+		// Check
+		CreateThread(c, thread, nil, nil)
+	}
+}
+
+func CheckThreadCreateNoCase(c *client.Forum) {
+	pass := 0
+	for true {
+		pass++
+		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
+
+		forum := CreateForum(c, nil, nil)
+		thread := RandomThread()
+
+		modify := pass
+		// Slug
+		if (modify & 1) == 1 {
+			thread.Forum = strings.ToLower(forum.Slug)
+		} else {
+			thread.Forum = strings.ToUpper(forum.Slug)
+		}
+		modify >>= 1
+		// Done?
+		if modify != 0 {
+			break
+		}
+		// Check
+		CreateThread(c, thread, forum, nil)
+	}
+}
+
+func CheckThreadCreateUnicode(c *client.Forum) {
+	thread := RandomThread()
+	thread.Title = "松尾芭蕉"
+	thread.Message = "かれ朶に烏の\nとまりけり\n秋の暮"
 	CreateThread(c, thread, nil, nil)
 }
 
-func CheckThreadCreateNoSlug(c *client.Forum) {
+func CheckThreadCreateNoAuthor(c *client.Forum) {
 	thread := RandomThread()
-	thread.Slug = ""
-	CreateThread(c, thread, nil, nil)
-	CreateThread(c, thread, nil, nil)
+	forum := CreateForum(c, nil, nil)
+	thread.Author = RandomNickname()
+	_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
+		WithSlug(forum.Slug).
+		WithThread(thread).
+		WithContext(Expected(404, nil, nil)))
+	CheckIsType(operations.NewThreadCreateNotFound(), err)
+}
+
+func CheckThreadCreateNoForum(c *client.Forum) {
+	thread := RandomThread()
+	forum := RandomForum()
+	_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
+		WithSlug(forum.Slug).
+		WithThread(thread).
+		WithContext(Expected(404, nil, nil)))
+	CheckIsType(operations.NewThreadCreateNotFound(), err)
+}
+
+func CheckThreadCreateConflict(c *client.Forum) {
+	pass := 0
+	for true {
+		pass++
+		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
+
+		forum := CreateForum(c, nil, nil)
+		thread := CreateThread(c, nil, nil, nil)
+
+		conflict := RandomThread()
+		conflict.Author = forum.User
+		conflict.Slug = thread.Slug
+
+		modify := pass
+		// Slug
+		conflict.Slug = ModifyCase(&modify, thread.Slug)
+		// Done?
+		if modify != 0 {
+			break
+		}
+		// Check
+		_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
+			WithSlug(forum.Slug).
+			WithThread(conflict).
+			WithContext(Expected(409, thread, nil)))
+		CheckIsType(operations.NewThreadCreateConflict(), err)
+	}
 }
