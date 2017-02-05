@@ -3,7 +3,6 @@ package tests
 import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
-	"strings"
 )
 
 func init() {
@@ -26,7 +25,7 @@ func init() {
 	Register(Checker{
 		Name:        "user_get_one_nocase",
 		Description: "",
-		FnCheck:     CheckUserGetOneNocase,
+		FnCheck:     Modifications(CheckUserGetOneNocase),
 		Deps: []string{
 			"user_get_one_simple",
 		},
@@ -46,10 +45,11 @@ func CheckUserGetOneNotFound(c *client.Forum) {
 	CheckIsType(operations.NewUserGetOneNotFound(), err)
 }
 
-func CheckUserGetOneNocase(c *client.Forum) {
+func CheckUserGetOneNocase(c *client.Forum, m *Modify) {
 	user := CreateUser(c, nil)
+	nickname := m.Case(user.Nickname)
 	_, err := c.Operations.UserGetOne(operations.NewUserGetOneParams().
-		WithNickname(strings.ToLower(user.Nickname)).
+		WithNickname(nickname).
 		WithContext(Expected(200, user, nil)))
 	CheckNil(err)
 }

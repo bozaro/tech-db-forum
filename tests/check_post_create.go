@@ -13,7 +13,7 @@ func init() {
 	Register(Checker{
 		Name:        "post_create_simple",
 		Description: "",
-		FnCheck:     CheckPostCreateSimple,
+		FnCheck:     Modifications(CheckPostCreateSimple),
 		Deps: []string{
 			"thread_create_simple",
 		},
@@ -84,13 +84,10 @@ func CheckPost(c *client.Forum, post *models.Post) {
 	CheckNil(err)
 }
 
-func CheckPostCreateSimple(c *client.Forum) {
-	for pass := 1; pass <= 2; pass++ {
-		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
-		thread := CreateThread(c, nil, nil, nil)
-		if pass == 2 {
-			thread.Slug = ""
-		}
-		CreatePost(c, nil, thread)
+func CheckPostCreateSimple(c *client.Forum, m *Modify) {
+	thread := CreateThread(c, nil, nil, nil)
+	if m.Bool() {
+		thread.Slug = ""
 	}
+	CreatePost(c, nil, thread)
 }

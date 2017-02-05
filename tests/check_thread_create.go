@@ -6,7 +6,6 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
 	"github.com/go-openapi/strfmt"
-	"strings"
 	"time"
 )
 
@@ -14,7 +13,7 @@ func init() {
 	Register(Checker{
 		Name:        "thread_create_simple",
 		Description: "",
-		FnCheck:     CheckThreadCreateSimple,
+		FnCheck:     Modifications(CheckThreadCreateSimple),
 		Deps: []string{
 			"forum_get_one_simple",
 		},
@@ -22,7 +21,7 @@ func init() {
 	Register(Checker{
 		Name:        "thread_create_nocase",
 		Description: "",
-		FnCheck:     CheckThreadCreateNoCase,
+		FnCheck:     Modifications(CheckThreadCreateNoCase),
 		Deps: []string{
 			"thread_create_simple",
 		},
@@ -54,7 +53,7 @@ func init() {
 	Register(Checker{
 		Name:        "thread_create_conflict",
 		Description: "",
-		FnCheck:     CheckThreadCreateConflict,
+		FnCheck:     Modifications(CheckThreadCreateConflict),
 		Deps: []string{
 			"thread_create_simple",
 		},
@@ -107,61 +106,34 @@ func CheckThread(c *client.Forum, thread *models.Thread) {
 	CheckNil(err)
 }
 
-func CheckThreadCreateSimple(c *client.Forum) {
-	pass := 0
-	for true {
-		pass++
-		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
-
-		thread := RandomThread()
-		if thread.Slug == "" || time.Time(thread.Created).IsZero() {
-			panic("Incorrect test login")
-		}
-
-		modify := pass
-		// Slug
-		if (modify & 1) == 1 {
-			thread.Slug = ""
-		}
-		modify >>= 1
-		// Created
-		if (modify & 1) == 1 {
-			thread.Created = strfmt.NewDateTime()
-		}
-		modify >>= 1
-		// Done?
-		if modify != 0 {
-			break
-		}
-		// Check
-		CreateThread(c, thread, nil, nil)
+func CheckThreadCreateSimple(c *client.Forum, m *Modify) {
+	thread := RandomThread()
+	if thread.Slug == "" || time.Time(thread.Created).IsZero() {
+		panic("Incorrect test login")
 	}
+
+	// Slug
+	if m.Bool() {
+		thread.Slug = ""
+	}
+	// Created
+	if m.Bool() {
+		thread.Created = strfmt.NewDateTime()
+	}
+
+	// Check
+	CreateThread(c, thread, nil, nil)
 }
 
-func CheckThreadCreateNoCase(c *client.Forum) {
-	pass := 0
-	for true {
-		pass++
-		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
+func CheckThreadCreateNoCase(c *client.Forum, m *Modify) {
+	forum := CreateForum(c, nil, nil)
+	thread := RandomThread()
 
-		forum := CreateForum(c, nil, nil)
-		thread := RandomThread()
+	// Slug
+	thread.Forum = m.Case(forum.Slug)
 
-		modify := pass
-		// Slug
-		if (modify & 1) == 1 {
-			thread.Forum = strings.ToLower(forum.Slug)
-		} else {
-			thread.Forum = strings.ToUpper(forum.Slug)
-		}
-		modify >>= 1
-		// Done?
-		if modify != 0 {
-			break
-		}
-		// Check
-		CreateThread(c, thread, forum, nil)
-	}
+	// Check
+	CreateThread(c, thread, forum, nil)
 }
 
 func CheckThreadCreateUnicode(c *client.Forum) {
@@ -192,31 +164,21 @@ func CheckThreadCreateNoForum(c *client.Forum) {
 	CheckIsType(operations.NewThreadCreateNotFound(), err)
 }
 
-func CheckThreadCreateConflict(c *client.Forum) {
-	pass := 0
-	for true {
-		pass++
-		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
+func CheckThreadCreateConflict(c *client.Forum, m *Modify) {
+	forum := CreateForum(c, nil, nil)
+	thread := CreateThread(c, nil, nil, nil)
 
-		forum := CreateForum(c, nil, nil)
-		thread := CreateThread(c, nil, nil, nil)
+	conflict := RandomThread()
+	conflict.Author = forum.User
+	conflict.Slug = thread.Slug
 
-		conflict := RandomThread()
-		conflict.Author = forum.User
-		conflict.Slug = thread.Slug
+	// Slug
+	conflict.Slug = m.Case(thread.Slug)
 
-		modify := pass
-		// Slug
-		conflict.Slug = ModifyCase(&modify, thread.Slug)
-		// Done?
-		if modify != 0 {
-			break
-		}
-		// Check
-		_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
-			WithSlug(forum.Slug).
-			WithThread(conflict).
-			WithContext(Expected(409, thread, nil)))
-		CheckIsType(operations.NewThreadCreateConflict(), err)
-	}
+	// Check
+	_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
+		WithSlug(forum.Slug).
+		WithThread(conflict).
+		WithContext(Expected(409, thread, nil)))
+	CheckIsType(operations.NewThreadCreateConflict(), err)
 }

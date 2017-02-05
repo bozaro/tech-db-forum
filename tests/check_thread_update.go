@@ -1,18 +1,16 @@
 package tests
 
 import (
-	"fmt"
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
-	"strings"
 )
 
 func init() {
 	Register(Checker{
 		Name:        "thread_update_simple",
 		Description: "",
-		FnCheck:     CheckThreadUpdateSimple,
+		FnCheck:     Modifications(CheckThreadUpdateSimple),
 		Deps: []string{
 			"thread_create_simple",
 		},
@@ -28,7 +26,7 @@ func init() {
 	Register(Checker{
 		Name:        "thread_update_part",
 		Description: "",
-		FnCheck:     CheckThreadUpdatePart,
+		FnCheck:     Modifications(CheckThreadUpdatePart),
 		Deps: []string{
 			"thread_update_simple",
 		},
@@ -43,32 +41,26 @@ func init() {
 	})
 }
 
-func CheckThreadUpdateSimple(c *client.Forum) {
-	for pass := 0; pass < 2; pass++ {
-		Checkpoint(c, fmt.Sprintf("Pass %d", pass+1))
-		thread := CreateThread(c, nil, nil, nil)
+func CheckThreadUpdateSimple(c *client.Forum, m *Modify) {
+	thread := CreateThread(c, nil, nil, nil)
 
-		temp := RandomThread()
-		update := models.ThreadUpdate{}
-		update.Title = temp.Title
-		update.Message = temp.Message
+	temp := RandomThread()
+	update := models.ThreadUpdate{}
+	update.Title = temp.Title
+	update.Message = temp.Message
 
-		expected := *thread
-		expected.Title = update.Title
-		expected.Message = update.Message
+	expected := *thread
+	expected.Title = update.Title
+	expected.Message = update.Message
 
-		id := thread.Slug
-		if pass == 1 {
-			id = fmt.Sprintf("%d", thread.ID)
-		}
+	id := m.SlugOrId(thread)
 
-		c.Operations.ThreadUpdate(operations.NewThreadUpdateParams().
-			WithSlugOrID(id).
-			WithThread(&update).
-			WithContext(Expected(200, &expected, nil)))
+	c.Operations.ThreadUpdate(operations.NewThreadUpdateParams().
+		WithSlugOrID(id).
+		WithThread(&update).
+		WithContext(Expected(200, &expected, nil)))
 
-		CheckThread(c, &expected)
-	}
+	CheckThread(c, &expected)
 }
 
 func CheckThreadUpdateEmpty(c *client.Forum) {
@@ -82,52 +74,31 @@ func CheckThreadUpdateEmpty(c *client.Forum) {
 	CheckThread(c, thread)
 }
 
-func CheckThreadUpdatePart(c *client.Forum) {
-	pass := 0
-	for true {
-		pass++
-		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
+func CheckThreadUpdatePart(c *client.Forum, m *Modify) {
+	fake := RandomThread()
+	expected := CreateThread(c, nil, nil, nil)
+	update := &models.ThreadUpdate{}
 
-		fake := RandomThread()
-		expected := CreateThread(c, nil, nil, nil)
-		update := &models.ThreadUpdate{}
-
-		modify := pass
-		// Slug or ID
-		id := expected.Slug
-		switch modify & 2 {
-		case 1:
-			id = fmt.Sprintf("%d", expected.ID)
-		case 2:
-			id = strings.ToLower(expected.Slug)
-		case 3:
-			id = strings.ToUpper(expected.Slug)
-		}
-		modify >>= 2
-		// Title
-		if (modify & 1) == 1 {
-			expected.Title = fake.Title
-			update.Title = fake.Title
-		}
-		modify >>= 1
-		// Message
-		if (modify & 1) == 1 {
-			expected.Message = fake.Message
-			update.Message = fake.Message
-		}
-		modify >>= 1
-		// Done?
-		if modify != 0 {
-			break
-		}
-		// Check
-		c.Operations.ThreadUpdate(operations.NewThreadUpdateParams().
-			WithSlugOrID(id).
-			WithThread(update).
-			WithContext(Expected(200, &expected, nil)))
-
-		CheckThread(c, expected)
+	// Slug or ID
+	id := m.SlugOrId(expected)
+	// Title
+	if m.Bool() {
+		expected.Title = fake.Title
+		update.Title = fake.Title
 	}
+	// Message
+	if m.Bool() {
+		expected.Message = fake.Message
+		update.Message = fake.Message
+	}
+
+	// Check
+	c.Operations.ThreadUpdate(operations.NewThreadUpdateParams().
+		WithSlugOrID(id).
+		WithThread(update).
+		WithContext(Expected(200, &expected, nil)))
+
+	CheckThread(c, expected)
 }
 
 func CheckThreadUpdateNotFound(c *client.Forum) {

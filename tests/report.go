@@ -19,13 +19,13 @@ func (self *Report) AddError(err interface{}) {
 		self.result = REPORT_FAILED
 	}
 }
-func (self *Report) Checkpoint(message string) {
-	if self.result != REPORT_FAILED {
-		self.messages = []string{}
-		log.Println("  " + message)
-	} else {
-		panic("Test is already failed")
+func (self *Report) Checkpoint(message string) bool {
+	if self.result == REPORT_FAILED {
+		return false
 	}
+	self.messages = []string{}
+	log.Println("  " + message)
+	return true
 }
 
 func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, message *string) {

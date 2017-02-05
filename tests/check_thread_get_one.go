@@ -1,17 +1,15 @@
 package tests
 
 import (
-	"fmt"
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
-	"strings"
 )
 
 func init() {
 	Register(Checker{
 		Name:        "thread_get_one_simple",
 		Description: "",
-		FnCheck:     CheckThreadGetOneSimple,
+		FnCheck:     Modifications(CheckThreadGetOneSimple),
 		Deps: []string{
 			"thread_create_simple",
 		},
@@ -26,37 +24,18 @@ func init() {
 	})
 }
 
-func CheckThreadGetOneSimple(c *client.Forum) {
-	pass := 0
-	for true {
-		pass++
-		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
+func CheckThreadGetOneSimple(c *client.Forum, m *Modify) {
+	expected := CreateThread(c, nil, nil, nil)
 
-		expected := CreateThread(c, nil, nil, nil)
+	// Slug or ID
+	id := m.SlugOrId(expected)
 
-		modify := pass
-		// Slug or ID
-		id := expected.Slug
-		switch modify & 2 {
-		case 1:
-			id = fmt.Sprintf("%d", expected.ID)
-		case 2:
-			id = strings.ToLower(expected.Slug)
-		case 3:
-			id = strings.ToUpper(expected.Slug)
-		}
-		modify >>= 2
-		// Done?
-		if modify != 0 {
-			break
-		}
-		// Check
-		c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
-			WithSlugOrID(id).
-			WithContext(Expected(200, &expected, nil)))
+	// Check
+	c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
+		WithSlugOrID(id).
+		WithContext(Expected(200, &expected, nil)))
 
-		CheckThread(c, expected)
-	}
+	CheckThread(c, expected)
 }
 
 func CheckThreadGetOneNotFound(c *client.Forum) {

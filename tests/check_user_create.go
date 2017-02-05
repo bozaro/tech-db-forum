@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"fmt"
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
@@ -28,7 +27,7 @@ func init() {
 	Register(Checker{
 		Name:        "user_create_conflict",
 		Description: "",
-		FnCheck:     CheckUserCreateConflict,
+		FnCheck:     Modifications(CheckUserCreateConflict),
 		Deps: []string{
 			"user_create_simple",
 		},
@@ -71,56 +70,46 @@ func CheckUserCreateUnicode(c *client.Forum) {
 	CheckUser(c, user)
 }
 
-func CheckUserCreateConflict(c *client.Forum) {
-	pass := 0
-	for true {
-		pass++
-		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
+func CheckUserCreateConflict(c *client.Forum, m *Modify) {
+	user1 := CreateUser(c, nil)
+	user2 := CreateUser(c, nil)
 
-		user1 := CreateUser(c, nil)
-		user2 := CreateUser(c, nil)
+	expected := []models.User{}
+	conflict_user := RandomUser()
 
-		expected := []models.User{}
-		conflict_user := RandomUser()
+	// Email
+	switch m.Int(4) {
+	case 1:
+		conflict_user.Email = user1.Email
+		expected = append(expected, *user1)
+	case 2:
+		conflict_user.Email = strfmt.Email(strings.ToLower(user1.Email.String()))
+		expected = append(expected, *user1)
+	case 3:
+		conflict_user.Email = strfmt.Email(strings.ToUpper(user1.Email.String()))
+		expected = append(expected, *user1)
+	}
 
-		modify := pass
-		// Email
-		switch modify % 4 {
-		case 1:
-			conflict_user.Email = user1.Email
-			expected = append(expected, *user1)
-		case 2:
-			conflict_user.Email = strfmt.Email(strings.ToLower(user1.Email.String()))
-			expected = append(expected, *user1)
-		case 3:
-			conflict_user.Email = strfmt.Email(strings.ToUpper(user1.Email.String()))
+	// Nickname
+	switch m.Int(5) {
+	case 1:
+		conflict_user.Nickname = user2.Nickname
+		expected = append(expected, *user2)
+	case 2:
+		conflict_user.Nickname = strings.ToLower(user2.Nickname)
+		expected = append(expected, *user2)
+	case 3:
+		conflict_user.Nickname = strings.ToUpper(user2.Nickname)
+		expected = append(expected, *user2)
+	case 4:
+		conflict_user.Nickname = user1.Nickname
+		if len(expected) == 0 {
 			expected = append(expected, *user1)
 		}
-		modify /= 4
-		// Nickname
-		switch modify % 5 {
-		case 1:
-			conflict_user.Nickname = user2.Nickname
-			expected = append(expected, *user2)
-		case 2:
-			conflict_user.Nickname = strings.ToLower(user2.Nickname)
-			expected = append(expected, *user2)
-		case 3:
-			conflict_user.Nickname = strings.ToUpper(user2.Nickname)
-			expected = append(expected, *user2)
-		case 4:
-			conflict_user.Nickname = user1.Nickname
-			if len(expected) == 0 {
-				expected = append(expected, *user1)
-			}
-		default:
-		}
-		modify /= 5
-		// Done?
-		if modify != 0 {
-			break
-		}
-		// Check
+	}
+
+	// Check
+	if len(expected) != 0 {
 		nickname := conflict_user.Nickname
 		conflict_user.Nickname = ""
 		c.Operations.UserCreate(operations.NewUserCreateParams().

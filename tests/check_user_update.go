@@ -1,12 +1,10 @@
 package tests
 
 import (
-	"fmt"
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
 	"github.com/go-openapi/strfmt"
-	"strings"
 )
 
 func init() {
@@ -29,7 +27,7 @@ func init() {
 	Register(Checker{
 		Name:        "user_update_part",
 		Description: "",
-		FnCheck:     CheckUserUpdatePart,
+		FnCheck:     Modifications(CheckUserUpdatePart),
 		Deps: []string{
 			"user_update_simple",
 		},
@@ -45,7 +43,7 @@ func init() {
 	Register(Checker{
 		Name:        "user_update_conflict",
 		Description: "",
-		FnCheck:     CheckUserUpdateConflict,
+		FnCheck:     Modifications(CheckUserUpdateConflict),
 		Deps: []string{
 			"user_update_simple",
 		},
@@ -80,47 +78,34 @@ func CheckUserUpdateEmpty(c *client.Forum) {
 	CheckUser(c, user)
 }
 
-func CheckUserUpdatePart(c *client.Forum) {
-	pass := 0
-	for true {
-		pass++
-		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
+func CheckUserUpdatePart(c *client.Forum, m *Modify) {
+	fake := RandomUser()
+	expected := CreateUser(c, nil)
+	update := &models.User{}
 
-		fake := RandomUser()
-		expected := CreateUser(c, nil)
-		update := &models.User{}
-
-		modify := pass
-		// Email
-		if (modify & 1) == 1 {
-			expected.Email = fake.Email
-			update.Email = fake.Email
-		}
-		modify >>= 1
-		// About
-		if (modify & 1) == 1 {
-			expected.About = fake.About
-			update.About = fake.About
-		}
-		modify >>= 1
-		// Fullname
-		if (modify & 1) == 1 {
-			expected.Fullname = fake.Fullname
-			update.Fullname = fake.Fullname
-		}
-		modify >>= 1
-		// Done?
-		if modify != 0 {
-			break
-		}
-		// Check
-		c.Operations.UserUpdate(operations.NewUserUpdateParams().
-			WithNickname(expected.Nickname).
-			WithProfile(update).
-			WithContext(Expected(200, &expected, nil)))
-
-		CheckUser(c, expected)
+	// Email
+	if m.Bool() {
+		expected.Email = fake.Email
+		update.Email = fake.Email
 	}
+	// About
+	if m.Bool() {
+		expected.About = fake.About
+		update.About = fake.About
+	}
+	// Fullname
+	if m.Bool() {
+		expected.Fullname = fake.Fullname
+		update.Fullname = fake.Fullname
+	}
+
+	// Check
+	c.Operations.UserUpdate(operations.NewUserUpdateParams().
+		WithNickname(expected.Nickname).
+		WithProfile(update).
+		WithContext(Expected(200, &expected, nil)))
+
+	CheckUser(c, expected)
 }
 
 func CheckUserUpdateNotFound(c *client.Forum) {
@@ -131,27 +116,16 @@ func CheckUserUpdateNotFound(c *client.Forum) {
 	CheckIsType(operations.NewUserUpdateNotFound(), err)
 }
 
-func CheckUserUpdateConflict(c *client.Forum) {
+func CheckUserUpdateConflict(c *client.Forum, m *Modify) {
 	user1 := CreateUser(c, nil)
 	user2 := CreateUser(c, nil)
 
 	update := &models.User{
-		Email: user1.Email,
+		Email: strfmt.Email(m.Case(user1.Email.String())),
 	}
 
 	c.Operations.UserUpdate(operations.NewUserUpdateParams().
-		WithNickname(user2.Nickname).
-		WithProfile(update).
-		WithContext(Expected(409, nil, nil)))
-
-	c.Operations.UserUpdate(operations.NewUserUpdateParams().
-		WithNickname(strings.ToLower(user2.Nickname)).
-		WithProfile(update).
-		WithContext(Expected(409, nil, nil)))
-
-	update.Email = strfmt.Email(strings.ToLower(update.Email.String()))
-	c.Operations.UserUpdate(operations.NewUserUpdateParams().
-		WithNickname(user2.Nickname).
+		WithNickname(m.Case(user2.Nickname)).
 		WithProfile(update).
 		WithContext(Expected(409, nil, nil)))
 

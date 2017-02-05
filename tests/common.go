@@ -3,11 +3,11 @@ package tests
 import (
 	"bytes"
 	"fmt"
+	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/models"
 	"io"
 	"io/ioutil"
 	"reflect"
-	"strings"
 	"time"
 )
 
@@ -59,17 +59,21 @@ func GetBody(stream *io.ReadCloser) ([]byte, error) {
 
 }
 
-func ModifyCase(modify *int, source string) string {
-	v := *modify % 3
-	*modify /= 3
-	switch v {
-	case 0:
-		return source
-	case 1:
-		return strings.ToLower(source)
-	case 2:
-		return strings.ToUpper(source)
-	default:
-		panic("Unexpected value")
+func Modifications(checker func(c *client.Forum, modify *Modify)) func(c *client.Forum) {
+	return func(c *client.Forum) {
+		pass := 0
+		for true {
+			pass++
+			if !Checkpoint(c, fmt.Sprintf("Pass %d", pass)) {
+				break
+			}
+			modify := Modify(pass)
+			// Run check
+			checker(c, &modify)
+			// Done?
+			if modify != 0 {
+				break
+			}
+		}
 	}
 }

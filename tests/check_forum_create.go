@@ -1,11 +1,9 @@
 package tests
 
 import (
-	"fmt"
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
-	"strings"
 )
 
 func init() {
@@ -28,7 +26,7 @@ func init() {
 	Register(Checker{
 		Name:        "forum_create_conflict",
 		Description: "",
-		FnCheck:     CheckForumCreateConflict,
+		FnCheck:     Modifications(CheckForumCreateConflict),
 		Deps: []string{
 			"forum_create_simple",
 		},
@@ -36,7 +34,7 @@ func init() {
 	Register(Checker{
 		Name:        "forum_create_user_case",
 		Description: "",
-		FnCheck:     CheckForumCreateUserCase,
+		FnCheck:     Modifications(CheckForumCreateUserCase),
 		Deps: []string{
 			"forum_get_one_simple",
 		},
@@ -81,37 +79,22 @@ func CheckForumCreateSimple(c *client.Forum) {
 	CreateForum(c, nil, nil)
 }
 
-func CheckForumCreateUserCase(c *client.Forum) {
-	pass := 0
-	for true {
-		pass++
-		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
-		user := CreateUser(c, nil)
-		forum := RandomForum()
+func CheckForumCreateUserCase(c *client.Forum, m *Modify) {
+	user := CreateUser(c, nil)
+	forum := RandomForum()
 
-		modify := pass
-		// Slug
-		switch modify % 3 {
-		case 1:
-			forum.User = strings.ToLower(user.Nickname)
-		case 2:
-			forum.User = strings.ToUpper(user.Nickname)
-		}
-		modify /= 3
-		// Done?
-		if modify != 0 {
-			break
-		}
+	// Slug
+	forum.User = m.Case(user.Nickname)
 
-		expected := *forum
-		expected.User = user.Nickname
-		_, err := c.Operations.ForumCreate(operations.NewForumCreateParams().
-			WithForum(forum).
-			WithContext(Expected(201, &expected, nil)))
-		CheckNil(err)
+	// Check
+	expected := *forum
+	expected.User = user.Nickname
+	_, err := c.Operations.ForumCreate(operations.NewForumCreateParams().
+		WithForum(forum).
+		WithContext(Expected(201, &expected, nil)))
+	CheckNil(err)
 
-		CheckForum(c, &expected)
-	}
+	CheckForum(c, &expected)
 }
 
 func CheckForumCreateUserNotFound(c *client.Forum) {
@@ -132,35 +115,17 @@ func CheckForumCreateUnicode(c *client.Forum) {
 	CheckForum(c, forum)
 }
 
-func CheckForumCreateConflict(c *client.Forum) {
-	pass := 0
-	for true {
-		pass++
-		Checkpoint(c, fmt.Sprintf("Pass %d", pass))
+func CheckForumCreateConflict(c *client.Forum, m *Modify) {
+	forum := CreateForum(c, nil, nil)
+	conflict_forum := RandomForum()
+	conflict_forum.User = forum.User
 
-		forum := CreateForum(c, nil, nil)
-		conflict_forum := RandomForum()
-		conflict_forum.User = forum.User
+	// Slug
+	conflict_forum.Slug = m.Case(forum.Slug)
 
-		modify := pass
-		// Slug
-		switch modify % 4 {
-		case 1:
-			conflict_forum.Slug = forum.Slug
-		case 2:
-			conflict_forum.Slug = strings.ToLower(forum.Slug)
-		case 3:
-			conflict_forum.Slug = strings.ToUpper(forum.Slug)
-		}
-		modify /= 4
-		// Done?
-		if modify != 0 {
-			break
-		}
-		// Check
-		_, err := c.Operations.ForumCreate(operations.NewForumCreateParams().
-			WithForum(conflict_forum).
-			WithContext(Expected(409, &forum, nil)))
-		CheckIsType(operations.NewForumCreateConflict(), err)
-	}
+	// Check
+	_, err := c.Operations.ForumCreate(operations.NewForumCreateParams().
+		WithForum(conflict_forum).
+		WithContext(Expected(409, &forum, nil)))
+	CheckIsType(operations.NewForumCreateConflict(), err)
 }
