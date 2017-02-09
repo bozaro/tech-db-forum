@@ -18,6 +18,54 @@ func init() {
 			"thread_create_simple",
 		},
 	})
+	Register(Checker{
+		Name:        "post_create_unicode",
+		Description: "",
+		FnCheck:     CheckPostCreateUnicode,
+		Deps: []string{
+			"post_create_simple",
+		},
+	})
+	Register(Checker{
+		Name:        "post_create_no_thread",
+		Description: "",
+		FnCheck:     CheckPostCreateNoThread,
+		Deps: []string{
+			"post_create_simple",
+		},
+	})
+	Register(Checker{
+		Name:        "post_create_no_author",
+		Description: "",
+		FnCheck:     Modifications(CheckPostCreateNoAuthor),
+		Deps: []string{
+			"post_create_simple",
+		},
+	})
+	Register(Checker{
+		Name:        "post_create_with_parent",
+		Description: "",
+		FnCheck:     CheckPostCreateWithParent,
+		Deps: []string{
+			"post_create_simple",
+		},
+	})
+	Register(Checker{
+		Name:        "post_create_invalid_parent",
+		Description: "",
+		FnCheck:     Modifications(CheckPostCreateInvalidParent),
+		Deps: []string{
+			"post_create_simple",
+		},
+	})
+	Register(Checker{
+		Name:        "post_create_deep_parent",
+		Description: "",
+		FnCheck:     CheckPostCreateDeepParent,
+		Deps: []string{
+			"post_create_simple",
+		},
+	})
 }
 
 func CreatePost(c *client.Forum, post *models.Post, thread *models.Thread) *models.Post {
@@ -90,4 +138,76 @@ func CheckPostCreateSimple(c *client.Forum, m *Modify) {
 		thread.Slug = ""
 	}
 	CreatePost(c, nil, thread)
+}
+
+func CheckPostCreateNoThread(c *client.Forum) {
+	post := RandomPost()
+	post.Author = CreateUser(c, nil).Nickname
+
+	var err error
+	_, err = c.Operations.PostCreate(operations.NewPostCreateParams().
+		WithSlugOrID(THREAD_FAKE_ID).
+		WithPost(post).
+		WithContext(Expected(404, nil, nil)))
+	CheckIsType(operations.NewPostCreateNotFound(), err)
+
+	_, err = c.Operations.PostCreate(operations.NewPostCreateParams().
+		WithSlugOrID(RandomThread().Slug).
+		WithPost(post).
+		WithContext(Expected(404, nil, nil)))
+	CheckIsType(operations.NewPostCreateNotFound(), err)
+}
+
+func CheckPostCreateNoAuthor(c *client.Forum, m *Modify) {
+	post := RandomPost()
+	post.Author = RandomNickname()
+	thread := CreateThread(c, nil, nil, nil)
+
+	_, err := c.Operations.PostCreate(operations.NewPostCreateParams().
+		WithSlugOrID(m.SlugOrId(thread)).
+		WithPost(post).
+		WithContext(Expected(404, nil, nil)))
+	CheckIsType(operations.NewPostCreateNotFound(), err)
+}
+
+func CheckPostCreateInvalidParent(c *client.Forum, m *Modify) {
+	post := RandomPost()
+	thread := CreateThread(c, nil, nil, nil)
+	post.Author = thread.Author
+	parentId := POST_FAKE_ID
+	if m.Bool() {
+		parentId = CreatePost(c, nil, nil).ID
+	}
+	_, err := c.Operations.PostCreate(operations.NewPostCreateParams().
+		WithSlugOrID(m.SlugOrId(thread)).
+		WithParent(&parentId).
+		WithPost(post).
+		WithContext(Expected(409, nil, nil)))
+	CheckIsType(operations.NewPostCreateConflict(), err)
+}
+
+func CheckPostCreateWithParent(c *client.Forum) {
+	post := RandomPost()
+	thread := CreateThread(c, nil, nil, nil)
+	post.Author = thread.Author
+	post.Parent = CreatePost(c, nil, thread).ID
+	CreatePost(c, post, thread)
+}
+
+func CheckPostCreateDeepParent(c *client.Forum) {
+	thread := CreateThread(c, nil, nil, nil)
+	var parent int64
+	for level := 0; level < 0x10; level++ {
+		post := RandomPost()
+		post.Author = thread.Author
+		post.Parent = parent
+		CreatePost(c, post, thread)
+		parent = post.ID
+	}
+}
+
+func CheckPostCreateUnicode(c *client.Forum) {
+	post := RandomPost()
+	post.Message = "大象销售。不贵。"
+	CreatePost(c, post, nil)
 }
