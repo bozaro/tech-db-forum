@@ -84,19 +84,12 @@ func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
 	}
 	sort.Sort(UserByNickname(all_expected))
 
-	var desc *bool
-
 	// Desc
+	desc := m.NullableBool()
 	small := time.Millisecond
-	switch m.Int(3) {
-	case 1:
-		v := bool(true)
+	if desc != nil && *desc {
 		small = -small
-		desc = &v
 		sort.Sort(sort.Reverse(UserByNickname(all_expected)))
-	case 2:
-		v := bool(false)
-		desc = &v
 	}
 
 	// Check read all
