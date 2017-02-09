@@ -92,13 +92,12 @@ type ThreadGetPostsParams struct {
 
 	*/
 	Limit *int32
-	/*Since
-	  Дата создания сообщения, с которой будут выводиться записи
-	(сообщение я с указанной датой попадает в результат выборки).
+	/*Marker
+	  Маркер для определения идентификатора текущей страницы сообщений (маркер может быть получен из какого-либо предыдущего запроса).
 
 
 	*/
-	Since *strfmt.DateTime
+	Marker *string
 	/*SlugOrID
 	  Идентификатор ветки обсуждения.
 
@@ -180,15 +179,15 @@ func (o *ThreadGetPostsParams) SetLimit(limit *int32) {
 	o.Limit = limit
 }
 
-// WithSince adds the since to the thread get posts params
-func (o *ThreadGetPostsParams) WithSince(since *strfmt.DateTime) *ThreadGetPostsParams {
-	o.SetSince(since)
+// WithMarker adds the marker to the thread get posts params
+func (o *ThreadGetPostsParams) WithMarker(marker *string) *ThreadGetPostsParams {
+	o.SetMarker(marker)
 	return o
 }
 
-// SetSince adds the since to the thread get posts params
-func (o *ThreadGetPostsParams) SetSince(since *strfmt.DateTime) {
-	o.Since = since
+// SetMarker adds the marker to the thread get posts params
+func (o *ThreadGetPostsParams) SetMarker(marker *string) {
+	o.Marker = marker
 }
 
 // WithSlugOrID adds the slugOrID to the thread get posts params
@@ -251,16 +250,16 @@ func (o *ThreadGetPostsParams) WriteToRequest(r runtime.ClientRequest, reg strfm
 
 	}
 
-	if o.Since != nil {
+	if o.Marker != nil {
 
-		// query param since
-		var qrSince strfmt.DateTime
-		if o.Since != nil {
-			qrSince = *o.Since
+		// query param marker
+		var qrMarker string
+		if o.Marker != nil {
+			qrMarker = *o.Marker
 		}
-		qSince := qrSince.String()
-		if qSince != "" {
-			if err := r.SetQueryParam("since", qSince); err != nil {
+		qMarker := qrMarker
+		if qMarker != "" {
+			if err := r.SetQueryParam("marker", qMarker); err != nil {
 				return err
 			}
 		}

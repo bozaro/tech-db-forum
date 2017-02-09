@@ -85,13 +85,27 @@ func SortPosts(posts []*models.Post, desc bool, limit int) [][]*models.Post {
 		limit = len(posts)
 	}
 	sorted := posts
+	// Descending order
 	if desc {
 		sorted = make([]*models.Post, len(posts))
 		for i, v := range posts {
 			sorted[len(posts)-i-1] = v
 		}
 	}
-	return [][]*models.Post{sorted}
+	// Pagination
+	result := [][]*models.Post{}
+	page := []*models.Post{}
+	for _, post := range sorted {
+		if len(page) == limit {
+			result = append(result, page)
+			page = []*models.Post{}
+		}
+		page = append(page, post)
+	}
+	if len(page) > 0 {
+		result = append(result, page)
+	}
+	return result
 }
 
 func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
@@ -112,18 +126,25 @@ func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
 		WithContext(Expected(200, &all_posts, nil)))
 
 	// Check read by 3 records
-	/* todo: #14
 	var limit int32 = 3
 	batches := SortPosts(tree, desc != nil && *desc, int(limit))
-	var since *strfmt.DateTime = nil
+	var marker *string = nil
 	for _, batch := range batches {
-		c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
+		page, err := c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 			WithSlugOrID(id).
 			WithLimit(&limit).
 			WithDesc(desc).
-			WithSince(since).
-			WithContext(Expected(200, &batch, nil)))
-		//since = &threads[m-1].Created
+			WithMarker(marker).
+			WithContext(Expected(200, &models.PostPage{
+				RandomMarker(),
+				batch,
+			}, func(data interface{}) interface{} {
+				page := data.(*models.PostPage)
+				page.Marker = ""
+				return page
+			})))
+		CheckNil(err)
+		marker = &page.Payload.Marker
 	}
 
 	// Check read after all
@@ -131,9 +152,8 @@ func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
 		WithSlugOrID(id).
 		WithLimit(&limit).
 		WithDesc(desc).
-		WithSince(since).
-		WithContext(Expected(200, &[]models.Thread{}, nil)))
-	*/
+		WithMarker(marker).
+		WithContext(Expected(200, &models.PostPage{Marker: *marker}, nil)))
 }
 
 func CheckThreadGetPostsNotFound(c *client.Forum) {

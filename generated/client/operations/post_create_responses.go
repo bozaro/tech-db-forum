@@ -109,7 +109,7 @@ func NewPostCreateConflict() *PostCreateConflict {
 
 /*PostCreateConflict handles this case with default header values.
 
-Родитель и текущий пост относятся к разным веткам обсуждения.
+Родительский пост отсутсвует в текущей ветке обсуждения.
 
 */
 type PostCreateConflict struct {
