@@ -119,11 +119,19 @@ func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
 	id := m.SlugOrId(thread)
 
 	// Check read all
+	marker_filter := func(data interface{}) interface{} {
+		page := data.(*models.PostPage)
+		page.Marker = ""
+		return page
+	}
 	all_posts := SortPosts(tree, desc != nil && *desc, 0)[0]
 	c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 		WithSlugOrID(id).
 		WithDesc(desc).
-		WithContext(Expected(200, &all_posts, nil)))
+		WithContext(Expected(200, &models.PostPage{
+			RandomMarker(),
+			all_posts,
+		}, marker_filter)))
 
 	// Check read by 3 records
 	var limit int32 = 3
@@ -138,11 +146,7 @@ func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
 			WithContext(Expected(200, &models.PostPage{
 				RandomMarker(),
 				batch,
-			}, func(data interface{}) interface{} {
-				page := data.(*models.PostPage)
-				page.Marker = ""
-				return page
-			})))
+			}, marker_filter)))
 		CheckNil(err)
 		marker = &page.Payload.Marker
 	}
@@ -153,7 +157,9 @@ func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
 		WithLimit(&limit).
 		WithDesc(desc).
 		WithMarker(marker).
-		WithContext(Expected(200, &models.PostPage{Marker: *marker}, nil)))
+		WithContext(Expected(200, &models.PostPage{Marker: *marker,
+			Posts: []*models.Post{},
+		}, nil)))
 }
 
 func CheckThreadGetPostsNotFound(c *client.Forum) {
