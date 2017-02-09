@@ -4,6 +4,9 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
+	"math/rand"
+	"sort"
+	"time"
 )
 
 func init() {
@@ -43,15 +46,43 @@ func init() {
 }
 
 func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
-	/*forum := CreateForum(c, nil, nil)
-	threads := []models.Thread{}
+	forum := CreateForum(c, nil, nil)
+	threads := []*models.Thread{}
+	users := []*models.User{}
 	created := time.Now()
 	created.Round(time.Millisecond)
-	for i := 0; i < 10; i++ {
-		thread := CreateThread(c, nil, forum, nil)
-		threads = append(threads, *thread)
+
+	forum_users := map[string]*models.User{}
+	// Пост, который не участвует в данном форуме
+	CreatePost(c, nil, nil)
+	// Пользователи
+	for i := 0; i < 8; i++ {
+		user := CreateUser(c, nil)
+		users = append(users, user)
 	}
-	sort.Sort(ThreadByCreated(threads))
+	// Ветви
+	for i := 0; i < 4; i++ {
+		user := users[i/2]
+		thread := CreateThread(c, nil, forum, user)
+		threads = append(threads, thread)
+		forum_users[user.Nickname] = user
+	}
+	// Посты
+	for i := 0; i < 10; i++ {
+		user := users[i%(len(users)-1)+1]
+		thread := threads[rand.Intn(len(threads))]
+		post := RandomPost()
+		post.Author = user.Nickname
+		CreatePost(c, post, thread)
+		forum_users[user.Nickname] = user
+	}
+
+	// Список пользователей
+	all_expected := []models.User{}
+	for _, user := range forum_users {
+		all_expected = append(all_expected, *user)
+	}
+	sort.Sort(UserByNickname(all_expected))
 
 	var desc *bool
 
@@ -62,7 +93,7 @@ func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
 		v := bool(true)
 		small = -small
 		desc = &v
-		sort.Sort(sort.Reverse(ThreadByCreated(threads)))
+		sort.Sort(sort.Reverse(UserByNickname(all_expected)))
 	case 2:
 		v := bool(false)
 		desc = &v
@@ -72,34 +103,35 @@ func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
 	c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
 		WithSlug(forum.Slug).
 		WithDesc(desc).
-		WithContext(Expected(200, &threads, nil)))
+		WithContext(Expected(200, &all_expected, nil)))
 
 	// Check read by 4 records
 	limit := int32(4)
-	var since *strfmt.DateTime = nil
-	for n := 0; n < len(threads); n += int(limit) - 1 {
+	for n := 0; n < len(all_expected); n += int(limit) - 1 {
 		m := n + int(limit)
-		if m > len(threads) {
-			m = len(threads)
+		if m > len(all_expected) {
+			m = len(all_expected)
 		}
-		expected := threads[n:m]
+		expected := all_expected[n:m]
+		var since *string = nil
+		if n > 0 {
+			since = &all_expected[n-1].Nickname
+		}
 		c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
 			WithSlug(forum.Slug).
 			WithLimit(&limit).
 			WithDesc(desc).
 			WithSince(since).
 			WithContext(Expected(200, &expected, nil)))
-		since = &threads[m - 1].Created
 	}
 
 	// Check read after all
-	after_last := strfmt.DateTime(time.Time(threads[len(threads) - 1].Created).Add(small))
 	c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
 		WithSlug(forum.Slug).
 		WithLimit(&limit).
 		WithDesc(desc).
-		WithSince(&after_last).
-		WithContext(Expected(200, &[]models.Thread{}, nil)))*/
+		WithSince(&all_expected[len(all_expected)-1].Nickname).
+		WithContext(Expected(200, &[]models.Thread{}, nil)))
 }
 
 func CheckForumGetUsersEmpty(c *client.Forum, m *Modify) {
@@ -145,7 +177,8 @@ func CheckForumGetUsersVote(c *client.Forum, m *Modify) {
 	forum := CreateForum(c, nil, nil)
 
 	user := CreateUser(c, nil)
-	thread := CreateThread(c, nil, nil, nil)
+	author := CreateUser(c, nil)
+	thread := CreateThread(c, nil, forum, author)
 	var err error
 	// Like user1
 	thread.Votes = 1
@@ -167,7 +200,7 @@ func CheckForumGetUsersVote(c *client.Forum, m *Modify) {
 		WithLimit(limit).
 		WithSince(since).
 		WithDesc(desc).
-		WithContext(Expected(200, &[]models.User{}, nil)))
+		WithContext(Expected(200, &[]models.User{*author}, nil)))
 }
 
 func CheckForumGetUsersNotFound(c *client.Forum, m *Modify) {
