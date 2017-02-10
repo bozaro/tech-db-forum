@@ -57,11 +57,27 @@ var cmdFunc = &cli.Command{
 	},
 }
 
+type CmdFillT struct {
+	CmdCommonT
+}
+
+var cmdFill = &cli.Command{
+	Name: "fill",
+	Desc: "fill database with random data",
+	Argv: func() interface{} { return new(CmdFillT) },
+	Fn: func(ctx *cli.Context) error {
+		argv := ctx.Argv().(*CmdFillT)
+		os.Exit(tests.Fill(argv.Url))
+		return nil
+	},
+}
+
 func main() {
 	cli.RegisterFlagParser("url", newParserUrl)
 
 	if err := cli.Root(root,
 		cli.Tree(cmdFunc),
+		cli.Tree(cmdFill),
 	).Run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

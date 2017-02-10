@@ -81,6 +81,8 @@ func CreatePost(c *client.Forum, post *models.Post, thread *models.Thread) *mode
 		}
 		post.Thread = thread.ID
 		post.Forum = thread.Forum
+	} else {
+		slug = fmt.Sprintf("%d", post.Thread)
 	}
 	if slug == "" {
 		slug = fmt.Sprintf("%d", thread.ID)

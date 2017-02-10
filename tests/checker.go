@@ -41,9 +41,9 @@ func Register(checker Checker) {
 	checks = append(checks, checker)
 }
 
-func RunCheck(check Checker, report *Report, cfg *client.TransportConfig) {
+func RunCheck(check Checker, report *Report, url *url.URL) {
 	report.result = REPORT_SUCCESS
-	transport := http_transport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
+	transport := CreateTransport(url)
 	defer func() {
 		if r := recover(); r != nil {
 			report.AddError(r)
@@ -52,16 +52,23 @@ func RunCheck(check Checker, report *Report, cfg *client.TransportConfig) {
 	check.FnCheck(client.New(&CheckerTransport{transport, report}, nil))
 }
 
+func CreateTransport(url *url.URL) *http_transport.Runtime {
+	cfg := client.DefaultTransportConfig()
+	if url != nil {
+		cfg.WithHost(url.Host).WithSchemes([]string{url.Scheme}).WithBasePath(url.Path)
+	}
+	return http_transport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
+}
+
 func Run(url *url.URL) int {
 	total := 0
 	failed := 0
 	skipped := 0
 
-	cfg := client.DefaultTransportConfig().WithHost(url.Host).WithSchemes([]string{url.Scheme}).WithBasePath(url.Path)
 	for _, check := range checks {
 		log.Printf("=== RUN:  %s", check.Name)
 		report := Report{}
-		RunCheck(check, &report, cfg)
+		RunCheck(check, &report, url)
 		if report.result != REPORT_SUCCESS {
 			report.Show()
 		}
