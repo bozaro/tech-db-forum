@@ -6,6 +6,7 @@ import (
 	http_transport "github.com/go-openapi/runtime/client"
 	"log"
 	"net/http"
+	"net/url"
 )
 
 type Checker struct {
@@ -40,9 +41,8 @@ func Register(checker Checker) {
 	checks = append(checks, checker)
 }
 
-func RunCheck(check Checker, report *Report) {
+func RunCheck(check Checker, report *Report, cfg *client.TransportConfig) {
 	report.result = REPORT_SUCCESS
-	cfg := client.DefaultTransportConfig().WithHost("localhost:5000").WithSchemes([]string{"http"})
 	transport := http_transport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
 	defer func() {
 		if r := recover(); r != nil {
@@ -52,14 +52,16 @@ func RunCheck(check Checker, report *Report) {
 	check.FnCheck(client.New(&CheckerTransport{transport, report}, nil))
 }
 
-func Run() int {
+func Run(url *url.URL) int {
 	total := 0
 	failed := 0
 	skipped := 0
+
+	cfg := client.DefaultTransportConfig().WithHost(url.Host).WithSchemes([]string{url.Scheme}).WithBasePath(url.Path)
 	for _, check := range checks {
 		log.Printf("=== RUN:  %s", check.Name)
 		report := Report{}
-		RunCheck(check, &report)
+		RunCheck(check, &report, cfg)
 		if report.result != REPORT_SUCCESS {
 			report.Show()
 		}

@@ -73,3 +73,21 @@
 [submodule "vendor/github.com/drhodes/golorem"]
 	path = vendor/github.com/drhodes/golorem
 	url = https://github.com/drhodes/golorem
+[submodule "vendor/github.com/Bowery/prompt"]
+	path = vendor/github.com/Bowery/prompt
+	url = https://github.com/Bowery/prompt
+[submodule "vendor/github.com/labstack/gommon"]
+	path = vendor/github.com/labstack/gommon
+	url = https://github.com/labstack/gommon
+[submodule "vendor/github.com/mattn/go-colorable"]
+	path = vendor/github.com/mattn/go-colorable
+	url = https://github.com/mattn/go-colorable
+[submodule "vendor/github.com/mattn/go-isatty"]
+	path = vendor/github.com/mattn/go-isatty
+	url = https://github.com/mattn/go-isatty
+[submodule "vendor/github.com/mkideal/cli"]
+	path = vendor/github.com/mkideal/cli
+	url = https://github.com/mkideal/cli
+[submodule "vendor/github.com/mkideal/pkg"]
+	path = vendor/github.com/mkideal/pkg
+	url = https://github.com/mkideal/pkg
