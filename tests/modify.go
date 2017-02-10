@@ -3,7 +3,6 @@ package tests
 import (
 	"fmt"
 	"github.com/bozaro/tech-db-forum/generated/models"
-	//"strings"
 )
 
 type Modify int
@@ -51,6 +50,7 @@ func (self *Modify) Case(source string) string {
 		return source
 	}
 }
+
 func (self *Modify) SlugOrId(thread *models.Thread) string {
 	switch self.Int(3) {
 	case 0:
