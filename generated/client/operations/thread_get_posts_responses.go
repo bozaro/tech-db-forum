@@ -53,7 +53,7 @@ func NewThreadGetPostsOK() *ThreadGetPostsOK {
 
 */
 type ThreadGetPostsOK struct {
-	Payload []*models.Post
+	Payload *models.PostPage
 }
 
 func (o *ThreadGetPostsOK) Error() string {
@@ -62,8 +62,10 @@ func (o *ThreadGetPostsOK) Error() string {
 
 func (o *ThreadGetPostsOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(models.PostPage)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 

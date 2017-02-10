@@ -17,6 +17,20 @@ func (self *Modify) Int(n int) int {
 func (self *Modify) Bool() bool {
 	return self.Int(2) > 0
 }
+func (self *Modify) NullableBool() *bool {
+	switch self.Int(3) {
+	case 0:
+		v := true
+		return &v
+	case 1:
+		v := false
+		return &v
+	case 2:
+		return nil
+	default:
+		panic("Unexpected value")
+	}
+}
 
 func (self *Modify) Case(source string) string {
 	switch self.Int(3) {

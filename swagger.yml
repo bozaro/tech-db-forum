@@ -1,4 +1,5 @@
 swagger: '2.0'
+swagger: '2.0'
 info:
   title: forum
   description: |
@@ -451,13 +452,11 @@ paths:
         minimum: 1
         maximum: 10000
         description: Максимальное кол-во возвращаемых записей.
-      - name: since
+      - name: marker
         in: query
         type: string
-        format: date-time
         description: |
-          Дата создания сообщения, с которой будут выводиться записи
-          (сообщение я с указанной датой попадает в результат выборки).
+          Маркер для определения идентификатора текущей страницы сообщений (маркер может быть получен из какого-либо предыдущего запроса).
       - name: sort
         in: query
         type: string
@@ -487,9 +486,7 @@ paths:
           description: |
             Информация о сообщениях форума.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/Post'
+            $ref: '#/definitions/PostPage'
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
@@ -828,6 +825,20 @@ definitions:
         $ref: '#/definitions/Thread'
       forum:
         $ref: '#/definitions/Forum'
+  PostPage:
+    type: object
+    description: |
+      Страница с результатом поиска постов.
+    properties:
+      posts:
+        type: array
+        items:
+          $ref: '#/definitions/Post'
+      marker:
+        type: string
+        description: |
+          Маркер для получения следующей старницы.
+          Для пустой страницы должен передаваться исходный маркер.
   Vote:
     type: object
     description: |
