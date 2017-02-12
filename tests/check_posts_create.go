@@ -11,7 +11,7 @@ import (
 
 func init() {
 	Register(Checker{
-		Name:        "post_create_simple",
+		Name:        "posts_create_simple",
 		Description: "",
 		FnCheck:     Modifications(CheckPostCreateSimple),
 		Deps: []string{
@@ -19,108 +19,136 @@ func init() {
 		},
 	})
 	Register(Checker{
-		Name:        "post_create_unicode",
+		Name:        "posts_create_unicode",
 		Description: "",
 		FnCheck:     CheckPostCreateUnicode,
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 		},
 	})
 	Register(Checker{
-		Name:        "post_create_no_thread",
+		Name:        "posts_create_no_thread",
 		Description: "",
 		FnCheck:     CheckPostCreateNoThread,
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 		},
 	})
 	Register(Checker{
-		Name:        "post_create_no_author",
+		Name:        "posts_create_no_author",
 		Description: "",
 		FnCheck:     Modifications(CheckPostCreateNoAuthor),
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 		},
 	})
 	Register(Checker{
-		Name:        "post_create_with_parent",
+		Name:        "posts_create_with_parent",
 		Description: "",
 		FnCheck:     CheckPostCreateWithParent,
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 		},
 	})
 	Register(Checker{
-		Name:        "post_create_invalid_parent",
+		Name:        "posts_create_invalid_parent",
 		Description: "",
 		FnCheck:     Modifications(CheckPostCreateInvalidParent),
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 		},
 	})
 	Register(Checker{
-		Name:        "post_create_deep_parent",
+		Name:        "posts_create_deep_parent",
 		Description: "",
 		FnCheck:     CheckPostCreateDeepParent,
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 		},
 	})
+}
+
+func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) []*models.Post {
+	if len(posts) == 0 {
+		return []*models.Post{}
+	}
+	var postsThread int32 = 0
+	for _, post := range posts {
+		if post.Thread != 0 {
+			if postsThread == 0 {
+				postsThread = post.Thread
+			}
+			if postsThread != post.Thread {
+				panic("Invalid test data: can't create multiple posts in differ threads")
+			}
+		}
+	}
+	slug := ""
+	var postsForum string
+	if postsThread == 0 {
+		if thread == nil {
+			thread = CreateThread(c, nil, nil, nil)
+		} else {
+			slug = thread.Slug
+		}
+		postsThread = thread.ID
+		postsForum = thread.Forum
+	}
+	if slug == "" {
+		slug = fmt.Sprintf("%d", postsThread)
+	}
+	var author string
+
+	check_forum := postsForum != ""
+	if !check_forum {
+		postsForum = RandomForum().Slug
+	}
+
+	var expected []*models.Post
+	if thread != nil {
+		author = thread.Author
+	}
+	for n, post := range posts {
+		if post.Author == "" {
+			if author == "" {
+				author = CreateUser(c, nil).Nickname
+			}
+			post.Author = author
+		}
+		post.Thread = 0
+
+		expectedPost := *post
+		expectedPost.ID = int64(42 + n)
+		expectedPost.Thread = postsThread
+		expectedPost.Created = strfmt.DateTime(time.Now())
+		expectedPost.Forum = postsForum
+		expected = append(expected, &expectedPost)
+	}
+
+	result, err := c.Operations.PostsCreate(operations.NewPostsCreateParams().
+		WithSlugOrID(slug).
+		WithPosts(posts).
+		WithContext(Expected(201, &expected, func(data interface{}) interface{} {
+			posts := data.(*[]*models.Post)
+			for _, post := range *posts {
+				post.ID = 0
+				if !check_forum {
+					post.Forum = ""
+				}
+				post.Created = strfmt.NewDateTime()
+			}
+			return data
+		})))
+	CheckNil(err)
+
+	return result.Payload
 }
 
 func CreatePost(c *client.Forum, post *models.Post, thread *models.Thread) *models.Post {
 	if post == nil {
 		post = RandomPost()
 	}
-	slug := ""
-	if post.Thread == 0 {
-		if thread == nil {
-			thread = CreateThread(c, nil, nil, nil)
-		} else {
-			slug = thread.Slug
-		}
-		post.Thread = thread.ID
-		post.Forum = thread.Forum
-	}
-	if slug == "" {
-		slug = fmt.Sprintf("%d", thread.ID)
-	}
-	if post.Author == "" {
-		if thread == nil {
-			post.Author = CreateUser(c, nil).Nickname
-		} else {
-			post.Author = thread.Author
-		}
-	}
-
-	expected := *post
-	expected.ID = 42
-	expected.Thread = post.Thread
-	expected.Created = strfmt.DateTime(time.Now())
-
-	var parent *int64
-	if post.Parent != 0 {
-		parent = &post.Parent
-	}
-	post.Thread = 0
-	check_forum := post.Forum != ""
-
-	result, err := c.Operations.PostCreate(operations.NewPostCreateParams().
-		WithSlugOrID(slug).
-		WithParent(parent).
-		WithPost(post).
-		WithContext(Expected(201, &expected, func(data interface{}) interface{} {
-			post := data.(*models.Post)
-			post.ID = 0
-			if !check_forum {
-				post.Forum = ""
-			}
-			post.Created = strfmt.NewDateTime()
-			return data
-		})))
-	CheckNil(err)
-
-	return result.Payload
+	return CreatePosts(c, []*models.Post{post}, thread)[0]
 }
 
 func CheckPost(c *client.Forum, post *models.Post) {
@@ -145,17 +173,17 @@ func CheckPostCreateNoThread(c *client.Forum) {
 	post.Author = CreateUser(c, nil).Nickname
 
 	var err error
-	_, err = c.Operations.PostCreate(operations.NewPostCreateParams().
+	_, err = c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(THREAD_FAKE_ID).
-		WithPost(post).
+		WithPosts([]*models.Post{post}).
 		WithContext(Expected(404, nil, nil)))
-	CheckIsType(operations.NewPostCreateNotFound(), err)
+	CheckIsType(operations.NewPostsCreateNotFound(), err)
 
-	_, err = c.Operations.PostCreate(operations.NewPostCreateParams().
+	_, err = c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(RandomThread().Slug).
-		WithPost(post).
+		WithPosts([]*models.Post{post}).
 		WithContext(Expected(404, nil, nil)))
-	CheckIsType(operations.NewPostCreateNotFound(), err)
+	CheckIsType(operations.NewPostsCreateNotFound(), err)
 }
 
 func CheckPostCreateNoAuthor(c *client.Forum, m *Modify) {
@@ -163,11 +191,11 @@ func CheckPostCreateNoAuthor(c *client.Forum, m *Modify) {
 	post.Author = RandomNickname()
 	thread := CreateThread(c, nil, nil, nil)
 
-	_, err := c.Operations.PostCreate(operations.NewPostCreateParams().
+	_, err := c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(m.SlugOrId(thread)).
-		WithPost(post).
+		WithPosts([]*models.Post{post}).
 		WithContext(Expected(404, nil, nil)))
-	CheckIsType(operations.NewPostCreateNotFound(), err)
+	CheckIsType(operations.NewPostsCreateNotFound(), err)
 }
 
 func CheckPostCreateInvalidParent(c *client.Forum, m *Modify) {
@@ -178,12 +206,12 @@ func CheckPostCreateInvalidParent(c *client.Forum, m *Modify) {
 	if m.Bool() {
 		parentId = CreatePost(c, nil, nil).ID
 	}
-	_, err := c.Operations.PostCreate(operations.NewPostCreateParams().
+	post.Parent = parentId
+	_, err := c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(m.SlugOrId(thread)).
-		WithParent(&parentId).
-		WithPost(post).
+		WithPosts([]*models.Post{post}).
 		WithContext(Expected(409, nil, nil)))
-	CheckIsType(operations.NewPostCreateConflict(), err)
+	CheckIsType(operations.NewPostsCreateConflict(), err)
 }
 
 func CheckPostCreateWithParent(c *client.Forum) {

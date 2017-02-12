@@ -15,62 +15,6 @@ consumes:
 produces:
 - application/json
 paths:
-  /batch/forum/create:
-    post:
-      summary: Добавление новых форумов
-      tags:
-      - draft
-      description: |
-        Массовое добавление Форумов в базу.
-      operationId: batchForumCreate
-      parameters:
-      - name: forums
-        in: body
-        description: Данные форумов.
-        required: true
-        schema:
-          type: array
-          items:
-            $ref: '#/definitions/Forum'
-      responses:
-        200:
-          description: |
-            Форумы созданы успешно.
-          schema:
-            description: |
-              Список идентификаторов созданных форумов в том же порядке, в
-              котором были перечислены данные форумов в `forums`.
-            type: array
-            items:
-              type: number
-              format: int32
-        409:
-          description: |
-            Хотя бы один форум уже присутсвует в базе данных.
-  /batch/user/create:
-    post:
-      summary: Добавление новых пользователей
-      tags:
-      - draft
-      description: |
-        Массовое добавление пользователей в базу.
-      operationId: batchUserCreate
-      parameters:
-      - name: profiles
-        in: body
-        description: Данные пользовательских профилей.
-        required: true
-        schema:
-          type: array
-          items:
-            $ref: '#/definitions/User'
-      responses:
-        200:
-          description: |
-            Пользователи созданы успешно.
-        409:
-          description: |
-            Хотя бы один пользователь уже присутсвует в базе данных.
   /forum/create:
     post:
       summary: Создание форума
@@ -342,10 +286,10 @@ paths:
             $ref: '#/definitions/Status'
   /thread/{slug_or_id}/create:
     post:
-      summary: Создание нового поста
+      summary: Создание новых постов
       description: |
-        Добавление новой нового поста в ветку обсуждения на форум.
-      operationId: postCreate
+        Добавление новых постов в ветку обсуждения на форум.
+      operationId: postsCreate
       parameters:
       - name: slug_or_id
         in: path
@@ -353,32 +297,29 @@ paths:
         required: true
         type: string
         format: identity
-      - name: parent
-        in: query
-        description: Идентификатор родительского поста.
-        type: number
-        format: int64
-        required: false
-        default: 0
-      - name: post
+      - name: posts
         in: body
-        description: Данные поста.
+        description: Список создаваемых постов.
         required: true
         schema:
-          $ref: '#/definitions/Post'
+          type: array
+          items:
+            $ref: '#/definitions/Post'
       responses:
         201:
           description: |
-            Пост успешно создан.
-            Возвращает данные созданного поста.
+            Посты успешно созданы.
+            Возвращает данные созданных постов в том же порядке, в котором их передали на вход метода.
           schema:
-            $ref: '#/definitions/Post'
+            type: array
+            items:
+              $ref: '#/definitions/Post'
         404:
           description: |
             Ветка обсуждения отсутствует в базе данных.
         409:
           description: |
-            Родительский пост отсутсвует в текущей ветке обсуждения.
+            Хотя бы один родительский пост отсутсвует в текущей ветке обсуждения.
   /thread/{slug_or_id}/details:
     get:
       summary: Получение информации о ветке обсуждения
@@ -771,7 +712,6 @@ definitions:
         format: int64
         description: |
           Идентификатор родительского сообщения (0 - корневое сообщение обсуждения).
-        readOnly: true
       author:
         type: string
         format: identity

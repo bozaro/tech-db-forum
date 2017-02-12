@@ -9,7 +9,6 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/bozaro/tech-db-forum/generated/client/draft"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 )
 
@@ -53,8 +52,6 @@ func NewHTTPClientWithConfig(formats strfmt.Registry, cfg *TransportConfig) *For
 func New(transport runtime.ClientTransport, formats strfmt.Registry) *Forum {
 	cli := new(Forum)
 	cli.Transport = transport
-
-	cli.Draft = draft.New(transport, formats)
 
 	cli.Operations = operations.New(transport, formats)
 
@@ -102,8 +99,6 @@ func (cfg *TransportConfig) WithSchemes(schemes []string) *TransportConfig {
 
 // Forum is a client for forum
 type Forum struct {
-	Draft *draft.Client
-
 	Operations *operations.Client
 
 	Transport runtime.ClientTransport
@@ -112,8 +107,6 @@ type Forum struct {
 // SetTransport changes the transport on the client and all its subresources
 func (c *Forum) SetTransport(transport runtime.ClientTransport) {
 	c.Transport = transport
-
-	c.Draft.SetTransport(transport)
 
 	c.Operations.SetTransport(transport)
 
