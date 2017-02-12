@@ -182,37 +182,6 @@ func (a *Client) ForumGetUsers(params *ForumGetUsersParams) (*ForumGetUsersOK, e
 }
 
 /*
-PostCreate созданиеs нового поста
-
-Добавление новой нового поста в ветку обсуждения на форум.
-
-*/
-func (a *Client) PostCreate(params *PostCreateParams) (*PostCreateCreated, error) {
-	// TODO: Validate the params before sending
-	if params == nil {
-		params = NewPostCreateParams()
-	}
-
-	result, err := a.transport.Submit(&runtime.ClientOperation{
-		ID:                 "postCreate",
-		Method:             "POST",
-		PathPattern:        "/thread/{slug_or_id}/create",
-		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
-		Schemes:            []string{"http", "https"},
-		Params:             params,
-		Reader:             &PostCreateReader{formats: a.formats},
-		Context:            params.Context,
-		Client:             params.HTTPClient,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return result.(*PostCreateCreated), nil
-
-}
-
-/*
 PostGetOne получениеs информации о ветке обсуждения
 
 Получение информации о ветке обсуждения по его имени.
@@ -273,6 +242,37 @@ func (a *Client) PostUpdate(params *PostUpdateParams) (*PostUpdateOK, error) {
 		return nil, err
 	}
 	return result.(*PostUpdateOK), nil
+
+}
+
+/*
+PostsCreate созданиеs новых постов
+
+Добавление новых постов в ветку обсуждения на форум.
+
+*/
+func (a *Client) PostsCreate(params *PostsCreateParams) (*PostsCreateCreated, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewPostsCreateParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "postsCreate",
+		Method:             "POST",
+		PathPattern:        "/thread/{slug_or_id}/create",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http", "https"},
+		Params:             params,
+		Reader:             &PostsCreateReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*PostsCreateCreated), nil
 
 }
 

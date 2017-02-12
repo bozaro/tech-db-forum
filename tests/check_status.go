@@ -11,7 +11,7 @@ func init() {
 		Description: "",
 		FnCheck:     CheckStatus,
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 		},
 	})
 }

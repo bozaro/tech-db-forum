@@ -15,7 +15,7 @@ func init() {
 		Description: "",
 		FnCheck:     Modifications(CheckForumGetUsersSimple),
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 		},
 	})
 	Register(Checker{
@@ -23,7 +23,7 @@ func init() {
 		Description: "",
 		FnCheck:     Modifications(CheckForumGetUsersNotFound),
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 		},
 	})
 	Register(Checker{
@@ -31,7 +31,7 @@ func init() {
 		Description: "",
 		FnCheck:     Modifications(CheckForumGetUsersEmpty),
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 		},
 	})
 	Register(Checker{
@@ -39,7 +39,7 @@ func init() {
 		Description: "",
 		FnCheck:     Modifications(CheckForumGetUsersVote),
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 			"thread_create_vote_simple",
 		},
 	})
