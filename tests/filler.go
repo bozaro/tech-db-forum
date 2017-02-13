@@ -6,7 +6,37 @@ import (
 	"log"
 	"math/rand"
 	"net/url"
+	"sync"
+	"sync/atomic"
 )
+
+func FillUsers(c *client.Forum, parallel int, count int) []*models.User {
+	results := make(chan *models.User, 64)
+	var need int32 = int32(count)
+
+	// spawn four worker goroutines
+	var wg sync.WaitGroup
+	for i := 0; i < parallel; i++ {
+		wg.Add(1)
+		go func() {
+			for atomic.AddInt32(&need, -1) >= 0 {
+				results <- CreateUser(c, nil)
+			}
+			wg.Done()
+		}()
+	}
+
+	// get result
+	result := make([]*models.User, count)
+	for i := 0; i < count; i++ {
+		result[i] = <-results
+	}
+	close(results)
+
+	// wait for the workers to finish
+	wg.Wait()
+	return result
+}
 
 func Fill(url *url.URL) int {
 
@@ -16,10 +46,11 @@ func Fill(url *url.URL) int {
 	CheckNil(err)
 
 	log.Println("Creating users")
-	users := []*models.User{}
+	/*users := []*models.User{}
 	for i := 0; i < 1000; i++ {
 		users = append(users, CreateUser(c, nil))
-	}
+	}*/
+	users := FillUsers(c, 8, 1000)
 
 	log.Println("Creating forums")
 	forums := []*models.Forum{}
