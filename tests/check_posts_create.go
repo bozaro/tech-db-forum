@@ -19,6 +19,14 @@ func init() {
 		},
 	})
 	Register(Checker{
+		Name:        "posts_create_empty",
+		Description: "",
+		FnCheck:     Modifications(CheckPostCreateEmpty),
+		Deps: []string{
+			"thread_create_simple",
+		},
+	})
+	Register(Checker{
 		Name:        "posts_create_unicode",
 		Description: "",
 		FnCheck:     CheckPostCreateUnicode,
@@ -29,7 +37,7 @@ func init() {
 	Register(Checker{
 		Name:        "posts_create_no_thread",
 		Description: "",
-		FnCheck:     CheckPostCreateNoThread,
+		FnCheck:     Modifications(CheckPostCreateNoThread),
 		Deps: []string{
 			"posts_create_simple",
 		},
@@ -168,20 +176,31 @@ func CheckPostCreateSimple(c *client.Forum, m *Modify) {
 	CreatePost(c, nil, thread)
 }
 
-func CheckPostCreateNoThread(c *client.Forum) {
-	post := RandomPost()
-	post.Author = CreateUser(c, nil).Nickname
+func CheckPostCreateEmpty(c *client.Forum, m *Modify) {
+	thread := CreateThread(c, nil, nil, nil)
+	if m.Bool() {
+		thread.Slug = ""
+	}
+	CreatePosts(c, []*models.Post{}, thread)
+}
 
+func CheckPostCreateNoThread(c *client.Forum, m *Modify) {
+	posts := []*models.Post{}
+	if m.Bool() {
+		post := RandomPost()
+		post.Author = CreateUser(c, nil).Nickname
+		posts = append(posts, post)
+	}
 	var err error
 	_, err = c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(THREAD_FAKE_ID).
-		WithPosts([]*models.Post{post}).
+		WithPosts(posts).
 		WithContext(Expected(404, nil, nil)))
 	CheckIsType(operations.NewPostsCreateNotFound(), err)
 
 	_, err = c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(RandomThread().Slug).
-		WithPosts([]*models.Post{post}).
+		WithPosts(posts).
 		WithContext(Expected(404, nil, nil)))
 	CheckIsType(operations.NewPostsCreateNotFound(), err)
 }
