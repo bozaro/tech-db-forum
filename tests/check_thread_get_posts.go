@@ -86,20 +86,43 @@ func CreateTree(c *client.Forum, thread *models.Thread) []OrderedPost {
 	}
 	sort.Ints(keys)
 	result := []OrderedPost{}
-	for i, k := range keys {
-		v := nodes[k]
-		post := RandomPost()
-		if v.parent != nil {
-			post.Parent = v.parent.id
+	batch := []*node{}
+
+	flushPosts := func() {
+		if len(batch) == 0 {
+			panic("Internal test error")
 		}
-		post = CreatePost(c, post, thread)
-		v.id = post.ID
-		result = append(result, OrderedPost{
-			idx:  i,
-			top:  v.top,
-			path: v.path,
-			post: post,
-		})
+		posts := make([]*models.Post, len(batch))
+		for i, v := range batch {
+			post := RandomPost()
+			if v.parent != nil {
+				post.Parent = v.parent.id
+			}
+			posts[i] = post
+		}
+		posts = CreatePosts(c, posts, thread)
+		for i, v := range batch {
+			post := posts[i]
+			v.id = post.ID
+			result = append(result, OrderedPost{
+				idx:  len(result),
+				top:  v.top,
+				path: v.path,
+				post: post,
+			})
+		}
+		batch = []*node{}
+	}
+
+	for _, k := range keys {
+		v := nodes[k]
+		if v.parent != nil && v.parent.id == 0 {
+			flushPosts()
+		}
+		batch = append(batch, v)
+	}
+	if len(batch) > 0 {
+		flushPosts()
 	}
 	return result
 }
