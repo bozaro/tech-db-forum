@@ -13,7 +13,7 @@ func init() {
 		Description: "",
 		FnCheck:     CheckPostUpdateSimple,
 		Deps: []string{
-			"post_create_simple",
+			"posts_create_simple",
 		},
 	})
 	Register(Checker{

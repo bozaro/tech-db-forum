@@ -19,6 +19,10 @@ func (self *Report) AddError(err interface{}) {
 		self.result = REPORT_FAILED
 	}
 }
+func (self *Report) Skip(message string) {
+	self.messages = append(self.messages, message)
+	self.result = REPORT_SKIPPED
+}
 func (self *Report) Checkpoint(message string) bool {
 	if self.result == REPORT_FAILED {
 		return false
