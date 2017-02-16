@@ -36,6 +36,10 @@ func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *ht
 	if self.result == REPORT_FAILED {
 		return
 	}
+	if message == nil {
+		// TODO: Сделать адекватный вывод ошибок
+		return
+	}
 	msg := ""
 	if message != nil {
 		msg += "!!! ERROR:\n"

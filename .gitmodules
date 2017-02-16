@@ -91,3 +91,6 @@
 [submodule "vendor/github.com/mkideal/pkg"]
 	path = vendor/github.com/mkideal/pkg
 	url = https://github.com/mkideal/pkg
+[submodule "vendor/github.com/aryann/difflib"]
+	path = vendor/github.com/aryann/difflib
+	url = https://github.com/aryann/difflib

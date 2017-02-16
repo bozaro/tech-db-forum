@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sergi/go-diff/diffmatchpatch"
+	"github.com/aryann/difflib"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"strings"
 )
 
 const (
@@ -140,9 +141,10 @@ func GetDiff(actual string, expected string) string {
 	if actual == expected {
 		return ""
 	}
-	dmp := diffmatchpatch.New()
-	diffs := dmp.DiffMain(actual, expected, false)
-	return dmp.DiffPrettyText(diffs)
+	return difflib.HTMLDiff(
+		strings.Split(expected, "\n"),
+		strings.Split(actual, "\n"),
+	)
 }
 
 func GetDelta(data []byte, expected interface{}, prepare Filter) string {
