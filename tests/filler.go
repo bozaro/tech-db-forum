@@ -45,12 +45,13 @@ func Fill(url *url.URL) int {
 	_, err := c.Operations.Clear(nil)
 	CheckNil(err)
 
-	log.Println("Creating users")
-	/*users := []*models.User{}
-	for i := 0; i < 1000; i++ {
+	log.Println("Creating users (single thread)")
+	users := []*models.User{}
+	for i := 0; i < 10000; i++ {
 		users = append(users, CreateUser(c, nil))
-	}*/
-	users := FillUsers(c, 8, 1000)
+	}
+	log.Println("Creating users (multiple threads)")
+	users = FillUsers(c, 8, 10000)
 
 	log.Println("Creating forums")
 	forums := []*models.Forum{}
@@ -73,7 +74,7 @@ func Fill(url *url.URL) int {
 	for i := 0; i < 10000; i++ {
 		post := RandomPost()
 		post.Author = users[rand.Intn(len(users))].Nickname
-		post.Thread = threads[rand.Intn(len(users))].ID
+		post.Thread = threads[rand.Intn(len(threads))].ID
 		posts = append(posts, CreatePost(c, post, nil))
 	}
 
