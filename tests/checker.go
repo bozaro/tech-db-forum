@@ -142,6 +142,6 @@ func Run(url *url.URL) int {
 		}
 		log.Printf("--- DONE: %s (%s)", check.Name, result)
 	}
-	log.Printf("RESULT: %d total, %d skipped, %d failed)", total, skipped, failed)
+	log.Printf("RESULT: %d total, %d success, %d skipped, %d failed)", total, total-skipped-failed, skipped, failed)
 	return failed
 }

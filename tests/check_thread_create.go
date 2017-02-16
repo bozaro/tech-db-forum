@@ -91,6 +91,8 @@ func CreateThread(c *client.Forum, thread *models.Thread, forum *models.Forum, a
 			thread.ID = 0
 			if !check_create {
 				thread.Created = strfmt.NewDateTime()
+			} else {
+				thread.Created = strfmt.DateTime(time.Time(thread.Created).UTC())
 			}
 			return thread
 		})))
