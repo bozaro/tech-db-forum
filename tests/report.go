@@ -69,7 +69,12 @@ func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *ht
 	}
 	pass := &self.Pass[len(self.Pass)-1]
 
-	reportMessage := ReportMessage{}
+	reportMessage := ReportMessage{
+		Url:      req.URL.String(),
+		Request:  RequestInfo(req),
+		Response: ResponseInfo(res),
+		Example:  ResponseInfo(example),
+	}
 	if delta != nil {
 		reportMessage.Delta = template.HTML(DeltaToHtml(*delta))
 	}
@@ -88,8 +93,18 @@ type ReportPass struct {
 	Messages []ReportMessage
 }
 
+type ReportHttp struct {
+	Title  string
+	Header http.Header
+	Body   string
+}
+
 type ReportMessage struct {
-	Delta template.HTML
+	Url      string
+	Delta    template.HTML
+	Request  *ReportHttp
+	Response *ReportHttp
+	Example  *ReportHttp
 }
 
 func DeltaToText(delta []difflib.DiffRecord) string {
@@ -141,6 +156,41 @@ func (self *Report) Show() {
 	/*for _, message := range self.messages {
 		log.Println(message)
 	}*/
+}
+
+func RequestInfo(req *http.Request) *ReportHttp {
+	context, err := GetBody(&req.Body)
+	body := ""
+	if err == nil {
+		body += string(context)
+	}
+	if len(body) > 0 && !strings.HasSuffix(body, "\n") {
+		body += "\n"
+	}
+	return &ReportHttp{
+		Title:  req.Method + " " + req.URL.String() + " " + req.Proto,
+		Header: req.Header,
+		Body:   body,
+	}
+}
+
+func ResponseInfo(res *http.Response) *ReportHttp {
+	if res == nil {
+		return nil
+	}
+	context, err := GetBody(&res.Body)
+	body := ""
+	if err == nil {
+		body += string(context)
+	}
+	if len(body) > 0 && !strings.HasSuffix(body, "\n") {
+		body += "\n"
+	}
+	return &ReportHttp{
+		Title:  res.Proto + " " + res.Status,
+		Header: res.Header,
+		Body:   body,
+	}
 }
 
 func RequestToText(req *http.Request) string {
