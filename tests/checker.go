@@ -4,9 +4,11 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/go-openapi/runtime"
 	http_transport "github.com/go-openapi/runtime/client"
+	"html/template"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 )
 
@@ -49,7 +51,7 @@ func Register(checker Checker) {
 }
 
 func RunCheck(check Checker, report *Report, cfg *client.TransportConfig) {
-	report.result = REPORT_SUCCESS
+	report.Result = Success
 	transport := http_transport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
 	defer func() {
 		if r := recover(); r != nil {
@@ -108,9 +110,12 @@ func Run(url *url.URL, keep bool) int {
 	broken := map[string]bool{}
 
 	cfg := client.DefaultTransportConfig().WithHost(url.Host).WithSchemes([]string{url.Scheme}).WithBasePath(url.Path)
+	reports := []*Report{}
 	for _, check := range SortedChecks() {
 		log.Printf("=== RUN:  %s", check.Name)
-		report := Report{}
+		report := Report{
+			Checker: check,
+		}
 		skip := ""
 		for _, dep := range check.Deps {
 			if broken[dep] {
@@ -123,17 +128,17 @@ func Run(url *url.URL, keep bool) int {
 		} else {
 			report.Skip("Skipped by " + skip)
 		}
-		if report.result != REPORT_SUCCESS {
+		if report.Result != Success {
 			report.Show()
 		}
 		var result string
 		total++
-		switch report.result {
-		case REPORT_SKIPPED:
+		switch report.Result {
+		case Skipped:
 			broken[check.Name] = true
 			skipped++
 			result = "SKIPPED"
-		case REPORT_SUCCESS:
+		case Success:
 			result = "OK"
 		default:
 			broken[check.Name] = true
@@ -141,10 +146,27 @@ func Run(url *url.URL, keep bool) int {
 			result = "FAILED"
 		}
 		log.Printf("--- DONE: %s (%s)", check.Name, result)
+		reports = append(reports, &report)
 		if failed > 0 && !keep {
 			break
 		}
 	}
+
+	tmpl, err := template.ParseFiles("checker.tpl")
+	if err != nil {
+		panic(err)
+	}
+	file, err := os.Create("report.html")
+	defer file.Close()
+	err = tmpl.Execute(file, struct {
+		Reports []*Report
+	}{
+		Reports: reports,
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	log.Printf("RESULT: %d total, %d skipped, %d failed)", total, skipped, failed)
 	return failed
 }

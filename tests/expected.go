@@ -78,13 +78,13 @@ func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 		if res.StatusCode != self.code {
 			message := fmt.Sprintf("Unexpected status code: %d (expected %d)", res.StatusCode, self.code)
 			self.report.RoundTrip(req, res, self.Example(req), &message)
-			self.report.result = REPORT_FAILED
+			self.report.Result = Failed
 			return false
 		}
 		delta := GetDelta(body, self.body, self.filter)
 		if (res.StatusCode != self.code) || (delta != "") {
 			self.report.RoundTrip(req, res, self.Example(req), &delta)
-			self.report.result = REPORT_FAILED
+			self.report.Result = Failed
 			return false
 		} else {
 			self.report.RoundTrip(req, res, nil, nil)

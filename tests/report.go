@@ -7,24 +7,26 @@ import (
 	"strings"
 )
 
+type ResultType int
+
 const (
-	REPORT_FAILED  = 0
-	REPORT_SKIPPED = 1
-	REPORT_SUCCESS = 2
+	Failed ResultType = iota
+	Skipped
+	Success
 )
 
 func (self *Report) AddError(err interface{}) {
-	if self.result != REPORT_FAILED {
+	if self.Result != Failed {
 		self.messages = append(self.messages, fmt.Sprint(err))
-		self.result = REPORT_FAILED
+		self.Result = Failed
 	}
 }
 func (self *Report) Skip(message string) {
 	self.messages = append(self.messages, message)
-	self.result = REPORT_SKIPPED
+	self.Result = Skipped
 }
 func (self *Report) Checkpoint(message string) bool {
-	if self.result == REPORT_FAILED {
+	if self.Result == Failed {
 		return false
 	}
 	self.messages = []string{}
@@ -33,7 +35,7 @@ func (self *Report) Checkpoint(message string) bool {
 }
 
 func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, message *string) {
-	if self.result == REPORT_FAILED {
+	if self.Result == Failed {
 		return
 	}
 	if message == nil {
@@ -59,14 +61,15 @@ func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *ht
 			msg += "<<< EXPECTED RESPONSE EXAMPLE:\n"
 			msg += ResponseToText(example)
 		}
-		self.result = REPORT_FAILED
+		self.Result = Failed
 	}
 	self.messages = append(self.messages, msg)
 }
 
 type Report struct {
+	Checker  Checker
 	messages []string
-	result   int
+	Result   ResultType
 }
 
 func (self *Report) Show() {
