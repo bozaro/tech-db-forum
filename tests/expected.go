@@ -141,10 +141,19 @@ func GetDiff(actual string, expected string) string {
 	if actual == expected {
 		return ""
 	}
-	return difflib.HTMLDiff(
+	diff := difflib.Diff(
 		strings.Split(expected, "\n"),
 		strings.Split(actual, "\n"),
 	)
+	result := make([]string, len(diff))
+	for i, item := range diff {
+		result[i] = item.String()
+	}
+	return strings.Join(result, "\n")
+	/*return difflib.HTMLDiff(
+		strings.Split(expected, "\n"),
+		strings.Split(actual, "\n"),
+	)*/
 }
 
 func GetDelta(data []byte, expected interface{}, prepare Filter) string {
