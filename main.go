@@ -44,6 +44,7 @@ var root = &cli.Command{
 
 type CmdFuncT struct {
 	CmdCommonT
+	Keep bool `cli:"keep" usage:"Don't stop after first failed test'"`
 }
 
 var cmdFunc = &cli.Command{
@@ -52,7 +53,7 @@ var cmdFunc = &cli.Command{
 	Argv: func() interface{} { return new(CmdFuncT) },
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdFuncT)
-		os.Exit(tests.Run(argv.Url))
+		os.Exit(tests.Run(argv.Url, argv.Keep))
 		return nil
 	},
 }

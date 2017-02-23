@@ -101,7 +101,7 @@ func SortedChecks() []Checker {
 	return result
 }
 
-func Run(url *url.URL) int {
+func Run(url *url.URL, keep bool) int {
 	total := 0
 	failed := 0
 	skipped := 0
@@ -141,6 +141,9 @@ func Run(url *url.URL) int {
 			result = "FAILED"
 		}
 		log.Printf("--- DONE: %s (%s)", check.Name, result)
+		if failed > 0 && !keep {
+			break
+		}
 	}
 	log.Printf("RESULT: %d total, %d skipped, %d failed)", total, skipped, failed)
 	return failed
