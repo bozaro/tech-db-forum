@@ -146,7 +146,7 @@ func CheckForumGetUsersCollation(c *client.Forum, m *Modify) {
 	// Пост, который не участвует в данном форуме
 	CreatePost(c, nil, nil)
 	// Суффиксы пользователей
-	prefix := nick_id.MustGenerate()
+	prefix := nick_id.Generate()
 	suffixes := []string{
 		"joe",
 		"_joe",

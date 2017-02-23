@@ -5,22 +5,21 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/models"
 	"github.com/drhodes/golorem"
 	"github.com/go-openapi/strfmt"
-	"github.com/ventu-io/go-shortid"
 	"math/rand"
 	"time"
 )
 
-const ABC_NICK = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_."
-const ABC_SLUG = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-"
+const ABC_NICK = "0123456789abcdefghijklmnopqrstuvwxyz_."
+const ABC_SLUG = "0123456789abcdefghijklmnopqrstuvwxyz_-"
 const POST_FAKE_ID int64 = 2139800938
 const THREAD_FAKE_ID = "2139800939"
 
-var nick_id *shortid.Shortid
-var slug_id *shortid.Shortid
+var nick_id *Shortid
+var slug_id *Shortid
 
 func init() {
-	nick_id = shortid.MustNew(0, ABC_NICK, 1)
-	slug_id = shortid.MustNew(0, ABC_SLUG, 1)
+	nick_id = NewShortid(ABC_NICK)
+	slug_id = NewShortid(ABC_SLUG)
 }
 
 func RandomTime() time.Time {
@@ -32,7 +31,7 @@ func RandomTime() time.Time {
 }
 
 func RandomMarker() string {
-	return slug_id.MustGenerate()
+	return slug_id.Generate()
 }
 
 func RandomEmail() strfmt.Email {
@@ -40,7 +39,7 @@ func RandomEmail() strfmt.Email {
 }
 
 func RandomNickname() string {
-	return lorem.Word(1, 10) + "." + nick_id.MustGenerate()
+	return lorem.Word(1, 10) + "." + nick_id.Generate()
 }
 
 func RandomUser() *models.User {
@@ -55,7 +54,7 @@ func RandomUser() *models.User {
 func RandomForum() *models.Forum {
 	return &models.Forum{
 		Posts: 0,
-		Slug:  slug_id.MustGenerate(),
+		Slug:  slug_id.Generate(),
 		Title: lorem.Sentence(1, 10),
 	}
 }
@@ -63,7 +62,7 @@ func RandomForum() *models.Forum {
 func RandomThread() *models.Thread {
 	return &models.Thread{
 		Message: lorem.Paragraph(1, 20),
-		Slug:    slug_id.MustGenerate(),
+		Slug:    slug_id.Generate(),
 		Title:   lorem.Sentence(1, 10),
 		Created: strfmt.DateTime(RandomTime()),
 	}

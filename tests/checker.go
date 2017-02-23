@@ -48,15 +48,23 @@ func Register(checker Checker) {
 	registeredChecks = append(registeredChecks, checker)
 }
 
-func RunCheck(check Checker, report *Report, cfg *client.TransportConfig) {
+func RunCheck(check Checker, report *Report, url *url.URL) {
 	report.result = REPORT_SUCCESS
-	transport := http_transport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
+	transport := CreateTransport(url)
 	defer func() {
 		if r := recover(); r != nil {
 			report.AddError(r)
 		}
 	}()
 	check.FnCheck(client.New(&CheckerTransport{transport, report}, nil))
+}
+
+func CreateTransport(url *url.URL) *http_transport.Runtime {
+	cfg := client.DefaultTransportConfig()
+	if url != nil {
+		cfg.WithHost(url.Host).WithSchemes([]string{url.Scheme}).WithBasePath(url.Path)
+	}
+	return http_transport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
 }
 
 func SortedChecks() []Checker {
@@ -107,7 +115,6 @@ func Run(url *url.URL) int {
 	skipped := 0
 	broken := map[string]bool{}
 
-	cfg := client.DefaultTransportConfig().WithHost(url.Host).WithSchemes([]string{url.Scheme}).WithBasePath(url.Path)
 	for _, check := range SortedChecks() {
 		log.Printf("=== RUN:  %s", check.Name)
 		report := Report{}
@@ -119,7 +126,7 @@ func Run(url *url.URL) int {
 			}
 		}
 		if skip == "" {
-			RunCheck(check, &report, cfg)
+			RunCheck(check, &report, url)
 		} else {
 			report.Skip("Skipped by " + skip)
 		}

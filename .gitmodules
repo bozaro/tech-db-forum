@@ -46,9 +46,6 @@
 [submodule "vendor/github.com/mitchellh/mapstructure"]
 	path = vendor/github.com/mitchellh/mapstructure
 	url = https://github.com/mitchellh/mapstructure
-[submodule "vendor/github.com/ventu-io/go-shortid"]
-	path = vendor/github.com/ventu-io/go-shortid
-	url = https://github.com/ventu-io/go-shortid
 [submodule "vendor/golang.org/x/net"]
 	path = vendor/golang.org/x/net
 	url = https://go.googlesource.com/net
@@ -58,18 +55,9 @@
 [submodule "vendor/gopkg.in/yaml.v2"]
 	path = vendor/gopkg.in/yaml.v2
 	url = https://gopkg.in/yaml.v2
-[submodule "vendor/github.com/davecgh/go-spew"]
-	path = vendor/github.com/davecgh/go-spew
-	url = https://github.com/davecgh/go-spew
-[submodule "vendor/github.com/pmezard/go-difflib"]
-	path = vendor/github.com/pmezard/go-difflib
-	url = https://github.com/pmezard/go-difflib
 [submodule "vendor/github.com/sergi/go-diff"]
 	path = vendor/github.com/sergi/go-diff
 	url = https://github.com/sergi/go-diff
-[submodule "vendor/github.com/stretchr/testify"]
-	path = vendor/github.com/stretchr/testify
-	url = https://github.com/stretchr/testify
 [submodule "vendor/github.com/drhodes/golorem"]
 	path = vendor/github.com/drhodes/golorem
 	url = https://github.com/drhodes/golorem
