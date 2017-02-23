@@ -1,7 +1,10 @@
 package tests
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/aryann/difflib"
+	"html/template"
 	"log"
 	"net/http"
 	"strings"
@@ -17,35 +20,33 @@ const (
 
 func (self *Report) AddError(err interface{}) {
 	if self.Result != Failed {
-		self.messages = append(self.messages, fmt.Sprint(err))
+		//self.messages = append(self.messages, fmt.Sprint(err))
 		self.Result = Failed
 	}
 }
+
 func (self *Report) Skip(message string) {
-	self.messages = append(self.messages, message)
+	self.SkippedBy = append(self.SkippedBy, message)
 	self.Result = Skipped
 }
+
 func (self *Report) Checkpoint(message string) bool {
 	if self.Result == Failed {
 		return false
 	}
-	self.messages = []string{}
+	self.Pass = append(self.Pass, ReportPass{Name: message})
 	log.Println("  " + message)
 	return true
 }
 
-func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, message *string) {
+func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, delta *[]difflib.DiffRecord) {
 	if self.Result == Failed {
 		return
 	}
-	if message == nil {
-		// TODO: Сделать адекватный вывод ошибок
-		return
-	}
 	msg := ""
-	if message != nil {
+	if delta != nil {
 		msg += "!!! ERROR:\n"
-		msg += *message
+		msg += DeltaToText(*delta)
 		if !strings.HasSuffix(msg, "\n") {
 			msg += "\n"
 		}
@@ -56,26 +57,90 @@ func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *ht
 		msg += "<<< ACTUAL RESPONSE:\n"
 		msg += ResponseToText(res)
 	}
-	if message != nil {
+	if delta != nil {
 		if example != nil {
 			msg += "<<< EXPECTED RESPONSE EXAMPLE:\n"
 			msg += ResponseToText(example)
 		}
 		self.Result = Failed
 	}
-	self.messages = append(self.messages, msg)
+	if len(self.Pass) == 0 {
+		self.Pass = []ReportPass{{Name: ""}}
+	}
+	pass := &self.Pass[len(self.Pass)-1]
+
+	reportMessage := ReportMessage{}
+	if delta != nil {
+		reportMessage.Delta = template.HTML(DeltaToHtml(*delta))
+	}
+	pass.Messages = append(pass.Messages, reportMessage)
 }
 
 type Report struct {
-	Checker  Checker
-	messages []string
-	Result   ResultType
+	Checker   Checker
+	Pass      []ReportPass
+	SkippedBy []string
+	Result    ResultType
+}
+
+type ReportPass struct {
+	Name     string
+	Messages []ReportMessage
+}
+
+type ReportMessage struct {
+	Delta template.HTML
+}
+
+func DeltaToText(delta []difflib.DiffRecord) string {
+	result := make([]string, len(delta))
+	for i, item := range delta {
+		switch item.Delta {
+		case difflib.LeftOnly:
+			result[i] = Colorize(31, item.String())
+		case difflib.RightOnly:
+			result[i] = Colorize(32, item.String())
+		default:
+			result[i] = item.String()
+		}
+	}
+	return strings.Join(result, "\n")
+}
+
+func DeltaToHtml(delta []difflib.DiffRecord) string {
+	buf := bytes.NewBufferString("")
+	i, j := 0, 0
+	for _, d := range delta {
+		buf.WriteString(`<tr><td class="line-num">`)
+		if d.Delta == difflib.Common || d.Delta == difflib.LeftOnly {
+			i++
+			fmt.Fprintf(buf, "%d</td><td", i)
+			if d.Delta == difflib.LeftOnly {
+				fmt.Fprint(buf, ` class="deleted"`)
+			}
+			fmt.Fprintf(buf, "><pre>%s</pre>", d.Payload)
+		} else {
+			buf.WriteString("</td><td>")
+		}
+		buf.WriteString("</td><td")
+		if d.Delta == difflib.Common || d.Delta == difflib.RightOnly {
+			j++
+			if d.Delta == difflib.RightOnly {
+				fmt.Fprint(buf, ` class="added"`)
+			}
+			fmt.Fprintf(buf, `><pre>%s</pre></td><td class="line-num">%d`, d.Payload, j)
+		} else {
+			buf.WriteString("></td><td>")
+		}
+		buf.WriteString("</td></tr>\n")
+	}
+	return buf.String()
 }
 
 func (self *Report) Show() {
-	for _, message := range self.messages {
+	/*for _, message := range self.messages {
 		log.Println(message)
-	}
+	}*/
 }
 
 func RequestToText(req *http.Request) string {

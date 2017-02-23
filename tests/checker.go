@@ -116,17 +116,13 @@ func Run(url *url.URL, keep bool) int {
 		report := Report{
 			Checker: check,
 		}
-		skip := ""
 		for _, dep := range check.Deps {
 			if broken[dep] {
-				skip = dep
-				break
+				report.Skip(dep)
 			}
 		}
-		if skip == "" {
+		if report.Result != Skipped {
 			RunCheck(check, &report, cfg)
-		} else {
-			report.Skip("Skipped by " + skip)
 		}
 		if report.Result != Success {
 			report.Show()

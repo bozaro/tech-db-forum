@@ -76,14 +76,22 @@ func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 		}
 
 		if res.StatusCode != self.code {
-			message := fmt.Sprintf("Unexpected status code: %d (expected %d)", res.StatusCode, self.code)
-			self.report.RoundTrip(req, res, self.Example(req), &message)
+			self.report.RoundTrip(req, res, self.Example(req), &[]difflib.DiffRecord{
+				{
+					Delta:   difflib.LeftOnly,
+					Payload: fmt.Sprintf("Status: %d %s", self.code, http.StatusText(self.code)),
+				},
+				{
+					Delta:   difflib.RightOnly,
+					Payload: fmt.Sprintf("Status: %d %s", res.StatusCode, http.StatusText(res.StatusCode)),
+				},
+			})
 			self.report.Result = Failed
 			return false
 		}
 		delta := GetDelta(body, self.body, self.filter)
-		if (res.StatusCode != self.code) || (delta != "") {
-			self.report.RoundTrip(req, res, self.Example(req), &delta)
+		if (res.StatusCode != self.code) || (delta != nil) {
+			self.report.RoundTrip(req, res, self.Example(req), delta)
 			self.report.Result = Failed
 			return false
 		} else {
@@ -138,30 +146,15 @@ func ToJson(obj interface{}) string {
 	return string(data)
 }
 
-func GetDiff(actual string, expected string) string {
+func GetDiff(actual string, expected string) *[]difflib.DiffRecord {
 	if actual == expected {
-		return ""
+		return nil
 	}
-	diff := difflib.Diff(
+	delta := difflib.Diff(
 		strings.Split(expected, "\n"),
 		strings.Split(actual, "\n"),
 	)
-	result := make([]string, len(diff))
-	for i, item := range diff {
-		switch item.Delta {
-		case difflib.LeftOnly:
-			result[i] = Colorize(31, item.String())
-		case difflib.RightOnly:
-			result[i] = Colorize(32, item.String())
-		default:
-			result[i] = item.String()
-		}
-	}
-	return strings.Join(result, "\n")
-	/*return difflib.HTMLDiff(
-		strings.Split(expected, "\n"),
-		strings.Split(actual, "\n"),
-	)*/
+	return &delta
 }
 
 func Colorize(color int, message string) string {
@@ -171,9 +164,9 @@ func Colorize(color int, message string) string {
 	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", color, message)
 }
 
-func GetDelta(data []byte, expected interface{}, prepare Filter) string {
+func GetDelta(data []byte, expected interface{}, prepare Filter) *[]difflib.DiffRecord {
 	if expected == nil {
-		return ""
+		return nil
 	}
 	expected_json := ToJson(prepare(expected))
 	var actual interface{} = reflect.New(reflect.TypeOf(expected).Elem()).Interface()
@@ -183,7 +176,7 @@ func GetDelta(data []byte, expected interface{}, prepare Filter) string {
 
 	actual_json := ToJson(prepare(actual))
 	if expected_json == actual_json {
-		return ""
+		return nil
 	}
 	return GetDiff(actual_json, expected_json)
 }
