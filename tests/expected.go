@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"runtime"
 	"strings"
 )
 
@@ -147,13 +148,27 @@ func GetDiff(actual string, expected string) string {
 	)
 	result := make([]string, len(diff))
 	for i, item := range diff {
-		result[i] = item.String()
+		switch item.Delta {
+		case difflib.LeftOnly:
+			result[i] = Colorize(31, item.String())
+		case difflib.RightOnly:
+			result[i] = Colorize(32, item.String())
+		default:
+			result[i] = item.String()
+		}
 	}
 	return strings.Join(result, "\n")
 	/*return difflib.HTMLDiff(
 		strings.Split(expected, "\n"),
 		strings.Split(actual, "\n"),
 	)*/
+}
+
+func Colorize(color int, message string) string {
+	if runtime.GOOS == "windows" {
+		return message
+	}
+	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", color, message)
 }
 
 func GetDelta(data []byte, expected interface{}, prepare Filter) string {
