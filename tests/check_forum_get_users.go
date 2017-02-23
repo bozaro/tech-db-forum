@@ -19,6 +19,14 @@ func init() {
 		},
 	})
 	Register(Checker{
+		Name:        "forum_get_users_collation",
+		Description: "",
+		FnCheck:     Modifications(CheckForumGetUsersCollation),
+		Deps: []string{
+			"posts_create_simple",
+		},
+	})
+	Register(Checker{
 		Name:        "forum_get_users_notfound",
 		Description: "",
 		FnCheck:     Modifications(CheckForumGetUsersNotFound),
@@ -58,6 +66,101 @@ func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
 	// Пользователи
 	for i := 0; i < 8; i++ {
 		user := CreateUser(c, nil)
+		users = append(users, user)
+	}
+	// Ветви
+	for i := 0; i < 4; i++ {
+		user := users[i/2]
+		thread := CreateThread(c, nil, forum, user)
+		threads = append(threads, thread)
+		forum_users[user.Nickname] = user
+	}
+	// Посты
+	for i := 0; i < 10; i++ {
+		user := users[i%(len(users)-1)+1]
+		thread := threads[rand.Intn(len(threads))]
+		post := RandomPost()
+		post.Author = user.Nickname
+		CreatePost(c, post, thread)
+		forum_users[user.Nickname] = user
+	}
+
+	// Список пользователей
+	all_expected := []models.User{}
+	for _, user := range forum_users {
+		all_expected = append(all_expected, *user)
+	}
+	sort.Sort(UserByNickname(all_expected))
+
+	// Desc
+	desc := m.NullableBool()
+	small := time.Millisecond
+	if desc != nil && *desc {
+		small = -small
+		sort.Sort(sort.Reverse(UserByNickname(all_expected)))
+	}
+
+	// Check read all
+	c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
+		WithSlug(forum.Slug).
+		WithDesc(desc).
+		WithContext(Expected(200, &all_expected, nil)))
+
+	// Check read by 4 records
+	limit := int32(4)
+	for n := 0; n < len(all_expected); n += int(limit) - 1 {
+		m := n + int(limit)
+		if m > len(all_expected) {
+			m = len(all_expected)
+		}
+		expected := all_expected[n:m]
+		var since *string = nil
+		if n > 0 {
+			since = &all_expected[n-1].Nickname
+		}
+		c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
+			WithSlug(forum.Slug).
+			WithLimit(&limit).
+			WithDesc(desc).
+			WithSince(since).
+			WithContext(Expected(200, &expected, nil)))
+	}
+
+	// Check read after all
+	c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
+		WithSlug(forum.Slug).
+		WithLimit(&limit).
+		WithDesc(desc).
+		WithSince(&all_expected[len(all_expected)-1].Nickname).
+		WithContext(Expected(200, &[]models.Thread{}, nil)))
+}
+
+func CheckForumGetUsersCollation(c *client.Forum, m *Modify) {
+	forum := CreateForum(c, nil, nil)
+	threads := []*models.Thread{}
+	users := []*models.User{}
+	created := time.Now()
+	created.Round(time.Millisecond)
+
+	forum_users := map[string]*models.User{}
+	// Пост, который не участвует в данном форуме
+	CreatePost(c, nil, nil)
+	// Суффиксы пользователей
+	prefix := nick_id.MustGenerate()
+	suffixes := []string{
+		"joe",
+		"_joe",
+		".joe",
+		"Jill",
+		"bill",
+		"Bob",
+		"Zod",
+	}
+	// Пользователи
+	for _, suffix := range suffixes {
+		user := RandomUser()
+		user.Nickname = prefix + suffix
+		user = CreateUser(c, user)
 		users = append(users, user)
 	}
 	// Ветви
