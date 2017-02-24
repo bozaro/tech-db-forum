@@ -2,6 +2,7 @@ package tests
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/aryann/difflib"
 	"html/template"
@@ -96,9 +97,10 @@ type ReportPass struct {
 }
 
 type ReportHttp struct {
-	Title  string
-	Header http.Header
-	Body   string
+	Title    string
+	Header   http.Header
+	BodyRaw  string
+	BodyJson *string
 }
 
 type ReportMessage struct {
@@ -170,9 +172,10 @@ func RequestInfo(req *http.Request) *ReportHttp {
 		body += "\n"
 	}
 	return &ReportHttp{
-		Title:  req.Method + " " + req.URL.String() + " " + req.Proto,
-		Header: req.Header,
-		Body:   body,
+		Title:    req.Method + " " + req.URL.String() + " " + req.Proto,
+		Header:   req.Header,
+		BodyRaw:  body,
+		BodyJson: PrettyJson(body),
 	}
 }
 
@@ -184,11 +187,23 @@ func ResponseInfo(res *http.Response) *ReportHttp {
 	if err != nil {
 		panic(err)
 	}
+	body := string(context)
 	return &ReportHttp{
-		Title:  res.Proto + " " + res.Status,
-		Header: res.Header,
-		Body:   string(context),
+		Title:    res.Proto + " " + res.Status,
+		Header:   res.Header,
+		BodyRaw:  body,
+		BodyJson: PrettyJson(body),
 	}
+}
+
+func PrettyJson(body string) *string {
+	var out bytes.Buffer
+	err := json.Indent(&out, []byte(body), "", "  ")
+	if err != nil {
+		return nil
+	}
+	res := out.String()
+	return &res
 }
 
 func (self *ReportHttp) String() string {
@@ -199,7 +214,11 @@ func (self *ReportHttp) String() string {
 		}
 	}
 	msg += "\n"
-	msg += self.Body
+	if self.BodyJson != nil {
+		msg += *self.BodyJson
+	} else {
+		msg += self.BodyRaw
+	}
 	if !strings.HasSuffix(msg, "\n") {
 		msg += "\n"
 	}
