@@ -29,7 +29,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Результат функционального тестирования</title>
+    <title>
+        {{ if eq .Failed 0 }}
+        [SUCCESS]
+        {{ else }}
+        [FAILED]
+        {{ end }}
+        Результат функционального тестирования
+    </title>
     {{ asset "style type='text/css'" "highlight.js/styles/idea.css" }}
     {{ asset "style type='text/css'" "template.css" }}
     {{ asset "script" "highlight.js/highlight.pack.js" }}
@@ -56,12 +63,12 @@
     </script>
 </head>
 <body>
-    {{ if eq .Failed 0 }}
-    <div class="total_result success">[SUCCESS]</div>
-    {{ else }}
-    <div class="total_result failed">[FAILED]</div>
-    {{ end }}
-    <h1>
+{{ if eq .Failed 0 }}
+<div class="total_result success">[SUCCESS]</div>
+{{ else }}
+<div class="total_result failed">[FAILED]</div>
+{{ end }}
+<h1>
     Результат функционального тестирования
 </h1>
 <div class="summary">
