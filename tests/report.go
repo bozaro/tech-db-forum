@@ -1,108 +1,205 @@
 package tests
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"log"
+	"github.com/aryann/difflib"
+	"html/template"
 	"net/http"
 	"strings"
 )
 
+type ResultType int
+
 const (
-	REPORT_FAILED  = 0
-	REPORT_SKIPPED = 1
-	REPORT_SUCCESS = 2
+	Failed ResultType = iota
+	Skipped
+	Success
 )
 
 func (self *Report) AddError(err interface{}) {
-	if self.result != REPORT_FAILED {
-		self.messages = append(self.messages, fmt.Sprint(err))
-		self.result = REPORT_FAILED
+	if self.Result != Failed {
+		// Добавляем сообщение в отчет
+		if len(self.Pass) == 0 {
+			self.Pass = []ReportPass{{Name: ""}}
+		}
+		pass := &self.Pass[len(self.Pass)-1]
+		pass.Failure = fmt.Sprintf("%s", err)
+		self.Result = Failed
+		log.Error(err)
 	}
 }
+
 func (self *Report) Skip(message string) {
-	self.messages = append(self.messages, message)
-	self.result = REPORT_SKIPPED
+	self.SkippedBy = append(self.SkippedBy, message)
+	self.Result = Skipped
 }
+
 func (self *Report) Checkpoint(message string) bool {
-	if self.result == REPORT_FAILED {
+	if self.Result == Failed {
 		return false
 	}
-	self.messages = []string{}
-	log.Println("  " + message)
+	self.Pass = append(self.Pass, ReportPass{Name: message})
+	log.Debug("  " + message)
 	return true
 }
 
-func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, message *string) {
-	if self.result == REPORT_FAILED {
+func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, delta *[]difflib.DiffRecord) {
+	if self.Result == Failed {
 		return
 	}
-	msg := ""
-	if message != nil {
-		msg += "!!! ERROR:\n"
-		msg += *message
-		if !strings.HasSuffix(msg, "\n") {
-			msg += "\n"
-		}
+
+	reportMessage := ReportMessage{
+		Url:      req.URL.String(),
+		Request:  RequestInfo(req),
+		Response: ResponseInfo(res),
+		Example:  ResponseInfo(example),
 	}
-	msg += ">>> REQUEST:\n"
-	msg += RequestToText(req)
-	if res != nil {
-		msg += "<<< ACTUAL RESPONSE:\n"
-		msg += ResponseToText(res)
-	}
-	if message != nil {
+	if delta != nil {
+		reportMessage.Delta = template.HTML(DeltaToHtml(*delta))
+
+		log.Warningf("Request:\n%s", reportMessage.Request.String())
+		log.Warningf("Actual response:\n%s", reportMessage.Response.String())
 		if example != nil {
-			msg += "<<< EXPECTED RESPONSE EXAMPLE:\n"
-			msg += ResponseToText(example)
+			log.Warningf("Expected response like:\n%s", reportMessage.Example.String())
 		}
-		self.result = REPORT_FAILED
+		log.Errorf("Error:\n%s", DeltaToText(*delta))
+		self.Result = Failed
 	}
-	self.messages = append(self.messages, msg)
+	// Добавляем сообщение в отчет
+	if len(self.Pass) == 0 {
+		self.Pass = []ReportPass{{Name: ""}}
+	}
+	pass := &self.Pass[len(self.Pass)-1]
+	pass.Messages = append(pass.Messages, reportMessage)
 }
 
 type Report struct {
-	messages []string
-	result   int
+	Checker   Checker
+	Pass      []ReportPass
+	SkippedBy []string
+	Result    ResultType
 }
 
-func (self *Report) Show() {
-	for _, message := range self.messages {
-		log.Println(message)
+type ReportPass struct {
+	Name     string
+	Failure  string
+	Messages []ReportMessage
+}
+
+type ReportHttp struct {
+	Title    string
+	Header   http.Header
+	BodyRaw  string
+	BodyJson string
+}
+
+type ReportMessage struct {
+	Url      string
+	Delta    template.HTML
+	Request  *ReportHttp
+	Response *ReportHttp
+	Example  *ReportHttp
+}
+
+func DeltaToText(delta []difflib.DiffRecord) string {
+	result := make([]string, len(delta))
+	for i, item := range delta {
+		switch item.Delta {
+		case difflib.LeftOnly:
+			result[i] = Colorize(31, item.String())
+		case difflib.RightOnly:
+			result[i] = Colorize(32, item.String())
+		default:
+			result[i] = item.String()
+		}
+	}
+	return strings.Join(result, "\n")
+}
+
+func DeltaToHtml(delta []difflib.DiffRecord) string {
+	buf := bytes.NewBufferString("")
+	i, j := 0, 0
+	for _, d := range delta {
+		buf.WriteString(`<tr><td class="line-num line-num-l">`)
+		if d.Delta == difflib.Common || d.Delta == difflib.LeftOnly {
+			i++
+			fmt.Fprintf(buf, "%d</td><td", i)
+			if d.Delta == difflib.LeftOnly {
+				fmt.Fprint(buf, ` class="deleted"`)
+			}
+			fmt.Fprintf(buf, `><pre><code class="javascript">%s</code></pre>`, d.Payload)
+		} else {
+			buf.WriteString("</td><td>")
+		}
+		buf.WriteString("</td><td")
+		if d.Delta == difflib.Common || d.Delta == difflib.RightOnly {
+			j++
+			if d.Delta == difflib.RightOnly {
+				fmt.Fprint(buf, ` class="added"`)
+			}
+			fmt.Fprintf(buf, `><pre><code class="javascript">%s</code></pre></td><td class="line-num line-num-r">%d`, d.Payload, j)
+		} else {
+			buf.WriteString(`></td><td class="line-num line-num-r">`)
+		}
+		buf.WriteString("</td></tr>\n")
+	}
+	return buf.String()
+}
+
+func RequestInfo(req *http.Request) *ReportHttp {
+	context, err := GetBody(&req.Body)
+	body := ""
+	if err == nil {
+		body += string(context)
+	}
+	if len(body) > 0 && !strings.HasSuffix(body, "\n") {
+		body += "\n"
+	}
+	return &ReportHttp{
+		Title:    req.Method + " " + req.URL.String() + " " + req.Proto,
+		Header:   req.Header,
+		BodyRaw:  body,
+		BodyJson: PrettyJson(body),
 	}
 }
 
-func RequestToText(req *http.Request) string {
-	msg := req.Method + " " + req.URL.String() + " " + req.Proto + "\n"
-	for key, vals := range req.Header {
+func ResponseInfo(res *http.Response) *ReportHttp {
+	if res == nil {
+		return nil
+	}
+	context, err := GetBody(&res.Body)
+	if err != nil {
+		panic(err)
+	}
+	body := string(context)
+	return &ReportHttp{
+		Title:    res.Proto + " " + res.Status,
+		Header:   res.Header,
+		BodyRaw:  body,
+		BodyJson: PrettyJson(body),
+	}
+}
+
+func PrettyJson(body string) string {
+	var out bytes.Buffer
+	err := json.Indent(&out, []byte(body), "", "  ")
+	if err != nil {
+		return body
+	}
+	return out.String()
+}
+
+func (self *ReportHttp) String() string {
+	msg := self.Title + "\n"
+	for key, vals := range self.Header {
 		for _, val := range vals {
 			msg += key + ": " + val + "\n"
 		}
 	}
 	msg += "\n"
-
-	body, err := GetBody(&req.Body)
-	if err == nil {
-		msg += string(body)
-	}
-	if !strings.HasSuffix(msg, "\n") {
-		msg += "\n"
-	}
-	return msg
-}
-
-func ResponseToText(res *http.Response) string {
-	msg := res.Proto + " " + res.Status + "\n"
-	for key, vals := range res.Header {
-		for _, val := range vals {
-			msg += key + ": " + val + "\n"
-		}
-	}
-	msg += "\n"
-
-	body, err := GetBody(&res.Body)
-	if err == nil {
-		msg += string(body)
-	}
+	msg += self.BodyJson
 	if !strings.HasSuffix(msg, "\n") {
 		msg += "\n"
 	}

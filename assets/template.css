@@ -1,0 +1,174 @@
+pre {
+    margin: 0;
+}
+
+body {
+    font-family: sans-serif;
+}
+
+ol {
+    margin-top: 0.25em;
+    margin-bottom: 0.5em;
+}
+
+table.diff {
+    background-color: #999;
+    border-spacing: 1px;
+}
+
+.failed {
+    color: #600;
+}
+
+.success {
+    color: #060;
+}
+
+.skipped {
+    color: #880;
+}
+
+.checker_title:before {
+    content: "⊟";
+    color: #555;
+    padding-right: 0.5em;
+    font-family: serif;
+    font-weight: normal;
+}
+
+.hidden .checker_title:before {
+    content: "⊞";
+}
+
+.hidden .checker_payload {
+    display: none;
+}
+
+.roundtrip_title:before {
+    content: "⊟";
+    color: #555;
+    padding-right: 0.5em;
+    font-family: serif;
+    font-weight: normal;
+}
+
+.hidden .roundtrip_title:before {
+    content: "⊞";
+}
+
+.hidden .roundtrip_payload {
+    display: none;
+}
+
+.diff th {
+    background-color: #eee;
+}
+
+.diff tr {
+    background-color: #fff;
+    border-bottom: 1px solid black;
+}
+
+.diff .line-num {
+    width: 20px;
+    background-color: #eee;
+    font-family: monospace;
+    word-wrap: normal;
+}
+
+.diff .line-num:first-child {
+    text-align: right;
+}
+
+.diff .added {
+    background-color: #afa;
+}
+
+.diff .deleted {
+    background-color: #faa;
+}
+
+pre {
+    white-space: pre-wrap;
+}
+
+.tabs {
+    position: relative;
+    width: 100%;
+    margin-top: 0.5em;
+}
+
+.summary {
+    margin-top: 0.5em;
+    margin-bottom: 1.0em;
+}
+
+.checker_title {
+    cursor: pointer;
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+
+.total_result {
+    float: right;
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 4em;
+}
+
+.checker_result {
+    font-family: monospace;
+    font-size: 80%;
+}
+
+.roundtrip_title {
+    font-size: 120%;
+    font-weight: bold;
+    width: 100%;
+    cursor: pointer;
+}
+
+.pass_title {
+    font-size: 120%;
+    font-weight: bold;
+}
+
+.roundtrip_payload {
+    border: 1px solid #999;
+    background-color: #ddd;
+    padding: 0.25em;
+}
+
+.tabs label {
+    color: #444;
+    cursor: pointer;
+    display: block;
+    float: right;
+    border: 1px solid #999;
+    padding: 0.25em;
+    background-color: #eee;
+    margin-right: 0.25em;
+}
+
+.tabs input:checked + label {
+    border-bottom: 1px solid #fff;
+    background-color: #fff;
+}
+
+.tabs input {
+    display: none;
+}
+
+.tab_title {
+    color: #048;
+    padding-top: 0.25em;
+    padding-bottom: 0.25em;
+    font-weight: bold;
+}
+
+.tab_content {
+    background: #fff;
+    margin: -1px 0 0 0;
+    padding: 0.5em;
+    border: 1px solid #999;
+}

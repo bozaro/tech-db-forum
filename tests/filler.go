@@ -3,7 +3,6 @@ package tests
 import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/models"
-	"log"
 	"math/rand"
 	"net/url"
 	"sync"
@@ -45,21 +44,21 @@ func Fill(url *url.URL) int {
 	_, err := c.Operations.Clear(nil)
 	CheckNil(err)
 
-	log.Println("Creating users (single thread)")
+	log.Info("Creating users (single thread)")
 	users := []*models.User{}
 	for i := 0; i < 10000; i++ {
 		users = append(users, CreateUser(c, nil))
 	}
-	log.Println("Creating users (multiple threads)")
+	log.Info("Creating users (multiple threads)")
 	users = FillUsers(c, 8, 10000)
 
-	log.Println("Creating forums")
+	log.Info("Creating forums")
 	forums := []*models.Forum{}
 	for i := 0; i < 20; i++ {
 		forums = append(forums, CreateForum(c, nil, users[rand.Intn(len(users))]))
 	}
 
-	log.Println("Creating threads")
+	log.Info("Creating threads")
 	threads := []*models.Thread{}
 	for i := 0; i < 1000; i++ {
 		thread := RandomThread()
@@ -69,7 +68,7 @@ func Fill(url *url.URL) int {
 		threads = append(threads, CreateThread(c, thread, forums[rand.Intn(len(forums))], users[rand.Intn(len(users))]))
 	}
 
-	log.Println("Creating posts")
+	log.Info("Creating posts")
 	posts := []*models.Post{}
 	for i := 0; i < 10000; i++ {
 		post := RandomPost()
@@ -78,6 +77,6 @@ func Fill(url *url.URL) int {
 		posts = append(posts, CreatePost(c, post, nil))
 	}
 
-	log.Println("Done")
+	log.Info("Done")
 	return 0
 }

@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sergi/go-diff/diffmatchpatch"
+	"github.com/aryann/difflib"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"runtime"
+	"strings"
 )
 
 const (
@@ -74,15 +76,23 @@ func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 		}
 
 		if res.StatusCode != self.code {
-			message := fmt.Sprintf("Unexpected status code: %d (expected %d)", res.StatusCode, self.code)
-			self.report.RoundTrip(req, res, self.Example(req), &message)
-			self.report.result = REPORT_FAILED
+			self.report.RoundTrip(req, res, self.Example(req), &[]difflib.DiffRecord{
+				{
+					Delta:   difflib.LeftOnly,
+					Payload: fmt.Sprintf("Status: %d %s", self.code, http.StatusText(self.code)),
+				},
+				{
+					Delta:   difflib.RightOnly,
+					Payload: fmt.Sprintf("Status: %d %s", res.StatusCode, http.StatusText(res.StatusCode)),
+				},
+			})
+			self.report.Result = Failed
 			return false
 		}
 		delta := GetDelta(body, self.body, self.filter)
-		if (res.StatusCode != self.code) || (delta != "") {
-			self.report.RoundTrip(req, res, self.Example(req), &delta)
-			self.report.result = REPORT_FAILED
+		if (res.StatusCode != self.code) || (delta != nil) {
+			self.report.RoundTrip(req, res, self.Example(req), delta)
+			self.report.Result = Failed
 			return false
 		} else {
 			self.report.RoundTrip(req, res, nil, nil)
@@ -136,18 +146,27 @@ func ToJson(obj interface{}) string {
 	return string(data)
 }
 
-func GetDiff(actual string, expected string) string {
+func GetDiff(actual string, expected string) *[]difflib.DiffRecord {
 	if actual == expected {
-		return ""
+		return nil
 	}
-	dmp := diffmatchpatch.New()
-	diffs := dmp.DiffMain(actual, expected, false)
-	return dmp.DiffPrettyText(diffs)
+	delta := difflib.Diff(
+		strings.Split(expected, "\n"),
+		strings.Split(actual, "\n"),
+	)
+	return &delta
 }
 
-func GetDelta(data []byte, expected interface{}, prepare Filter) string {
+func Colorize(color int, message string) string {
+	if runtime.GOOS == "windows" {
+		return message
+	}
+	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", color, message)
+}
+
+func GetDelta(data []byte, expected interface{}, prepare Filter) *[]difflib.DiffRecord {
 	if expected == nil {
-		return ""
+		return nil
 	}
 	expected_json := ToJson(prepare(expected))
 	var actual interface{} = reflect.New(reflect.TypeOf(expected).Elem()).Interface()
@@ -157,7 +176,7 @@ func GetDelta(data []byte, expected interface{}, prepare Filter) string {
 
 	actual_json := ToJson(prepare(actual))
 	if expected_json == actual_json {
-		return ""
+		return nil
 	}
 	return GetDiff(actual_json, expected_json)
 }

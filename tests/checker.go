@@ -1,14 +1,24 @@
 package tests
 
 import (
+	"errors"
+	"fmt"
+	"github.com/bozaro/tech-db-forum/generated/assets"
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/go-openapi/runtime"
 	http_transport "github.com/go-openapi/runtime/client"
-	"log"
+	"github.com/op/go-logging"
+	"html/template"
 	"net/http"
 	"net/url"
+	"os"
+	"regexp"
 	"sort"
+	"strings"
+	"sync/atomic"
 )
+
+var log = logging.MustGetLogger("checker")
 
 type Checker struct {
 	// Имя текущей проверки.
@@ -20,6 +30,8 @@ type Checker struct {
 	// Тесты, без которых проверка не имеет смысл.
 	Deps []string
 }
+
+var s_templateUid int32 = 0
 
 type CheckerByName []Checker
 
@@ -49,7 +61,7 @@ func Register(checker Checker) {
 }
 
 func RunCheck(check Checker, report *Report, url *url.URL) {
-	report.result = REPORT_SUCCESS
+	report.Result = Success
 	transport := CreateTransport(url)
 	defer func() {
 		if r := recover(); r != nil {
@@ -109,46 +121,128 @@ func SortedChecks() []Checker {
 	return result
 }
 
-func Run(url *url.URL) int {
+func templateUid() string {
+	return fmt.Sprintf("i%d", atomic.AddInt32(&s_templateUid, 1))
+}
+
+func templateAsset(outer, name string) (template.HTML, error) {
+	data, err := assets.Asset(name)
+	tag := strings.SplitN(outer, " ", 2)[0]
+	if err != nil {
+		return template.HTML(""), err
+	}
+	return template.HTML(fmt.Sprintf("<%s>%s</%s>", outer, string(data), tag)), nil
+}
+
+func templateDict(values ...interface{}) (map[string]interface{}, error) {
+	if len(values)%2 != 0 {
+		return nil, errors.New("invalid dict call")
+	}
+	dict := make(map[string]interface{}, len(values)/2)
+	for i := 0; i < len(values); i += 2 {
+		key, ok := values[i].(string)
+		if !ok {
+			return nil, errors.New("dict keys must be strings")
+		}
+		dict[key] = values[i+1]
+	}
+	return dict, nil
+}
+
+func reportTemplate() *template.Template {
+	data, err := assets.Asset("template.html")
+	if err != nil {
+		panic(err)
+	}
+
+	tmpl, err := template.
+		New("template.html").
+		Funcs(template.FuncMap{
+			"uid":   templateUid,
+			"asset": templateAsset,
+			"dict":  templateDict,
+		}).
+		Parse(string(data))
+	if err != nil {
+		panic(err)
+	}
+	return tmpl
+}
+
+func Run(url *url.URL, mask *regexp.Regexp, report_file string, keep bool) int {
 	total := 0
 	failed := 0
 	skipped := 0
 	broken := map[string]bool{}
 
+	tpl := reportTemplate()
+	reports := []*Report{}
 	for _, check := range SortedChecks() {
-		log.Printf("=== RUN:  %s", check.Name)
-		report := Report{}
-		skip := ""
+		if (mask != nil) && (mask.FindString(check.Name) == "") {
+			continue
+		}
+		report := Report{
+			Checker: check,
+		}
 		for _, dep := range check.Deps {
 			if broken[dep] {
-				skip = dep
-				break
+				report.Skip(dep)
 			}
 		}
-		if skip == "" {
+		if report.Result != Skipped {
+			log.Infof("Run:  %s", check.Name)
 			RunCheck(check, &report, url)
 		} else {
-			report.Skip("Skipped by " + skip)
+			log.Noticef("Skip: %s", check.Name)
 		}
-		if report.result != REPORT_SUCCESS {
-			report.Show()
-		}
-		var result string
 		total++
-		switch report.result {
-		case REPORT_SKIPPED:
+		switch report.Result {
+		case Skipped:
 			broken[check.Name] = true
 			skipped++
-			result = "SKIPPED"
-		case REPORT_SUCCESS:
-			result = "OK"
+		case Success:
 		default:
 			broken[check.Name] = true
 			failed++
-			result = "FAILED"
 		}
-		log.Printf("--- DONE: %s (%s)", check.Name, result)
+		reports = append(reports, &report)
+		if failed > 0 && !keep {
+			break
+		}
 	}
-	log.Printf("RESULT: %d total, %d success, %d skipped, %d failed)", total, total-skipped-failed, skipped, failed)
+
+	if report_file != "" {
+		f, err := os.Create(report_file)
+		if err != nil {
+			log.Panic(err)
+		}
+		defer f.Close()
+		err = tpl.Execute(f, struct {
+			Total   int
+			Failed  int
+			Success int
+			Skipped int
+			Reports []*Report
+		}{
+			Total:   total,
+			Failed:  failed,
+			Success: total - failed - skipped,
+			Skipped: skipped,
+			Reports: reports,
+		})
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if failed == 0 {
+		log.Infof("All tests passed successfully")
+	} else {
+		skip_info := ""
+		if skipped > 0 {
+			skip_info = fmt.Sprintf(" (%d skipped)", skipped)
+		}
+		log.Errorf("Failed %d test of %d%s", failed, total, skip_info)
+	}
 	return failed
 }

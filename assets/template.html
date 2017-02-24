@@ -1,0 +1,154 @@
+{{define "message"}}
+{{ $id := uid }}
+<div id="{{$id}}" class="tabs">
+    {{ $raw_only := eq .Payload.BodyRaw .Payload.BodyJson }}
+    <input id="{{$id}}_raw" type="radio" name="{{$id}}" checked="{{if $raw_only}}checked{{end}}"
+           onchange="UpdateTab('{{$id}}')"/>
+    <label for="{{$id}}_raw" class="{{if $raw_only}}checked{{end}}">RAW</label>
+    {{if ne .Payload.BodyRaw .Payload.BodyJson }}
+    <input id="{{$id}}_json" type="radio" name="{{$id}}" checked="checked" onchange="UpdateTab('{{$id}}')"/>
+    <label for="{{$id}}_json">Pretty JSON</label>
+    {{end}}
+    <div class="tab_title">{{.Title}}</div>
+    <div style="clear:both"></div>
+    <div class="tab_content">
+        <pre><code class="http">{{.Payload.Title}}
+{{range $key, $value := .Payload.Header}}{{range $value}}
+{{- $key }}: {{ . }}
+{{end}}{{end}}
+</code></pre>
+        <pre id="{{$id}}_raw_tab"
+             style="{{if not $raw_only}}display: none{{end}}"><code>{{.Payload.BodyRaw}}</code></pre>
+        {{if not $raw_only }}
+        <pre id="{{$id}}_json_tab"><code class="javascript">{{.Payload.BodyJson}}</code></pre>
+        {{end}}
+    </div>
+</div>
+{{end}}
+
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>
+        {{ if eq .Failed 0 }}
+        [SUCCESS]
+        {{ else }}
+        [FAILED]
+        {{ end }}
+        Результат функционального тестирования
+    </title>
+    {{ asset "style type='text/css'" "highlight.js/styles/idea.css" }}
+    {{ asset "style type='text/css'" "template.css" }}
+    {{ asset "script" "highlight.js/highlight.pack.js" }}
+    <script>
+        hljs.initHighlightingOnLoad();
+    </script>
+    <script>
+
+        function UpdateTab(id) {
+            document.getElementById(id)
+                .querySelectorAll("input")
+                .forEach(function (item, i, arr) {
+                    var tab = document.getElementById(item.id + "_tab");
+                    tab.style.display = item.checked ? "" : "none";
+                });
+        }
+
+        function Toggle(id) {
+            document.getElementById(id)
+                .classList
+                .toggle("hidden");
+        }
+
+    </script>
+</head>
+<body>
+{{ if eq .Failed 0 }}
+<div class="total_result success">[SUCCESS]</div>
+{{ else }}
+<div class="total_result failed">[FAILED]</div>
+{{ end }}
+<h1>
+    Результат функционального тестирования
+</h1>
+<div class="summary">
+    {{ if eq .Failed 0 }}
+    <span class="success">Все тесты успешно пройдены.</span>
+    {{ else }}
+    <span class="failed"><b>{{.Failed}}</b> из {{.Total}} тестов завершилось с ошибкой{{ if gt .Skipped 0 }}
+        (еще {{.Skipped}} тестов было пропущено){{end}}.</span>
+    {{ end }}
+</div>
+{{range .Reports}}
+{{$did := uid}}
+<div id="{{$did}}" class="{{ if ne .Result 0 }} hidden {{ end }}">
+    <h2 class="checker_title" id="{{ .Checker.Name }}" onclick="Toggle('{{ $did }}')">
+        {{ if eq .Result 0 }}
+        <span class="checker_result failed">[FAILED]&nbsp;</span>
+        {{ else if eq .Result 2 }}
+        <span class="checker_result success">[SUCCESS]</span>
+        {{ else }}
+        <span class="checker_result skipped">[SKIPPED]</span>
+        {{ end }}
+        {{ .Checker.Name }}
+    </h2>
+    <div class="checker_payload">
+        {{if ne .Checker.Description "" }}
+        <div>{{ .Checker.Description }}</div>
+        {{end}}
+        {{if eq .Result 1}}
+        <div>Тест пропущен из-за того, что не были пройдены тесты:</div>
+        <ul>
+            {{range .SkippedBy}}
+            <li>{{.}}</li>
+            {{end}}
+        </ul>
+        {{end}}
+        {{range .Pass}}
+        {{if ne .Name ""}}
+        <div class="pass_title">{{.Name}}</div>
+        {{end}}
+        <ol>
+            {{range .Messages}}
+            {{$rid := uid}}
+            <li id="{{$rid}}" class="{{ if not .Delta }} hidden {{ end }}">
+                <div class="roundtrip_title {{ if .Delta}} failed {{ else }} success {{ end }}"
+                     onclick="Toggle('{{ $rid }}')">
+                    {{ .Url }}
+                </div>
+                <div class="roundtrip_payload">
+                    {{if ne .Delta "" }}
+                    <table class="diff" width="100%">
+                        <thead>
+                        <tr>
+                            <th class="line-num"></th>
+                            <th>Ожидание</th>
+                            <th>Реальность</th>
+                            <th class="line-num"></th>
+                        </tr>
+                        </thead>
+                        <tbody>{{ .Delta }}</tbody>
+                    </table>
+                    {{end}}
+
+                    {{template "message" dict "Payload" .Request "Title" "Запрос" }}
+                    {{template "message" dict "Payload" .Response "Title" "Ответ" }}
+
+                    {{if and .Example ( ne .Delta "" ) }}
+                    {{template "message" dict "Payload" .Example "Title" "Ожидался ответ вида" }}
+                    {{end}}
+                </div>
+            </li>
+            {{end}}
+        </ol>
+        {{if ne .Failure ""}}
+        <div class="checker_failure failed">
+            ОШИБКА: {{ .Failure }}
+        </div>
+        {{end}}
+        {{end}}
+    </div>
+</div>
+{{end}}
+</body>
+</html>
