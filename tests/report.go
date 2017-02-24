@@ -43,31 +43,6 @@ func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *ht
 	if self.Result == Failed {
 		return
 	}
-	msg := ""
-	if delta != nil {
-		msg += "!!! ERROR:\n"
-		msg += DeltaToText(*delta)
-		if !strings.HasSuffix(msg, "\n") {
-			msg += "\n"
-		}
-	}
-	msg += ">>> REQUEST:\n"
-	msg += RequestToText(req)
-	if res != nil {
-		msg += "<<< ACTUAL RESPONSE:\n"
-		msg += ResponseToText(res)
-	}
-	if delta != nil {
-		if example != nil {
-			msg += "<<< EXPECTED RESPONSE EXAMPLE:\n"
-			msg += ResponseToText(example)
-		}
-		self.Result = Failed
-	}
-	if len(self.Pass) == 0 {
-		self.Pass = []ReportPass{{Name: ""}}
-	}
-	pass := &self.Pass[len(self.Pass)-1]
 
 	reportMessage := ReportMessage{
 		Url:      req.URL.String(),
@@ -78,6 +53,33 @@ func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *ht
 	if delta != nil {
 		reportMessage.Delta = template.HTML(DeltaToHtml(*delta))
 	}
+
+	msg := ""
+	if delta != nil {
+		msg += "!!! ERROR:\n"
+		msg += DeltaToText(*delta)
+		if !strings.HasSuffix(msg, "\n") {
+			msg += "\n"
+		}
+	}
+	msg += ">>> REQUEST:\n"
+	msg += reportMessage.Request.String()
+	if res != nil {
+		msg += "<<< ACTUAL RESPONSE:\n"
+		msg += reportMessage.Response.String()
+	}
+	if delta != nil {
+		if example != nil {
+			msg += "<<< EXPECTED RESPONSE EXAMPLE:\n"
+			msg += reportMessage.Example.String()
+		}
+		self.Result = Failed
+	}
+	// Добавляем сообщение в отчет
+	if len(self.Pass) == 0 {
+		self.Pass = []ReportPass{{Name: ""}}
+	}
+	pass := &self.Pass[len(self.Pass)-1]
 	pass.Messages = append(pass.Messages, reportMessage)
 }
 
@@ -179,52 +181,25 @@ func ResponseInfo(res *http.Response) *ReportHttp {
 		return nil
 	}
 	context, err := GetBody(&res.Body)
-	body := ""
-	if err == nil {
-		body += string(context)
-	}
-	if len(body) > 0 && !strings.HasSuffix(body, "\n") {
-		body += "\n"
+	if err != nil {
+		panic(err)
 	}
 	return &ReportHttp{
 		Title:  res.Proto + " " + res.Status,
 		Header: res.Header,
-		Body:   body,
+		Body:   string(context),
 	}
 }
 
-func RequestToText(req *http.Request) string {
-	msg := req.Method + " " + req.URL.String() + " " + req.Proto + "\n"
-	for key, vals := range req.Header {
+func (self *ReportHttp) String() string {
+	msg := self.Title + "\n"
+	for key, vals := range self.Header {
 		for _, val := range vals {
 			msg += key + ": " + val + "\n"
 		}
 	}
 	msg += "\n"
-
-	body, err := GetBody(&req.Body)
-	if err == nil {
-		msg += string(body)
-	}
-	if !strings.HasSuffix(msg, "\n") {
-		msg += "\n"
-	}
-	return msg
-}
-
-func ResponseToText(res *http.Response) string {
-	msg := res.Proto + " " + res.Status + "\n"
-	for key, vals := range res.Header {
-		for _, val := range vals {
-			msg += key + ": " + val + "\n"
-		}
-	}
-	msg += "\n"
-
-	body, err := GetBody(&res.Body)
-	if err == nil {
-		msg += string(body)
-	}
+	msg += self.Body
 	if !strings.HasSuffix(msg, "\n") {
 		msg += "\n"
 	}
