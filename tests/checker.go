@@ -161,7 +161,7 @@ func reportTemplate() *template.Template {
 	return tmpl
 }
 
-func Run(url *url.URL, mask regexp.Regexp, report_file string, keep bool) int {
+func Run(url *url.URL, mask *regexp.Regexp, report_file string, keep bool) int {
 	total := 0
 	failed := 0
 	skipped := 0
@@ -171,7 +171,7 @@ func Run(url *url.URL, mask regexp.Regexp, report_file string, keep bool) int {
 	cfg := client.DefaultTransportConfig().WithHost(url.Host).WithSchemes([]string{url.Scheme}).WithBasePath(url.Path)
 	reports := []*Report{}
 	for _, check := range SortedChecks() {
-		if mask.FindString(check.Name) == "" {
+		if (mask != nil) && (mask.FindString(check.Name) == "") {
 			continue
 		}
 		report := Report{

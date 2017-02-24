@@ -64,9 +64,9 @@ var root = &cli.Command{
 
 type CmdFuncT struct {
 	CmdCommonT
-	Keep   bool          `cli:"k,keep" usage:"Don't stop after first failed test'"`
-	Test   regexp.Regexp `cli:"t,tests" usage:"Mask for running test names (regexp)" parser:"regexp" dft:".*"`
-	Report string        `cli:"r,report" usage:"Detailed report file" dft:"report.html"`
+	Keep   bool           `cli:"k,keep" usage:"Don't stop after first failed test'"`
+	Test   *regexp.Regexp `cli:"t,tests" usage:"Mask for running test names (regexp)" parser:"regexp" dft:".*"`
+	Report string         `cli:"r,report" usage:"Detailed report file" dft:"report.html"`
 }
 
 var cmdFunc = &cli.Command{
