@@ -100,7 +100,7 @@ type ReportHttp struct {
 	Title    string
 	Header   http.Header
 	BodyRaw  string
-	BodyJson *string
+	BodyJson string
 }
 
 type ReportMessage struct {
@@ -196,14 +196,13 @@ func ResponseInfo(res *http.Response) *ReportHttp {
 	}
 }
 
-func PrettyJson(body string) *string {
+func PrettyJson(body string) string {
 	var out bytes.Buffer
 	err := json.Indent(&out, []byte(body), "", "  ")
 	if err != nil {
-		return nil
+		return body
 	}
-	res := out.String()
-	return &res
+	return out.String()
 }
 
 func (self *ReportHttp) String() string {
@@ -214,11 +213,7 @@ func (self *ReportHttp) String() string {
 		}
 	}
 	msg += "\n"
-	if self.BodyJson != nil {
-		msg += *self.BodyJson
-	} else {
-		msg += self.BodyRaw
-	}
+	msg += self.BodyJson
 	if !strings.HasSuffix(msg, "\n") {
 		msg += "\n"
 	}

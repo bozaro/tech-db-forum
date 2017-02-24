@@ -9,8 +9,23 @@
     {{end}}
     {{end}}
 </ul>
-<pre>{{.BodyRaw}}</pre>
-<pre>{{.BodyJson}}</pre>
+{{ $id := uid }}
+<div id="{{$id}}" class="tabs">
+    <input id="{{$id}}_raw" type="radio" name="{{$id}}" checked="{{if eq .BodyRaw .BodyJson}}checked{{end}}"
+           onchange="UpdateTab('{{$id}}')"/>
+    <label for="{{$id}}_raw" class="{{if eq .BodyRaw .BodyJson}}checked{{end}}">RAW</label>
+    {{if ne .BodyRaw .BodyJson }}
+    <input id="{{$id}}_json" type="radio" name="{{$id}}" checked="checked" onchange="UpdateTab('{{$id}}')"/>
+    <label for="{{$id}}_json">Pretty JSON</label>
+    {{end}}
+    <div style="clear:both"></div>
+    <div class="tab_content">
+        <pre id="{{$id}}_raw_tab" style="{{if ne .BodyRaw .BodyJson}}display: none{{end}}">{{.BodyRaw}}</pre>
+        {{if ne .BodyRaw .BodyJson }}
+        <pre id="{{$id}}_json_tab">{{.BodyJson}}</pre>
+        {{end}}
+    </div>
+</div>
 {{end}}
 
 <html lang="ru">
@@ -19,7 +34,7 @@
     <h1>Результат тестирования</h1>
     <style type="text/css">
         table.diff {
-            background-color: #aaa;
+            background-color: #999;
             border-spacing: 1px;
         }
 
@@ -54,7 +69,47 @@
         pre {
             white-space: pre-wrap;
         }
+
+        .tabs {
+            position: relative;
+            width: 100%;
+        }
+
+        .tabs label {
+            color: #555;
+            cursor: pointer;
+            display: block;
+            float: left;
+            margin-right: 2px;
+            border: 1px solid #999;
+        }
+
+        .tabs input:checked + label {
+            border-bottom: 1px solid #fff;
+        }
+
+        .tabs input {
+            display: none;
+        }
+
+        .tab_content {
+            background: #fff;
+            margin: -1px 0 0 0;
+            border: 1px solid #999;
+        }
     </style>
+    <script>
+
+        function UpdateTab(id) {
+            document.getElementById(id)
+                .querySelectorAll("input")
+                .forEach(function (item, i, arr) {
+                    var tab = document.getElementById(item.id + "_tab");
+                    tab.style.display = item.checked ? "" : "none";
+                });
+        }
+
+    </script>
 </head>
 <body>
 <h1>Результат тестирования</h1>

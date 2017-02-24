@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/go-openapi/runtime"
 	http_transport "github.com/go-openapi/runtime/client"
@@ -10,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"sync/atomic"
 )
 
 type Checker struct {
@@ -22,6 +24,8 @@ type Checker struct {
 	// Тесты, без которых проверка не имеет смысл.
 	Deps []string
 }
+
+var s_templateUid int32 = 0
 
 type CheckerByName []Checker
 
@@ -103,6 +107,10 @@ func SortedChecks() []Checker {
 	return result
 }
 
+func templateUid() string {
+	return fmt.Sprintf("i%d", atomic.AddInt32(&s_templateUid, 1))
+}
+
 func Run(url *url.URL, keep bool) int {
 	total := 0
 	failed := 0
@@ -148,7 +156,12 @@ func Run(url *url.URL, keep bool) int {
 		}
 	}
 
-	tmpl, err := template.ParseFiles("template.html")
+	tmpl, err := template.
+		New("template.html").
+		Funcs(template.FuncMap{
+			"uid": templateUid,
+		}).
+		ParseFiles("template.html")
 	if err != nil {
 		panic(err)
 	}
