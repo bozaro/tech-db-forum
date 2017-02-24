@@ -10,12 +10,12 @@
     {{end}}
     <div style="clear:both"></div>
     <div class="tab_content">
-        <pre><code class="nohighlight">{{.Title}}
+        <pre><code class="http">{{.Title}}
 {{range $key, $value := .Header}}{{range $value}}
 {{- $key }}: {{ . }}
 {{end}}{{end}}
 </code></pre>
-        <pre id="{{$id}}_raw_tab" style="{{if ne .BodyRaw .BodyJson}}display: none{{end}}"><code class="javascript">{{.BodyRaw}}</code></pre>
+        <pre id="{{$id}}_raw_tab" style="{{if ne .BodyRaw .BodyJson}}display: none{{end}}"><code>{{.BodyRaw}}</code></pre>
         {{if ne .BodyRaw .BodyJson }}
         <pre id="{{$id}}_json_tab"><code class="javascript">{{.BodyJson}}</code></pre>
         {{end}}
