@@ -207,8 +207,16 @@ func Run(url *url.URL, keep bool) int {
 	file, err := os.Create("report.html")
 	defer file.Close()
 	err = tpl.Execute(file, struct {
+		Total   int
+		Failed  int
+		Success int
+		Skipped int
 		Reports []*Report
 	}{
+		Total:   total,
+		Failed:  failed,
+		Success: total - failed - skipped,
+		Skipped: skipped,
 		Reports: reports,
 	})
 	if err != nil {

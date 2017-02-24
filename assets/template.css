@@ -6,6 +6,11 @@ body {
     font-family: sans-serif;
 }
 
+ol {
+    margin-top: 0.25em;
+    margin-bottom: 0.5em;
+}
+
 table.diff {
     background-color: #999;
     border-spacing: 1px;
@@ -17,6 +22,26 @@ table.diff {
 
 .success {
     color: #060;
+}
+
+.skipped {
+    color: #880;
+}
+
+.checker_title:before {
+    content: "⊟";
+    color: #555;
+    padding-right: 0.5em;
+    font-family: serif;
+    font-weight: normal;
+}
+
+.hidden .checker_title:before {
+    content: "⊞";
+}
+
+.hidden .checker_payload {
+    display: none;
 }
 
 .roundtrip_title:before {
@@ -73,11 +98,39 @@ pre {
     margin-top: 0.5em;
 }
 
+.summary {
+    margin-top: 0.5em;
+    margin-bottom: 1.0em;
+}
+
+.checker_title {
+    cursor: pointer;
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+
+.total_result {
+    float: right;
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 4em;
+}
+
+.checker_result {
+    font-family: monospace;
+    font-size: 80%;
+}
+
 .roundtrip_title {
     font-size: 120%;
     font-weight: bold;
     width: 100%;
     cursor: pointer;
+}
+
+.pass_title {
+    font-size: 120%;
+    font-weight: bold;
 }
 
 .roundtrip_payload {
