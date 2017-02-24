@@ -1,0 +1,83 @@
+pre {
+    margin: 0;
+}
+
+body {
+    font-family: sans-serif;
+}
+
+table.diff {
+    background-color: #999;
+    border-spacing: 1px;
+}
+
+.diff th {
+    background-color: #eee;
+}
+
+.diff tr {
+    background-color: #fff;
+    border-bottom: 1px solid black;
+}
+
+.diff .line-num {
+    width: 20px;
+    background-color: #eee;
+    font-family: monospace;
+    word-wrap: normal;
+}
+
+.diff .line-num:first-child {
+    text-align: right;
+}
+
+.diff .added {
+    background-color: #afa;
+}
+
+.diff .deleted {
+    background-color: #faa;
+}
+
+pre {
+    white-space: pre-wrap;
+}
+
+.tabs {
+    position: relative;
+    width: 100%;
+    margin-bottom: 0.5em;
+}
+
+.tabs label {
+    color: #444;
+    cursor: pointer;
+    display: block;
+    float: right;
+    border: 1px solid #999;
+    padding: 0.25em;
+    background-color: #eee;
+    margin-right: 0.25em;
+}
+
+.tabs input:checked + label {
+    border-bottom: 1px solid #fff;
+    background-color: #fff;
+}
+
+.tabs input {
+    display: none;
+}
+
+.tab_title {
+    padding-top: 0.25em;
+    padding-bottom: 0.25em;
+    font-weight: bold;
+}
+
+.tab_content {
+    background: #fff;
+    margin: -1px 0 0 0;
+    padding: 0.5em;
+    border: 1px solid #999;
+}
