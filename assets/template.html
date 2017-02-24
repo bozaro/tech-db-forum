@@ -141,6 +141,11 @@
             </li>
             {{end}}
         </ol>
+        {{if ne .Failure ""}}
+        <div class="checker_failure failed">
+            ОШИБКА: {{ .Failure }}
+        </div>
+        {{end}}
         {{end}}
     </div>
 </div>

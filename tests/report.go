@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/aryann/difflib"
 	"html/template"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -21,8 +20,14 @@ const (
 
 func (self *Report) AddError(err interface{}) {
 	if self.Result != Failed {
-		//self.messages = append(self.messages, fmt.Sprint(err))
+		// Добавляем сообщение в отчет
+		if len(self.Pass) == 0 {
+			self.Pass = []ReportPass{{Name: ""}}
+		}
+		pass := &self.Pass[len(self.Pass)-1]
+		pass.Failure = fmt.Sprintf("%s", err)
 		self.Result = Failed
+		log.Error(err)
 	}
 }
 
@@ -36,7 +41,7 @@ func (self *Report) Checkpoint(message string) bool {
 		return false
 	}
 	self.Pass = append(self.Pass, ReportPass{Name: message})
-	log.Println("  " + message)
+	log.Debug("  " + message)
 	return true
 }
 
@@ -53,27 +58,13 @@ func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *ht
 	}
 	if delta != nil {
 		reportMessage.Delta = template.HTML(DeltaToHtml(*delta))
-	}
 
-	msg := ""
-	if delta != nil {
-		msg += "!!! ERROR:\n"
-		msg += DeltaToText(*delta)
-		if !strings.HasSuffix(msg, "\n") {
-			msg += "\n"
-		}
-	}
-	msg += ">>> REQUEST:\n"
-	msg += reportMessage.Request.String()
-	if res != nil {
-		msg += "<<< ACTUAL RESPONSE:\n"
-		msg += reportMessage.Response.String()
-	}
-	if delta != nil {
+		log.Warningf("Request:\n%s", reportMessage.Request.String())
+		log.Warningf("Actual response:\n%s", reportMessage.Response.String())
 		if example != nil {
-			msg += "<<< EXPECTED RESPONSE EXAMPLE:\n"
-			msg += reportMessage.Example.String()
+			log.Warningf("Expected response like:\n%s", reportMessage.Example.String())
 		}
+		log.Errorf("Error:\n%s", DeltaToText(*delta))
 		self.Result = Failed
 	}
 	// Добавляем сообщение в отчет
@@ -93,6 +84,7 @@ type Report struct {
 
 type ReportPass struct {
 	Name     string
+	Failure  string
 	Messages []ReportMessage
 }
 
@@ -154,12 +146,6 @@ func DeltaToHtml(delta []difflib.DiffRecord) string {
 		buf.WriteString("</td></tr>\n")
 	}
 	return buf.String()
-}
-
-func (self *Report) Show() {
-	/*for _, message := range self.messages {
-		log.Println(message)
-	}*/
 }
 
 func RequestInfo(req *http.Request) *ReportHttp {

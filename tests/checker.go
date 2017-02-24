@@ -7,8 +7,8 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/go-openapi/runtime"
 	http_transport "github.com/go-openapi/runtime/client"
+	"github.com/op/go-logging"
 	"html/template"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,6 +16,8 @@ import (
 	"strings"
 	"sync/atomic"
 )
+
+var log = logging.MustGetLogger("checker")
 
 type Checker struct {
 	// Имя текущей проверки.
@@ -114,13 +116,13 @@ func templateUid() string {
 	return fmt.Sprintf("i%d", atomic.AddInt32(&s_templateUid, 1))
 }
 
-func templateAsset(outer, name string) template.HTML {
+func templateAsset(outer, name string) (template.HTML, error) {
 	data, err := assets.Asset(name)
 	tag := strings.SplitN(outer, " ", 2)[0]
 	if err != nil {
-		panic(err)
+		return template.HTML(""), err
 	}
-	return template.HTML(fmt.Sprintf("<%s>%s</%s>", outer, string(data), tag))
+	return template.HTML(fmt.Sprintf("<%s>%s</%s>", outer, string(data), tag)), nil
 }
 
 func templateDict(values ...interface{}) (map[string]interface{}, error) {
@@ -168,7 +170,6 @@ func Run(url *url.URL, keep bool) int {
 	cfg := client.DefaultTransportConfig().WithHost(url.Host).WithSchemes([]string{url.Scheme}).WithBasePath(url.Path)
 	reports := []*Report{}
 	for _, check := range SortedChecks() {
-		log.Printf("=== RUN:  %s", check.Name)
 		report := Report{
 			Checker: check,
 		}
@@ -178,26 +179,21 @@ func Run(url *url.URL, keep bool) int {
 			}
 		}
 		if report.Result != Skipped {
+			log.Infof("Run:  %s", check.Name)
 			RunCheck(check, &report, cfg)
+		} else {
+			log.Noticef("Skip: %s", check.Name)
 		}
-		if report.Result != Success {
-			report.Show()
-		}
-		var result string
 		total++
 		switch report.Result {
 		case Skipped:
 			broken[check.Name] = true
 			skipped++
-			result = "SKIPPED"
 		case Success:
-			result = "OK"
 		default:
 			broken[check.Name] = true
 			failed++
-			result = "FAILED"
 		}
-		log.Printf("--- DONE: %s (%s)", check.Name, result)
 		reports = append(reports, &report)
 		if failed > 0 && !keep {
 			break
@@ -223,6 +219,14 @@ func Run(url *url.URL, keep bool) int {
 		panic(err)
 	}
 
-	log.Printf("RESULT: %d total, %d skipped, %d failed)", total, skipped, failed)
+	if failed == 0 {
+		log.Infof("All tests passed successfully")
+	} else {
+		skip_info := ""
+		if skipped > 0 {
+			skip_info = fmt.Sprintf(" (%d skipped)", skipped)
+		}
+		log.Errorf("Failed %d test of %d%s", failed, total, skip_info)
+	}
 	return failed
 }

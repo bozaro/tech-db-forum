@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/bozaro/tech-db-forum/tests"
 	"github.com/mkideal/cli"
+	"github.com/op/go-logging"
 	"net/url"
 	"os"
 	"reflect"
@@ -60,6 +61,14 @@ var cmdFunc = &cli.Command{
 }
 
 func main() {
+	format := logging.MustStringFormatter(
+		`%{color}%{time:15:04:05.000} %{level:.4s}%{color:reset} %{message}`,
+	)
+	backend := logging.NewLogBackend(os.Stderr, "", 0)
+
+	// Set the backends to be used.
+	logging.SetBackend(logging.NewBackendFormatter(backend, format))
+
 	cli.RegisterFlagParser("url", newParserUrl)
 
 	if err := cli.Root(root,
