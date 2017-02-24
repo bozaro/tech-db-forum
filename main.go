@@ -10,14 +10,23 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 )
 
 type parserUrl struct {
 	ptr interface{}
 }
 
+type parserRegexp struct {
+	ptr interface{}
+}
+
 func newParserUrl(ptr interface{}) cli.FlagParser {
 	return &parserUrl{ptr}
+}
+
+func newParserRegexp(ptr interface{}) cli.FlagParser {
+	return &parserRegexp{ptr}
 }
 
 func (parser *parserUrl) Parse(s string) error {
@@ -29,9 +38,18 @@ func (parser *parserUrl) Parse(s string) error {
 	return err
 }
 
+func (parser *parserRegexp) Parse(s string) error {
+	u, err := regexp.Compile(s)
+	if err == nil {
+		val := reflect.ValueOf(parser.ptr)
+		val.Elem().Set(reflect.ValueOf(*u))
+	}
+	return err
+}
+
 type CmdCommonT struct {
 	cli.Helper
-	Url *url.URL `cli:"url" usage:"base url for testing API" parser:"url" dft:"http://localhost:5000/api"`
+	Url *url.URL `cli:"u,url" usage:"base url for testing API" parser:"url" dft:"http://localhost:5000/api"`
 }
 
 var root = &cli.Command{
@@ -46,7 +64,9 @@ var root = &cli.Command{
 
 type CmdFuncT struct {
 	CmdCommonT
-	Keep bool `cli:"keep" usage:"Don't stop after first failed test'"`
+	Keep   bool          `cli:"k,keep" usage:"Don't stop after first failed test'"`
+	Test   regexp.Regexp `cli:"t,tests" usage:"Mask for running test names (regexp)" parser:"regexp" dft:".*"`
+	Report string        `cli:"r,report" usage:"Detailed report file" dft:"report.html"`
 }
 
 var cmdFunc = &cli.Command{
@@ -55,7 +75,7 @@ var cmdFunc = &cli.Command{
 	Argv: func() interface{} { return new(CmdFuncT) },
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdFuncT)
-		os.Exit(tests.Run(argv.Url, argv.Keep))
+		os.Exit(tests.Run(argv.Url, argv.Test, argv.Report, argv.Keep))
 		return nil
 	},
 }
@@ -70,6 +90,7 @@ func main() {
 	logging.SetBackend(logging.NewBackendFormatter(backend, format))
 
 	cli.RegisterFlagParser("url", newParserUrl)
+	cli.RegisterFlagParser("regexp", newParserRegexp)
 
 	if err := cli.Root(root,
 		cli.Tree(cmdFunc),

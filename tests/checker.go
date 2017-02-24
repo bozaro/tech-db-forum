@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -160,7 +161,7 @@ func reportTemplate() *template.Template {
 	return tmpl
 }
 
-func Run(url *url.URL, keep bool) int {
+func Run(url *url.URL, mask regexp.Regexp, report_file string, keep bool) int {
 	total := 0
 	failed := 0
 	skipped := 0
@@ -170,6 +171,9 @@ func Run(url *url.URL, keep bool) int {
 	cfg := client.DefaultTransportConfig().WithHost(url.Host).WithSchemes([]string{url.Scheme}).WithBasePath(url.Path)
 	reports := []*Report{}
 	for _, check := range SortedChecks() {
+		if mask.FindString(check.Name) == "" {
+			continue
+		}
 		report := Report{
 			Checker: check,
 		}
@@ -200,23 +204,28 @@ func Run(url *url.URL, keep bool) int {
 		}
 	}
 
-	file, err := os.Create("report.html")
-	defer file.Close()
-	err = tpl.Execute(file, struct {
-		Total   int
-		Failed  int
-		Success int
-		Skipped int
-		Reports []*Report
-	}{
-		Total:   total,
-		Failed:  failed,
-		Success: total - failed - skipped,
-		Skipped: skipped,
-		Reports: reports,
-	})
-	if err != nil {
-		panic(err)
+	if report_file != "" {
+		f, err := os.Create(report_file)
+		if err != nil {
+			log.Panic(err)
+		}
+		defer f.Close()
+		err = tpl.Execute(f, struct {
+			Total   int
+			Failed  int
+			Success int
+			Skipped int
+			Reports []*Report
+		}{
+			Total:   total,
+			Failed:  failed,
+			Success: total - failed - skipped,
+			Skipped: skipped,
+			Reports: reports,
+		})
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	if failed == 0 {
