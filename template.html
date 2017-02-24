@@ -20,9 +20,9 @@
     {{end}}
     <div style="clear:both"></div>
     <div class="tab_content">
-        <pre id="{{$id}}_raw_tab" style="{{if ne .BodyRaw .BodyJson}}display: none{{end}}">{{.BodyRaw}}</pre>
+        <pre id="{{$id}}_raw_tab" style="{{if ne .BodyRaw .BodyJson}}display: none{{end}}"><code class="javascript">{{.BodyRaw}}</code></pre>
         {{if ne .BodyRaw .BodyJson }}
-        <pre id="{{$id}}_json_tab">{{.BodyJson}}</pre>
+        <pre id="{{$id}}_json_tab"><code class="javascript">{{.BodyJson}}</code></pre>
         {{end}}
     </div>
 </div>
@@ -32,7 +32,16 @@
 <head>
     <meta charset="UTF-8">
     <title>Результат тестирования</title>
+
+    <link rel="stylesheet" href="idea.css">
+    <script src="highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+
     <style type="text/css">
+        pre {
+            margin: 0;
+        }
+
         table.diff {
             background-color: #999;
             border-spacing: 1px;
