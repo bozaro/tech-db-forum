@@ -88,3 +88,6 @@
 [submodule "vendor/gopkg.in/mgo.v2"]
 	path = vendor/gopkg.in/mgo.v2
 	url = http://gopkg.in/mgo.v2
+[submodule "vendor/github.com/op/go-logging"]
+	path = vendor/github.com/op/go-logging
+	url = https://github.com/op/go-logging
