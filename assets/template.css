@@ -11,6 +11,30 @@ table.diff {
     border-spacing: 1px;
 }
 
+.failed {
+    color: #600;
+}
+
+.success {
+    color: #060;
+}
+
+.roundtrip_title:before {
+    content: "⊟";
+    color: #555;
+    padding-right: 0.5em;
+    font-family: serif;
+    font-weight: normal;
+}
+
+.hidden .roundtrip_title:before {
+    content: "⊞";
+}
+
+.hidden .roundtrip_payload {
+    display: none;
+}
+
 .diff th {
     background-color: #eee;
 }
@@ -46,7 +70,20 @@ pre {
 .tabs {
     position: relative;
     width: 100%;
-    margin-bottom: 0.5em;
+    margin-top: 0.5em;
+}
+
+.roundtrip_title {
+    font-size: 120%;
+    font-weight: bold;
+    width: 100%;
+    cursor: pointer;
+}
+
+.roundtrip_payload {
+    border: 1px solid #999;
+    background-color: #ddd;
+    padding: 0.25em;
 }
 
 .tabs label {
@@ -70,6 +107,7 @@ pre {
 }
 
 .tab_title {
+    color: #048;
     padding-top: 0.25em;
     padding-bottom: 0.25em;
     font-weight: bold;
