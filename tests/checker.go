@@ -148,7 +148,7 @@ func Run(url *url.URL, keep bool) int {
 		}
 	}
 
-	tmpl, err := template.ParseFiles("checker.tpl")
+	tmpl, err := template.ParseFiles("template.html")
 	if err != nil {
 		panic(err)
 	}

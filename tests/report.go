@@ -128,7 +128,7 @@ func DeltaToHtml(delta []difflib.DiffRecord) string {
 	buf := bytes.NewBufferString("")
 	i, j := 0, 0
 	for _, d := range delta {
-		buf.WriteString(`<tr><td class="line-num">`)
+		buf.WriteString(`<tr><td class="line-num line-num-l">`)
 		if d.Delta == difflib.Common || d.Delta == difflib.LeftOnly {
 			i++
 			fmt.Fprintf(buf, "%d</td><td", i)
@@ -145,9 +145,9 @@ func DeltaToHtml(delta []difflib.DiffRecord) string {
 			if d.Delta == difflib.RightOnly {
 				fmt.Fprint(buf, ` class="added"`)
 			}
-			fmt.Fprintf(buf, `><pre>%s</pre></td><td class="line-num">%d`, d.Payload, j)
+			fmt.Fprintf(buf, `><pre>%s</pre></td><td class="line-num line-num-r">%d`, d.Payload, j)
 		} else {
-			buf.WriteString("></td><td>")
+			buf.WriteString(`></td><td class="line-num line-num-r">`)
 		}
 		buf.WriteString("</td></tr>\n")
 	}

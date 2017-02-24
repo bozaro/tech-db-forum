@@ -1,0 +1,95 @@
+{{define "message"}}
+{{.Title}}
+<ul>
+    {{range $key, $value := .Header}}
+    {{range $value}}
+    <li>
+        {{ $key }}: {{ . }}
+    </li>
+    {{end}}
+    {{end}}
+</ul>
+<pre>{{.Body}}</pre>
+{{end}}
+
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <h1>Результат тестирования</h1>
+    <style type="text/css">
+        table.diff {
+            background-color: #aaa;
+            border-spacing: 1px;
+        }
+
+        .diff th {
+            background-color: #eee;
+        }
+
+        .diff tr {
+            background-color: #fff;
+            border-bottom: 1px solid black;
+        }
+
+        .diff .line-num {
+            width: 20px;
+            background-color: #eee;
+            font-family: monospace;
+            word-wrap: normal;
+        }
+
+        .diff .line-num:first-child {
+            text-align: right;
+        }
+
+        .diff .added {
+            background-color: #afa;
+        }
+
+        .diff .deleted {
+            background-color: #faa;
+        }
+    </style>
+</head>
+<body>
+<h1>Результат тестирования</h1>
+{{range .Reports}}
+<h2>[{{ .Result }}] {{ .Checker.Name }}</h2>
+<div>{{ .Checker.Description }}</div>
+{{range .SkippedBy}}
+<div>Skip: {{.}}</div>
+{{end}}
+{{range .Pass}}
+<h3>Pass: {{.Name}}</h3>
+{{range .Messages}}
+<h3>URL: {{ .Url }}</h3>
+<h4>Request</h4>
+{{template "message" .Request}}
+
+{{if ne .Delta "" }}
+<h4>Delta</h4>
+<table class="diff" width="100%">
+    <thead>
+    <tr>
+        <th class="line-num"></th>
+        <th>Ожидание</th>
+        <th>Реальность</th>
+        <th class="line-num"></th>
+    </tr>
+    </thead>
+    <tbody>{{ .Delta }}</tbody>
+</table>
+{{end}}
+
+<h4>Response</h4>
+{{template "message" .Response}}
+
+{{if .Example}}
+<h4>Example</h4>
+{{template "message" .Example}}
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+</body>
+</html>
