@@ -54,10 +54,26 @@ docker run -p 5000:5000 --name a.navrotskiy -t a.navrotskiy
  * [windows_386.zip](https://bozaro.github.io/tech-db-forum/windows_386.zip)
  * [windows_amd64.zip](https://bozaro.github.io/tech-db-forum/windows_amd64.zip)
 
-
 Для локальной сборки Go-скрипта достаточно выполнить команду:
 ```
 go get -u -v github.com/bozaro/tech-db-forum
 go build github.com/bozaro/tech-db-forum
 ```
 После этого в текущем каталоге будет создан исполняемый файл `tech-db-forum`.
+
+### Запуск функционального тестирования
+
+Для запуска функционального тестирования нужно выполнить команду вида:
+```
+./tech-db-forum func -u http://localhost:5000/api -r report.html
+```
+
+Поддерживаются следующие параметры:
+
+Параметр                              | Описание
+---                                   | ---
+-h, --help                            | Вывод списка поддерживаемых параметров
+-u, --url[=http://localhost:5000/api] | Указание базовой URL тестируемого приложения
+-k, --keep                            | Продолжить тестирование после первого упавшего теста
+-t, --tests[=.*]                      | Маска запускаемых тестов (регулярное выражение)
+-r, --report[=report.html]            | Имя файла для детального отчета о функциональном тестировании
