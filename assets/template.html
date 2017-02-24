@@ -1,14 +1,4 @@
 {{define "message"}}
-{{.Title}}
-<ul>
-    {{range $key, $value := .Header}}
-    {{range $value}}
-    <li>
-        {{ $key }}: {{ . }}
-    </li>
-    {{end}}
-    {{end}}
-</ul>
 {{ $id := uid }}
 <div id="{{$id}}" class="tabs">
     <input id="{{$id}}_raw" type="radio" name="{{$id}}" checked="{{if eq .BodyRaw .BodyJson}}checked{{end}}"
@@ -20,6 +10,11 @@
     {{end}}
     <div style="clear:both"></div>
     <div class="tab_content">
+        <pre><code class="nohighlight">{{.Title}}
+{{range $key, $value := .Header}}{{range $value}}
+{{- $key }}: {{ . }}
+{{end}}{{end}}
+</code></pre>
         <pre id="{{$id}}_raw_tab" style="{{if ne .BodyRaw .BodyJson}}display: none{{end}}"><code class="javascript">{{.BodyRaw}}</code></pre>
         {{if ne .BodyRaw .BodyJson }}
         <pre id="{{$id}}_json_tab"><code class="javascript">{{.BodyJson}}</code></pre>
