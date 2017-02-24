@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"github.com/bozaro/tech-db-forum/generated/assets"
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/go-openapi/runtime"
 	http_transport "github.com/go-openapi/runtime/client"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strings"
 	"sync/atomic"
 )
 
@@ -111,12 +113,41 @@ func templateUid() string {
 	return fmt.Sprintf("i%d", atomic.AddInt32(&s_templateUid, 1))
 }
 
+func templateAsset(outer, name string) template.HTML {
+	data, err := assets.Asset(name)
+	tag := strings.SplitN(outer, " ", 2)[0]
+	if err != nil {
+		panic(err)
+	}
+	return template.HTML(fmt.Sprintf("<%s>%s</%s>", outer, string(data), tag))
+}
+
+func reportTemplate() *template.Template {
+	data, err := assets.Asset("template.html")
+	if err != nil {
+		panic(err)
+	}
+
+	tmpl, err := template.
+		New("template.html").
+		Funcs(template.FuncMap{
+			"uid":   templateUid,
+			"asset": templateAsset,
+		}).
+		Parse(string(data))
+	if err != nil {
+		panic(err)
+	}
+	return tmpl
+}
+
 func Run(url *url.URL, keep bool) int {
 	total := 0
 	failed := 0
 	skipped := 0
 	broken := map[string]bool{}
 
+	tpl := reportTemplate()
 	cfg := client.DefaultTransportConfig().WithHost(url.Host).WithSchemes([]string{url.Scheme}).WithBasePath(url.Path)
 	reports := []*Report{}
 	for _, check := range SortedChecks() {
@@ -156,18 +187,9 @@ func Run(url *url.URL, keep bool) int {
 		}
 	}
 
-	tmpl, err := template.
-		New("template.html").
-		Funcs(template.FuncMap{
-			"uid": templateUid,
-		}).
-		ParseFiles("template.html")
-	if err != nil {
-		panic(err)
-	}
 	file, err := os.Create("report.html")
 	defer file.Close()
-	err = tmpl.Execute(file, struct {
+	err = tpl.Execute(file, struct {
 		Reports []*Report
 	}{
 		Reports: reports,

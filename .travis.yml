@@ -2,6 +2,7 @@ language: go
 sudo: false
 install:
 - go get -v github.com/go-swagger/go-swagger/cmd/swagger
+- go get -v github.com/jteeuwen/go-bindata/...
 - go generate -x .
 script:
 - go build .
