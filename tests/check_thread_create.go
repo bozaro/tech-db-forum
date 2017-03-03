@@ -88,7 +88,9 @@ func CreateThread(c *client.Forum, thread *models.Thread, forum *models.Forum, a
 		WithThread(thread).
 		WithContext(Expected(201, &expected, func(data interface{}) interface{} {
 			thread := data.(*models.Thread)
-			thread.ID = 0
+			if thread.ID != 0 {
+				thread.ID = expected.ID
+			}
 			if !check_create {
 				thread.Created = strfmt.NewDateTime()
 			} else {

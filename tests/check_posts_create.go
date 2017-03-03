@@ -116,6 +116,7 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 	if thread != nil {
 		author = thread.Author
 	}
+	base_id := 42
 	for n, post := range posts {
 		if post.Author == "" {
 			if author == "" {
@@ -126,7 +127,7 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 		post.Thread = 0
 
 		expectedPost := *post
-		expectedPost.ID = int64(42 + n)
+		expectedPost.ID = int64(base_id + n)
 		expectedPost.Thread = postsThread
 		expectedPost.Created = strfmt.DateTime(time.Now())
 		expectedPost.Forum = postsForum
@@ -138,8 +139,10 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 		WithPosts(posts).
 		WithContext(Expected(201, &expected, func(data interface{}) interface{} {
 			posts := data.(*[]*models.Post)
-			for _, post := range *posts {
-				post.ID = 0
+			for n, post := range *posts {
+				if post.ID != 0 {
+					post.ID = int64(base_id + n)
+				}
 				if !check_forum {
 					post.Forum = ""
 				}
