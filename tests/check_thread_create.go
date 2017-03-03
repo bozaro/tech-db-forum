@@ -82,7 +82,7 @@ func CreateThread(c *client.Forum, thread *models.Thread, forum *models.Forum, a
 	if forum != nil {
 		expected.Forum = forum.Slug
 	}
-	check_create := !time.Time(expected.Created).IsZero()
+	check_create := expected.Created != nil
 	result, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
 		WithSlug(thread.Forum).
 		WithThread(thread).
@@ -92,9 +92,11 @@ func CreateThread(c *client.Forum, thread *models.Thread, forum *models.Forum, a
 				thread.ID = expected.ID
 			}
 			if !check_create {
-				thread.Created = strfmt.NewDateTime()
-			} else {
-				thread.Created = strfmt.DateTime(time.Time(thread.Created).UTC())
+				thread.Created = nil
+			}
+			if thread.Created != nil {
+				created := strfmt.DateTime(time.Time(*thread.Created).UTC())
+				thread.Created = &created
 			}
 			return thread
 		})))
@@ -112,8 +114,8 @@ func CheckThread(c *client.Forum, thread *models.Thread) {
 
 func CheckThreadCreateSimple(c *client.Forum, m *Modify) {
 	thread := RandomThread()
-	if thread.Slug == "" || time.Time(thread.Created).IsZero() {
-		panic("Incorrect test login")
+	if thread.Slug == "" || thread.Created == nil {
+		panic("Incorrect thread data")
 	}
 
 	// Slug
@@ -122,7 +124,7 @@ func CheckThreadCreateSimple(c *client.Forum, m *Modify) {
 	}
 	// Created
 	if m.Bool() {
-		thread.Created = strfmt.NewDateTime()
+		thread.Created = nil
 	}
 
 	// Check

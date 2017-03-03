@@ -19,7 +19,7 @@ type Post struct {
 
 	// Дата создания сообщения на форуме.
 	// Read Only: true
-	Created strfmt.DateTime `json:"created,omitempty"`
+	Created *strfmt.DateTime `json:"created,omitempty"`
 
 	// Идентификатор форума (slug) данного сообещния.
 	// Read Only: true

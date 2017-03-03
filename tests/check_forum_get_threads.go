@@ -75,11 +75,11 @@ func CheckForumGetThreadsSimple(c *client.Forum, m *Modify) {
 			WithDesc(desc).
 			WithSince(since).
 			WithContext(Expected(200, &expected, nil)))
-		since = &threads[m-1].Created
+		since = threads[m-1].Created
 	}
 
 	// Check read after all
-	after_last := strfmt.DateTime(time.Time(threads[len(threads)-1].Created).Add(small))
+	after_last := strfmt.DateTime(time.Time(*threads[len(threads)-1].Created).Add(small))
 	c.Operations.ForumGetThreads(operations.NewForumGetThreadsParams().
 		WithSlug(forum.Slug).
 		WithLimit(&limit).

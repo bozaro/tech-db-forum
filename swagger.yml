@@ -682,6 +682,7 @@ definitions:
         format: date-time
         description: Дата создания ветки на форуме.
         example: 2017-01-01T00:00:00.000Z
+        x-isnullable: true
   ThreadUpdate:
     description: |
       Сообщение для обновления ветки обсуждения на форуме.
@@ -741,6 +742,7 @@ definitions:
         format: date-time
         description: Дата создания сообщения на форуме.
         readOnly: true
+        x-isnullable: true
   PostUpdate:
     description: |
       Сообщение для обновления сообщения внутри ветки на форуме.

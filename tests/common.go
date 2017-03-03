@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/go-openapi/strfmt"
 	"io"
 	"io/ioutil"
 	"reflect"
@@ -22,7 +23,15 @@ type ThreadByCreated []models.Thread
 func (a ThreadByCreated) Len() int      { return len(a) }
 func (a ThreadByCreated) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ThreadByCreated) Less(i, j int) bool {
-	return time.Time(a[i].Created).Before(time.Time(a[j].Created))
+	null_or_default := func(t *strfmt.DateTime) time.Time {
+		if t == nil {
+			return time.Time{}
+		}
+		return time.Time(*t)
+	}
+	time_i := null_or_default(a[i].Created).UTC()
+	time_j := null_or_default(a[j].Created).UTC()
+	return time_i.Before(time_j)
 }
 
 func CheckNil(err interface{}) {

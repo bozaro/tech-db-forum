@@ -87,7 +87,7 @@ func highlightJsBuildSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "highlight.js/build.sh", size: 54, mode: os.FileMode(509), modTime: time.Unix(1487944299, 0)}
+	info := bindataFileInfo{name: "highlight.js/build.sh", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -107,7 +107,7 @@ func highlightJsHighlightPackJs() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "highlight.js/highlight.pack.js", size: 32442, mode: os.FileMode(436), modTime: time.Unix(1487944269, 0)}
+	info := bindataFileInfo{name: "highlight.js/highlight.pack.js", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -127,7 +127,7 @@ func highlightJsStylesIdeaCss() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "highlight.js/styles/idea.css", size: 1135, mode: os.FileMode(436), modTime: time.Unix(1487939686, 0)}
+	info := bindataFileInfo{name: "highlight.js/styles/idea.css", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -147,7 +147,7 @@ func templateCss() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template.css", size: 2418, mode: os.FileMode(436), modTime: time.Unix(1487959409, 0)}
+	info := bindataFileInfo{name: "template.css", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -167,7 +167,7 @@ func templateHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template.html", size: 5456, mode: os.FileMode(436), modTime: time.Unix(1487962641, 0)}
+	info := bindataFileInfo{name: "template.html", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

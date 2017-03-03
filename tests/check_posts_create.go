@@ -117,6 +117,7 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 		author = thread.Author
 	}
 	base_id := 42
+	example_time := strfmt.DateTime(time.Now())
 	for n, post := range posts {
 		if post.Author == "" {
 			if author == "" {
@@ -129,7 +130,7 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 		expectedPost := *post
 		expectedPost.ID = int64(base_id + n)
 		expectedPost.Thread = postsThread
-		expectedPost.Created = strfmt.DateTime(time.Now())
+		expectedPost.Created = &example_time
 		expectedPost.Forum = postsForum
 		expected = append(expected, &expectedPost)
 	}
@@ -146,7 +147,9 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 				if !check_forum {
 					post.Forum = ""
 				}
-				post.Created = strfmt.NewDateTime()
+				if post.Created != nil {
+					post.Created = &example_time
+				}
 			}
 			return data
 		})))

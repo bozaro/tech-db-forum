@@ -60,11 +60,12 @@ func RandomForum() *models.Forum {
 }
 
 func RandomThread() *models.Thread {
+	created := strfmt.DateTime(RandomTime())
 	return &models.Thread{
 		Message: lorem.Paragraph(1, 20),
 		Slug:    slug_id.Generate(),
 		Title:   lorem.Sentence(1, 10),
-		Created: strfmt.DateTime(RandomTime()),
+		Created: &created,
 	}
 }
 func RandomPost() *models.Post {

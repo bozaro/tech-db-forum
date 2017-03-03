@@ -20,7 +20,7 @@ type Thread struct {
 	Author string `json:"author,omitempty"`
 
 	// Дата создания ветки на форуме.
-	Created strfmt.DateTime `json:"created,omitempty"`
+	Created *strfmt.DateTime `json:"created,omitempty"`
 
 	// Форум, в котором расположена данная ветка обсуждения.
 	// Read Only: true
