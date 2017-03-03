@@ -53,18 +53,20 @@ func init() {
 func CheckUserUpdateSimple(c *client.Forum) {
 	user := CreateUser(c, nil)
 
-	update := RandomUser()
-	update.Nickname = ""
-
-	expected := *update
+	expected := RandomUser()
 	expected.Nickname = user.Nickname
+	update := models.UserUpdate{
+		About:    expected.About,
+		Email:    expected.Email,
+		Fullname: expected.Fullname,
+	}
 
 	c.Operations.UserUpdate(operations.NewUserUpdateParams().
 		WithNickname(user.Nickname).
-		WithProfile(update).
+		WithProfile(&update).
 		WithContext(Expected(200, &expected, nil)))
 
-	CheckUser(c, &expected)
+	CheckUser(c, expected)
 }
 
 func CheckUserUpdateEmpty(c *client.Forum) {
@@ -72,7 +74,7 @@ func CheckUserUpdateEmpty(c *client.Forum) {
 
 	c.Operations.UserUpdate(operations.NewUserUpdateParams().
 		WithNickname(user.Nickname).
-		WithProfile(&models.User{}).
+		WithProfile(&models.UserUpdate{}).
 		WithContext(Expected(200, user, nil)))
 
 	CheckUser(c, user)
@@ -81,7 +83,7 @@ func CheckUserUpdateEmpty(c *client.Forum) {
 func CheckUserUpdatePart(c *client.Forum, m *Modify) {
 	fake := RandomUser()
 	expected := CreateUser(c, nil)
-	update := &models.User{}
+	update := &models.UserUpdate{}
 
 	// Email
 	if m.Bool() {
@@ -120,7 +122,7 @@ func CheckUserUpdateConflict(c *client.Forum, m *Modify) {
 	user1 := CreateUser(c, nil)
 	user2 := CreateUser(c, nil)
 
-	update := &models.User{
+	update := &models.UserUpdate{
 		Email: strfmt.Email(m.Case(user1.Email.String())),
 	}
 

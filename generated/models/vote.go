@@ -9,7 +9,6 @@ import (
 	strfmt "github.com/go-openapi/strfmt"
 
 	"github.com/go-openapi/errors"
-	"github.com/go-openapi/swag"
 	"github.com/go-openapi/validate"
 )
 
@@ -19,15 +18,22 @@ import (
 type Vote struct {
 
 	// Идентификатор пользователя.
-	Nickname string `json:"nickname,omitempty"`
+	// Required: true
+	Nickname string `json:"nickname"`
 
 	// Отданный голос.
-	Voice int32 `json:"voice,omitempty"`
+	// Required: true
+	Voice int32 `json:"voice"`
 }
 
 // Validate validates this vote
 func (m *Vote) Validate(formats strfmt.Registry) error {
 	var res []error
+
+	if err := m.validateNickname(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
 
 	if err := m.validateVoice(formats); err != nil {
 		// prop
@@ -37,6 +43,15 @@ func (m *Vote) Validate(formats strfmt.Registry) error {
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *Vote) validateNickname(formats strfmt.Registry) error {
+
+	if err := validate.RequiredString("nickname", "body", string(m.Nickname)); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -62,8 +77,8 @@ func (m *Vote) validateVoiceEnum(path, location string, value int32) error {
 
 func (m *Vote) validateVoice(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Voice) { // not required
-		return nil
+	if err := validate.Required("voice", "body", int32(m.Voice)); err != nil {
+		return err
 	}
 
 	// value enum

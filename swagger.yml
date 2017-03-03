@@ -533,7 +533,7 @@ paths:
         description: Изменения профиля пользователя.
         required: true
         schema:
-          $ref: '#/definitions/User'
+          $ref: '#/definitions/UserUpdate'
       responses:
         200:
           description: |
@@ -555,21 +555,30 @@ definitions:
         format: int32
         description: Кол-во пользователей в базе данных.
         example: 1000
+        x-isnullable: false
       forum:
         type: number
         format: int32
         description: Кол-во разделов в базе данных.
         example: 100
+        x-isnullable: false
       thread:
         type: number
         format: int32
         description: Кол-во веток обсуждения в базе данных.
         example: 1000
+        x-isnullable: false
       post:
         type: number
         format: int64
         description: Кол-во сообщений в базе данных.
         example: 1000000
+        x-isnullable: false
+    required:
+    - user
+    - forum
+    - thread
+    - post
   User:
     description: |
       Информация о пользователе.
@@ -584,6 +593,30 @@ definitions:
           Данное поле допускает только латиницу, цифры и знак подчеркивания.
           Сравнение имени регистронезависимо.
         example: j.sparrow
+      fullname:
+        type: string
+        description: Полное имя пользователя.
+        example: Captain Jack Sparrow
+        x-isnullable: false
+      about:
+        type: string
+        format: text
+        description: Описание пользователя.
+        example: This is the day you will always remember as the day that you almost caught Captain Jack Sparrow!
+      email:
+        type: string
+        format: email
+        description: Почтовый адрес пользователя (уникальное поле).
+        example: captaina@blackpearl.sea
+        x-isnullable: false
+    required:
+    - fullname
+    - email
+  UserUpdate:
+    description: |
+      Информация о пользователе.
+    type: object
+    properties:
       fullname:
         type: string
         description: Полное имя пользователя.
@@ -607,17 +640,20 @@ definitions:
         type: string
         description: Название форума.
         example: Pirate stories
+        x-isnullable: false
       user:
         type: string
         format: identity
         description: Nickname пользователя, который отвечает за форум (уникальное поле).
         example: j.sparrow
+        x-isnullable: false
       slug:
         type: string
         format: identity
         description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
         pattern: ^(\d|\w|-|_)*(\w|-|_)(\d|\w|-|_)*$
         example: pirate-stories
+        x-isnullable: false
       posts:
         type: number
         format: int64
@@ -632,6 +668,10 @@ definitions:
         description: |
           Общее кол-во ветвей обсуждения в данном форуме.
         example: 200
+    required:
+    - title
+    - user
+    - slug
   Thread:
     description: |
       Ветка обсуждения на форуме.
@@ -647,11 +687,13 @@ definitions:
         type: string
         description: Заголовок ветки обсуждения.
         example: Davy Jones cache
+        x-isnullable: false
       author:
         type: string
         format: identity
         description: Пользователь, создавший данную тему.
         example: j.sparrow
+        x-isnullable: false
       forum:
         type: string
         format: identity
@@ -663,6 +705,7 @@ definitions:
         format: text
         description: Описание ветки обсуждения.
         example: An urgent need to reveal the hiding place of Davy Jones. Who is willing to help in this matter?
+        x-isnullable: false
       votes:
         type: number
         format: int32
@@ -683,6 +726,10 @@ definitions:
         description: Дата создания ветки на форуме.
         example: 2017-01-01T00:00:00.000Z
         x-isnullable: true
+    required:
+    - title
+    - author
+    - message
   ThreadUpdate:
     description: |
       Сообщение для обновления ветки обсуждения на форуме.
@@ -718,11 +765,13 @@ definitions:
         format: identity
         description: Автор, написавший данное сообщение.
         example: j.sparrow
+        x-isnullable: false
       message:
         type: string
         format: text
         description: Собственно сообщение форума.
         example: We should be afraid of the Kraken.
+        x-isnullable: false
       isEdited:
         type: boolean
         description: Истина, если данное сообщение было изменено.
@@ -743,6 +792,9 @@ definitions:
         description: Дата создания сообщения на форуме.
         readOnly: true
         x-isnullable: true
+    required:
+    - author
+    - message
   PostUpdate:
     description: |
       Сообщение для обновления сообщения внутри ветки на форуме.
@@ -790,6 +842,7 @@ definitions:
         type: string
         format: identity
         description: Идентификатор пользователя.
+        x-isnullable: false
       voice:
         type: number
         format: int32
@@ -797,3 +850,7 @@ definitions:
         enum:
         - -1
         - 1
+        x-isnullable: false
+    required:
+    - nickname
+    - voice

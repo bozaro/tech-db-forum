@@ -7,6 +7,7 @@ import (
 	strfmt "github.com/go-openapi/strfmt"
 
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/validate"
 )
 
 // User Информация о пользователе.
@@ -18,10 +19,12 @@ type User struct {
 	About string `json:"about,omitempty"`
 
 	// Почтовый адрес пользователя (уникальное поле).
-	Email strfmt.Email `json:"email,omitempty"`
+	// Required: true
+	Email strfmt.Email `json:"email"`
 
 	// Полное имя пользователя.
-	Fullname string `json:"fullname,omitempty"`
+	// Required: true
+	Fullname string `json:"fullname"`
 
 	// Имя пользователя (уникальное поле).
 	// Данное поле допускает только латиницу, цифры и знак подчеркивания.
@@ -35,8 +38,36 @@ type User struct {
 func (m *User) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateEmail(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
+	if err := m.validateFullname(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *User) validateEmail(formats strfmt.Registry) error {
+
+	if err := validate.Required("email", "body", strfmt.Email(m.Email)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *User) validateFullname(formats strfmt.Registry) error {
+
+	if err := validate.RequiredString("fullname", "body", string(m.Fullname)); err != nil {
+		return err
+	}
+
 	return nil
 }

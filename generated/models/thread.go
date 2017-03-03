@@ -17,7 +17,8 @@ import (
 type Thread struct {
 
 	// Пользователь, создавший данную тему.
-	Author string `json:"author,omitempty"`
+	// Required: true
+	Author string `json:"author"`
 
 	// Дата создания ветки на форуме.
 	Created *strfmt.DateTime `json:"created,omitempty"`
@@ -31,7 +32,8 @@ type Thread struct {
 	ID int32 `json:"id,omitempty"`
 
 	// Описание ветки обсуждения.
-	Message string `json:"message,omitempty"`
+	// Required: true
+	Message string `json:"message"`
 
 	// Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
 	// В данной структуре slug опционален и не может быть числом.
@@ -41,7 +43,8 @@ type Thread struct {
 	Slug string `json:"slug,omitempty"`
 
 	// Заголовок ветки обсуждения.
-	Title string `json:"title,omitempty"`
+	// Required: true
+	Title string `json:"title"`
 
 	// Кол-во голосов непосредственно за данное сообщение форума.
 	// Read Only: true
@@ -52,7 +55,22 @@ type Thread struct {
 func (m *Thread) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateAuthor(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
+	if err := m.validateMessage(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
 	if err := m.validateSlug(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
+	if err := m.validateTitle(formats); err != nil {
 		// prop
 		res = append(res, err)
 	}
@@ -63,6 +81,24 @@ func (m *Thread) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *Thread) validateAuthor(formats strfmt.Registry) error {
+
+	if err := validate.RequiredString("author", "body", string(m.Author)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Thread) validateMessage(formats strfmt.Registry) error {
+
+	if err := validate.RequiredString("message", "body", string(m.Message)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *Thread) validateSlug(formats strfmt.Registry) error {
 
 	if swag.IsZero(m.Slug) { // not required
@@ -70,6 +106,15 @@ func (m *Thread) validateSlug(formats strfmt.Registry) error {
 	}
 
 	if err := validate.Pattern("slug", "body", string(m.Slug), `^(\d|\w|-|_)*(\w|-|_)(\d|\w|-|_)*$`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Thread) validateTitle(formats strfmt.Registry) error {
+
+	if err := validate.RequiredString("title", "body", string(m.Title)); err != nil {
 		return err
 	}
 

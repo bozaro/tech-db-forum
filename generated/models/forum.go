@@ -7,7 +7,6 @@ import (
 	strfmt "github.com/go-openapi/strfmt"
 
 	"github.com/go-openapi/errors"
-	"github.com/go-openapi/swag"
 	"github.com/go-openapi/validate"
 )
 
@@ -22,8 +21,9 @@ type Forum struct {
 	Posts int64 `json:"posts,omitempty"`
 
 	// Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
+	// Required: true
 	// Pattern: ^(\d|\w|-|_)*(\w|-|_)(\d|\w|-|_)*$
-	Slug string `json:"slug,omitempty"`
+	Slug string `json:"slug"`
 
 	// Общее кол-во ветвей обсуждения в данном форуме.
 	//
@@ -31,10 +31,12 @@ type Forum struct {
 	Threads int32 `json:"threads,omitempty"`
 
 	// Название форума.
-	Title string `json:"title,omitempty"`
+	// Required: true
+	Title string `json:"title"`
 
 	// Nickname пользователя, который отвечает за форум (уникальное поле).
-	User string `json:"user,omitempty"`
+	// Required: true
+	User string `json:"user"`
 }
 
 // Validate validates this forum
@@ -42,6 +44,16 @@ func (m *Forum) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateSlug(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
+	if err := m.validateTitle(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
+	if err := m.validateUser(formats); err != nil {
 		// prop
 		res = append(res, err)
 	}
@@ -54,11 +66,29 @@ func (m *Forum) Validate(formats strfmt.Registry) error {
 
 func (m *Forum) validateSlug(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Slug) { // not required
-		return nil
+	if err := validate.RequiredString("slug", "body", string(m.Slug)); err != nil {
+		return err
 	}
 
 	if err := validate.Pattern("slug", "body", string(m.Slug), `^(\d|\w|-|_)*(\w|-|_)(\d|\w|-|_)*$`); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Forum) validateTitle(formats strfmt.Registry) error {
+
+	if err := validate.RequiredString("title", "body", string(m.Title)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Forum) validateUser(formats strfmt.Registry) error {
+
+	if err := validate.RequiredString("user", "body", string(m.User)); err != nil {
 		return err
 	}
 

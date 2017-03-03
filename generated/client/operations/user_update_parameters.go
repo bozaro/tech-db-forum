@@ -71,7 +71,7 @@ type UserUpdateParams struct {
 	  Изменения профиля пользователя.
 
 	*/
-	Profile *models.User
+	Profile *models.UserUpdate
 
 	timeout    time.Duration
 	Context    context.Context
@@ -123,13 +123,13 @@ func (o *UserUpdateParams) SetNickname(nickname string) {
 }
 
 // WithProfile adds the profile to the user update params
-func (o *UserUpdateParams) WithProfile(profile *models.User) *UserUpdateParams {
+func (o *UserUpdateParams) WithProfile(profile *models.UserUpdate) *UserUpdateParams {
 	o.SetProfile(profile)
 	return o
 }
 
 // SetProfile adds the profile to the user update params
-func (o *UserUpdateParams) SetProfile(profile *models.User) {
+func (o *UserUpdateParams) SetProfile(profile *models.UserUpdate) {
 	o.Profile = profile
 }
 
@@ -145,7 +145,7 @@ func (o *UserUpdateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Re
 	}
 
 	if o.Profile == nil {
-		o.Profile = new(models.User)
+		o.Profile = new(models.UserUpdate)
 	}
 
 	if err := r.SetBodyParam(o.Profile); err != nil {

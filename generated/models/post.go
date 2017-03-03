@@ -7,6 +7,7 @@ import (
 	strfmt "github.com/go-openapi/strfmt"
 
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/validate"
 )
 
 // Post Сообщение внутри ветки обсуждения на форуме.
@@ -15,7 +16,8 @@ import (
 type Post struct {
 
 	// Автор, написавший данное сообщение.
-	Author string `json:"author,omitempty"`
+	// Required: true
+	Author string `json:"author"`
 
 	// Дата создания сообщения на форуме.
 	// Read Only: true
@@ -34,7 +36,8 @@ type Post struct {
 	IsEdited *bool `json:"isEdited,omitempty"`
 
 	// Собственно сообщение форума.
-	Message string `json:"message,omitempty"`
+	// Required: true
+	Message string `json:"message"`
 
 	// Идентификатор родительского сообщения (0 - корневое сообщение обсуждения).
 	//
@@ -49,8 +52,36 @@ type Post struct {
 func (m *Post) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateAuthor(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
+	if err := m.validateMessage(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *Post) validateAuthor(formats strfmt.Registry) error {
+
+	if err := validate.RequiredString("author", "body", string(m.Author)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Post) validateMessage(formats strfmt.Registry) error {
+
+	if err := validate.RequiredString("message", "body", string(m.Message)); err != nil {
+		return err
+	}
+
 	return nil
 }

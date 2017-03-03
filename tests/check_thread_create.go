@@ -162,6 +162,8 @@ func CheckThreadCreateNoAuthor(c *client.Forum) {
 
 func CheckThreadCreateNoForum(c *client.Forum) {
 	thread := RandomThread()
+	user := CreateUser(c, nil)
+	thread.Author = user.Nickname
 	forum := RandomForum()
 	_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
 		WithSlug(forum.Slug).
