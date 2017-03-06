@@ -20,7 +20,7 @@ func init() {
 	})
 	Register(Checker{
 		Name:        "forum_get_users_collation",
-		Description: "",
+		Description: "Данный тест проверяет корректность сортировки пользователей.",
 		FnCheck:     Modifications(CheckForumGetUsersCollation),
 		Deps: []string{
 			"posts_create_simple",
@@ -146,7 +146,7 @@ func CheckForumGetUsersCollation(c *client.Forum, m *Modify) {
 	// Пост, который не участвует в данном форуме
 	CreatePost(c, nil, nil)
 	// Суффиксы пользователей
-	prefix := nick_id.Generate()
+	prefix := nick_id.Generate() + "."
 	suffixes := []string{
 		"joe",
 		"_joe",
