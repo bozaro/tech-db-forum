@@ -30,10 +30,6 @@ func RandomTime() time.Time {
 		Round(time.Millisecond)
 }
 
-func RandomMarker() string {
-	return slug_id.Generate()
-}
-
 func RandomEmail() strfmt.Email {
 	return strfmt.Email(RandomNickname() + "@" + lorem.Host())
 }

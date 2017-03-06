@@ -198,9 +198,12 @@ func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
 	id := m.SlugOrId(thread)
 
 	// Check read all
+	fake_marker := "some marker"
 	marker_filter := func(data interface{}) interface{} {
 		page := data.(*models.PostPage)
-		page.Marker = ""
+		if len(page.Marker) > 0 {
+			page.Marker = fake_marker
+		}
 		return page
 	}
 	all_posts := SortPosts(tree, desc != nil && *desc, limitType, 0)[0]
@@ -209,7 +212,7 @@ func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
 		WithSort(sortType).
 		WithDesc(desc).
 		WithContext(Expected(200, &models.PostPage{
-			RandomMarker(),
+			fake_marker,
 			all_posts,
 		}, marker_filter)))
 
@@ -225,7 +228,7 @@ func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
 			WithDesc(desc).
 			WithMarker(marker).
 			WithContext(Expected(200, &models.PostPage{
-				RandomMarker(),
+				fake_marker,
 				batch,
 			}, marker_filter)))
 		CheckNil(err)
