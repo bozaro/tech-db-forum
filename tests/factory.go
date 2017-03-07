@@ -64,10 +64,19 @@ func RandomThread() *models.Thread {
 		Created: &created,
 	}
 }
+
 func RandomPost() *models.Post {
 	edited := false
 	return &models.Post{
 		Message:  lorem.Paragraph(1, 20),
 		IsEdited: &edited,
 	}
+}
+
+func RandomPosts(count int) []*models.Post {
+	posts := make([]*models.Post, count)
+	for i := range posts {
+		posts[i] = RandomPost()
+	}
+	return posts
 }

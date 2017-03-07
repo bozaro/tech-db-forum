@@ -30,6 +30,14 @@ func init() {
 			"forum_get_one_simple",
 		},
 	})
+	Register(Checker{
+		Name:        "forum_get_one_counter",
+		Description: "",
+		FnCheck:     CheckForumGetOneCounter,
+		Deps: []string{
+			"posts_create_simple",
+		},
+	})
 }
 
 func CheckForumGetOneSimple(c *client.Forum) {
@@ -52,4 +60,18 @@ func CheckForumGetOneNocase(c *client.Forum, m *Modify) {
 		WithSlug(slug).
 		WithContext(Expected(200, forum, nil)))
 	CheckNil(err)
+}
+
+func CheckForumGetOneCounter(c *client.Forum) {
+	forum := CreateForum(c, nil, nil)
+
+	t1 := CreateThread(c, nil, forum, nil)
+	CreatePosts(c, RandomPosts(3), t1)
+	t2 := CreateThread(c, nil, forum, nil)
+	CreatePosts(c, RandomPosts(5), t2)
+	CreatePosts(c, RandomPosts(2), t1)
+
+	forum.Threads = 2
+	forum.Posts = 10
+	CheckForum(c, forum)
 }
