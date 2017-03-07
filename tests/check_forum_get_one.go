@@ -63,15 +63,22 @@ func CheckForumGetOneNocase(c *client.Forum, m *Modify) {
 }
 
 func CheckForumGetOneCounter(c *client.Forum) {
-	forum := CreateForum(c, nil, nil)
+	f1 := CreateForum(c, nil, nil)
+	f2 := CreateForum(c, nil, nil)
 
-	t1 := CreateThread(c, nil, forum, nil)
+	t1 := CreateThread(c, nil, f1, nil)
 	CreatePosts(c, RandomPosts(3), t1)
-	t2 := CreateThread(c, nil, forum, nil)
+	t2 := CreateThread(c, nil, f1, nil)
 	CreatePosts(c, RandomPosts(5), t2)
 	CreatePosts(c, RandomPosts(2), t1)
+	t3 := CreateThread(c, nil, f2, nil)
+	CreatePosts(c, RandomPosts(4), t3)
 
-	forum.Threads = 2
-	forum.Posts = 10
-	CheckForum(c, forum)
+	f1.Threads = 2
+	f1.Posts = 10
+	CheckForum(c, f1)
+
+	f2.Threads = 1
+	f2.Posts = 4
+	CheckForum(c, f2)
 }
