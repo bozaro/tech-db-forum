@@ -38,21 +38,22 @@ export PATH="\$GOPATH/bin:\$PATH"
 cd src/$goProject
 
 # Build application
-go build
-GOOS=linux	GOARCH=amd64	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum
-GOOS=linux	GOARCH=386	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum
-GOOS=darwin	GOARCH=amd64	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum
-GOOS=darwin	GOARCH=386	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum
-GOOS=windows	GOARCH=amd64	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum.exe
-GOOS=windows	GOARCH=386	; go build -o build/\${GOOS}_\${GOARCH}/tech-db-forum.exe
+function go_build {
+    GOOS=\$1 GOARCH=\$2 go build -o build/\$1_\$2/tech-db-forum\$3
+    pushd build/\$1_\$2
+    zip ../../target/dist/\$1_\$2.zip tech-db-forum\$3
+    popd
+}
 
 rm -fR target/dist/
 mkdir -p target/dist/
-for i in build/*/; do
-  pushd \$i
-  zip ../../target/dist/`basename \$i`.zip *
-  popd
-done
+
+go_build linux   amd64
+go_build linux   386
+go_build darwin  amd64
+go_build windows amd64 .exe
+go_build windows 386   .exe
+
 git branch -fD gh-pages || true
 git branch -rd origin/gh-pages || true
 ghp-import -n target/dist
