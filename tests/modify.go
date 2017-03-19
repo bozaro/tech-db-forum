@@ -31,13 +31,13 @@ func (self *Modify) Bool() bool {
 func (self *Modify) NullableBool() *bool {
 	switch self.Int(3) {
 	case 0:
-		v := true
-		return &v
+		return nil
 	case 1:
 		v := false
 		return &v
 	case 2:
-		return nil
+		v := true
+		return &v
 	default:
 		panic("Unexpected value")
 	}

@@ -2,6 +2,7 @@ package tests
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -124,7 +125,10 @@ func (self *Validator) RoundTrip(req *http.Request) (*http.Response, error) {
 		self.report.AddError(err)
 		return nil, err
 	}
-	res, err := http.DefaultTransport.RoundTrip(req)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	res, err := tr.RoundTrip(req)
 	if err != nil {
 		self.report.AddError(err)
 		return nil, err

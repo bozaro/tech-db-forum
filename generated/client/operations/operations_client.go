@@ -39,7 +39,7 @@ func (a *Client) Clear(params *ClearParams) (*ClearOK, error) {
 		Method:             "POST",
 		PathPattern:        "/service/clear",
 		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json", "application/octet-stream"},
 		Schemes:            []string{"http", "https"},
 		Params:             params,
 		Reader:             &ClearReader{formats: a.formats},
@@ -250,6 +250,8 @@ func (a *Client) PostUpdate(params *PostUpdateParams) (*PostUpdateOK, error) {
 PostsCreate созданиеs новых постов
 
 Добавление новых постов в ветку обсуждения на форум.
+
+Все посты, созданные в рамках одного вызова данного метода должны иметь одинаковую дату создания (Post.Created).
 
 */
 func (a *Client) PostsCreate(params *PostsCreateParams) (*PostsCreateCreated, error) {

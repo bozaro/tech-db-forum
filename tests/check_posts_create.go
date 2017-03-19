@@ -19,6 +19,14 @@ func init() {
 		},
 	})
 	Register(Checker{
+		Name:        "posts_create_same_time",
+		Description: "",
+		FnCheck:     Modifications(CheckPostCreateSameTime),
+		Deps: []string{
+			"posts_create_simple",
+		},
+	})
+	Register(Checker{
 		Name:        "posts_create_empty",
 		Description: "",
 		FnCheck:     Modifications(CheckPostCreateEmpty),
@@ -140,6 +148,20 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 		WithPosts(posts).
 		WithContext(Expected(201, &expected, func(data interface{}) interface{} {
 			posts := data.(*[]*models.Post)
+
+			var first_time *strfmt.DateTime
+			same_time := true
+			for _, post := range *posts {
+				if post.Created != nil {
+					if first_time == nil {
+						first_time = post.Created
+					}
+					if *first_time != *post.Created {
+						same_time = false
+					}
+				}
+			}
+
 			for n, post := range *posts {
 				if post.ID != 0 {
 					post.ID = int64(base_id + n)
@@ -147,14 +169,14 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 				if !check_forum {
 					post.Forum = ""
 				}
-				if post.Created != nil {
+				if same_time && (post.Created != nil) {
 					post.Created = &example_time
 				}
 			}
 			return data
 		})))
-	CheckNil(err)
 
+	CheckNil(err)
 	return result.Payload
 }
 
@@ -180,6 +202,17 @@ func CheckPostCreateSimple(c *client.Forum, m *Modify) {
 		thread.Slug = ""
 	}
 	CreatePost(c, nil, thread)
+}
+
+func CheckPostCreateSameTime(c *client.Forum, m *Modify) {
+	thread := CreateThread(c, nil, nil, nil)
+	if m.Bool() {
+		thread.Slug = ""
+	}
+	CreatePosts(c, []*models.Post{
+		RandomPost(),
+		RandomPost(),
+	}, thread)
 }
 
 func CheckPostCreateEmpty(c *client.Forum, m *Modify) {

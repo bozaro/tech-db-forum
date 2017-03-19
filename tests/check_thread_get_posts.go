@@ -5,6 +5,7 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
+	"math/rand"
 	"sort"
 )
 
@@ -31,6 +32,14 @@ func init() {
 		},
 	})
 	Register(Checker{
+		Name:        "thread_get_posts_same_time",
+		Description: "",
+		FnCheck:     Modifications(CheckThreadGetPostsSameTime),
+		Deps: []string{
+			"thread_create_simple",
+		},
+	})
+	Register(Checker{
 		Name:        "thread_get_posts_notfound",
 		Description: "",
 		FnCheck:     CheckThreadGetPostsNotFound,
@@ -40,30 +49,7 @@ func init() {
 	})
 }
 
-func CreateTree(c *client.Forum, thread *models.Thread) []OrderedPost {
-	tree := [][]int{
-		{1},
-		{1, 2},
-		{1, 2, 14},
-		{1, 2, 15},
-		{1, 3},
-		{1, 3, 5},
-		{1, 3, 5, 6},
-		{1, 3, 5, 6, 7},
-		{1, 3, 5, 8},
-		{1, 3, 5, 8, 10},
-		{1, 3, 5, 9},
-		{1, 4},
-		{11},
-		{11, 17},
-		{11, 17, 20},
-		{11, 19},
-		{12},
-		{12, 16},
-		{13},
-		{13, 18},
-	}
-
+func CreateTree(c *client.Forum, thread *models.Thread, tree [][]int) []OrderedPost {
 	type node struct {
 		parent *node
 		path   string
@@ -79,11 +65,12 @@ func CreateTree(c *client.Forum, thread *models.Thread) []OrderedPost {
 			v.parent = nodes[t[len(t)-2]]
 		}
 		for _, i := range t {
-			v.path += fmt.Sprintf("%02x", i)
+			v.path += fmt.Sprintf("/%04x", i)
 		}
 		keys = append(keys, k)
 		nodes[k] = &v
 	}
+
 	sort.Ints(keys)
 	result := []OrderedPost{}
 	batch := []*node{}
@@ -164,8 +151,52 @@ func SortPosts(posts []OrderedPost, desc bool, limitType func(OrderedPost) int, 
 }
 
 func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
+	tree := [][]int{
+		{1},
+		{1, 2},
+		{1, 2, 14},
+		{1, 2, 15},
+		{1, 3},
+		{1, 3, 5},
+		{1, 3, 5, 6},
+		{1, 3, 5, 6, 7},
+		{1, 3, 5, 8},
+		{13},
+		{1, 3, 5, 8, 10},
+		{1, 3, 5, 9},
+		{13, 18},
+		{12},
+		{12, 16},
+		{11},
+		{11, 17},
+		{11, 19},
+		{11, 17, 20},
+		{1, 4},
+	}
+	CheckThreadGetPosts(c, m, tree, 3)
+}
+
+func CheckThreadGetPostsSameTime(c *client.Forum, m *Modify) {
+	tree := [][]int{}
+	id := 0
+	top := []int{}
+	for i := 0; i < 5; i++ {
+		id++
+		tree = append(tree, []int{id})
+		top = append(top, id)
+	}
+	for i := 0; i < len(top)*10; i++ {
+		tid := top[rand.Intn(len(top))]
+		id++
+		tree = append(tree, []int{tid, id})
+	}
+
+	CheckThreadGetPosts(c, m, tree, -1)
+}
+
+func CheckThreadGetPosts(c *client.Forum, m *Modify, tree [][]int, limit int32) {
 	thread := CreateThread(c, nil, nil, nil)
-	tree := CreateTree(c, thread)
+	posts_tree := CreateTree(c, thread, tree)
 
 	// Sort order
 	var sortType *string
@@ -181,11 +212,11 @@ func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
 	case 2:
 		v := "tree"
 		sortType = &v
-		sort.Sort(PostSortTree(tree))
+		sort.Sort(PostSortTree(posts_tree))
 	case 3:
 		v := "parent_tree"
 		sortType = &v
-		sort.Sort(PostSortTree(tree))
+		sort.Sort(PostSortTree(posts_tree))
 		limitType = func(post OrderedPost) int {
 			return post.top
 		}
@@ -206,46 +237,49 @@ func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
 		}
 		return page
 	}
-	all_posts := SortPosts(tree, desc != nil && *desc, limitType, 0)[0]
+	all_posts := SortPosts(posts_tree, desc != nil && *desc, limitType, 0)[0]
+	full_size := int32(len(all_posts) + 10)
 	c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 		WithSlugOrID(id).
 		WithSort(sortType).
 		WithDesc(desc).
+		WithLimit(&full_size).
 		WithContext(Expected(200, &models.PostPage{
 			fake_marker,
 			all_posts,
 		}, marker_filter)))
 
-	// Check read by 3 records
-	var limit int32 = 3
-	batches := SortPosts(tree, desc != nil && *desc, limitType, int(limit))
-	var marker *string = nil
-	for _, batch := range batches {
-		page, err := c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
+	if limit > 0 {
+		// Check read records page by page
+		batches := SortPosts(posts_tree, desc != nil && *desc, limitType, int(limit))
+		var marker *string = nil
+		for _, batch := range batches {
+			page, err := c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
+				WithSlugOrID(id).
+				WithSort(sortType).
+				WithLimit(&limit).
+				WithDesc(desc).
+				WithMarker(marker).
+				WithContext(Expected(200, &models.PostPage{
+					fake_marker,
+					batch,
+				}, marker_filter)))
+			CheckNil(err)
+			marker = &page.Payload.Marker
+		}
+
+		// Check read after all
+		c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 			WithSlugOrID(id).
 			WithSort(sortType).
 			WithLimit(&limit).
 			WithDesc(desc).
 			WithMarker(marker).
 			WithContext(Expected(200, &models.PostPage{
-				fake_marker,
-				batch,
-			}, marker_filter)))
-		CheckNil(err)
-		marker = &page.Payload.Marker
+				Marker: *marker,
+				Posts:  []*models.Post{},
+			}, nil)))
 	}
-
-	// Check read after all
-	c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
-		WithSlugOrID(id).
-		WithSort(sortType).
-		WithLimit(&limit).
-		WithDesc(desc).
-		WithMarker(marker).
-		WithContext(Expected(200, &models.PostPage{
-			Marker: *marker,
-			Posts:  []*models.Post{},
-		}, nil)))
 }
 
 func CheckThreadGetPostsNotFound(c *client.Forum) {
