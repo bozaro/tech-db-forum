@@ -95,6 +95,16 @@ var cmdFill = &cli.Command{
 	},
 }
 
+var cmdVersion = &cli.Command{
+	Name: "version",
+	Desc: "show version",
+	Argv: func() interface{} { return new(CmdFillT) },
+	Fn: func(ctx *cli.Context) error {
+		fmt.Println(tests.VersionFull())
+		return nil
+	},
+}
+
 func main() {
 	format := logging.MustStringFormatter(
 		`%{color}%{time:15:04:05.000} %{level:.4s}%{color:reset} %{message}`,
@@ -110,6 +120,7 @@ func main() {
 	if err := cli.Root(root,
 		cli.Tree(cmdFunc),
 		cli.Tree(cmdFill),
+		cli.Tree(cmdVersion),
 	).Run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

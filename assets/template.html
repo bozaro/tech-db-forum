@@ -29,6 +29,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="generator" content="{{ .Version }}" />
     <title>
         {{ if eq .Failed 0 }}
         [SUCCESS]
@@ -68,7 +69,7 @@
 {{ else }}
 <div class="total_result failed">[FAILED]</div>
 {{ end }}
-<h1>
+<h1 title="{{ .Version }}">
     Результат функционального тестирования
 </h1>
 <div class="summary">

@@ -39,7 +39,9 @@ cd src/$goProject
 
 # Build application
 function go_build {
-    GOOS=\$1 GOARCH=\$2 go build -o build/\$1_\$2/tech-db-forum\$3
+    GIT_COMMIT=`git rev-parse --verify HEAD`
+    GOOS=\$1 GOARCH=\$2 go build -ldflags " -X github.com/bozaro/tech-db-forum/tests.BuildTag=\${BUILD_TAG} -X github.com/bozaro/tech-db-forum/tests.GitCommit=\${GIT_COMMIT}" -o build/\$1_\$2/tech-db-forum\$3
+
     pushd build/\$1_\$2
     zip ../../target/dist/\$1_\$2.zip tech-db-forum\$3
     popd
