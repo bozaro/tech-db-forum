@@ -156,12 +156,12 @@ func reportTemplate() *template.Template {
 	}
 
 	tmpl, err := template.
-		New("template.html").
+	New("template.html").
 		Funcs(template.FuncMap{
-			"uid":   templateUid,
-			"asset": templateAsset,
-			"dict":  templateDict,
-		}).
+		"uid":   templateUid,
+		"asset": templateAsset,
+		"dict":  templateDict,
+	}).
 		Parse(string(data))
 	if err != nil {
 		panic(err)
@@ -223,12 +223,14 @@ func Run(url *url.URL, mask *regexp.Regexp, report_file string, keep bool) int {
 			Success int
 			Skipped int
 			Reports []*Report
+			Version string
 		}{
 			Total:   total,
 			Failed:  failed,
 			Success: total - failed - skipped,
 			Skipped: skipped,
 			Reports: reports,
+			Version: VersionFull(),
 		})
 		if err != nil {
 			panic(err)
