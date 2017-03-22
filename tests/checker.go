@@ -156,12 +156,12 @@ func reportTemplate() *template.Template {
 	}
 
 	tmpl, err := template.
-	New("template.html").
+		New("template.html").
 		Funcs(template.FuncMap{
-		"uid":   templateUid,
-		"asset": templateAsset,
-		"dict":  templateDict,
-	}).
+			"uid":   templateUid,
+			"asset": templateAsset,
+			"dict":  templateDict,
+		}).
 		Parse(string(data))
 	if err != nil {
 		panic(err)

@@ -7,10 +7,19 @@ import (
 	"github.com/bozaro/tech-db-forum/tests"
 	"github.com/mkideal/cli"
 	"github.com/op/go-logging"
+	"net/http"
 	"net/url"
 	"os"
 	"reflect"
 	"regexp"
+	"time"
+)
+
+const (
+	EXIT_INVALID_COMMAND = iota + 1
+	EXIT_WAIT_ALIVE_TIMEOUT
+	EXIT_FUNC_FAILED
+	EXIT_FILL_FAILED
 )
 
 type parserUrl struct {
@@ -49,7 +58,8 @@ func (parser *parserRegexp) Parse(s string) error {
 
 type CmdCommonT struct {
 	cli.Helper
-	Url *url.URL `cli:"u,url" usage:"base url for testing API" parser:"url" dft:"http://localhost:5000/api"`
+	Url       *url.URL `cli:"u,url" usage:"base url for testing API" parser:"url" dft:"http://localhost:5000/api"`
+	WaitAlive int      `cli:"wait" usage:"wait before remote API make alive (while connection refused or 5XX error on base url)" dft:"30"`
 }
 
 var root = &cli.Command{
@@ -57,7 +67,7 @@ var root = &cli.Command{
 	Argv: func() interface{} { return nil },
 	Fn: func(ctx *cli.Context) error {
 		ctx.WriteUsage()
-		os.Exit(1)
+		os.Exit(EXIT_INVALID_COMMAND)
 		return nil
 	},
 }
@@ -75,7 +85,10 @@ var cmdFunc = &cli.Command{
 	Argv: func() interface{} { return new(CmdFuncT) },
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdFuncT)
-		os.Exit(tests.Run(argv.Url, argv.Test, argv.Report, argv.Keep))
+		waitAlive(argv.CmdCommonT)
+		if tests.Run(argv.Url, argv.Test, argv.Report, argv.Keep) > 0 {
+			os.Exit(EXIT_FUNC_FAILED)
+		}
 		return nil
 	},
 }
@@ -90,7 +103,10 @@ var cmdFill = &cli.Command{
 	Argv: func() interface{} { return new(CmdFillT) },
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdFillT)
-		os.Exit(tests.Fill(argv.Url))
+		waitAlive(argv.CmdCommonT)
+		if tests.Fill(argv.Url) > 0 {
+			os.Exit(EXIT_FILL_FAILED)
+		}
 		return nil
 	},
 }
@@ -103,6 +119,43 @@ var cmdVersion = &cli.Command{
 		fmt.Println(tests.VersionFull())
 		return nil
 	},
+}
+var log = logging.MustGetLogger("main")
+
+func waitAlive(argv CmdCommonT) {
+	req, err := http.NewRequest("GET", argv.Url.String(), nil)
+	if err != nil {
+		panic(err)
+	}
+	lst := ""
+
+	if argv.WaitAlive <= 0 {
+		return
+	}
+	timeout := time.Now().Add(time.Duration(argv.WaitAlive) * time.Second)
+	for time.Now().Before(timeout) {
+		msg := ""
+		if err == nil {
+			res, err := tests.HttpTransport.RoundTrip(req)
+			if err != nil {
+				msg = fmt.Sprintf("Connection error: %s", err.Error())
+			} else if res.StatusCode >= 500 && res.StatusCode < 600 {
+				msg = fmt.Sprintf("Invalid response code: %d", res.StatusCode)
+			} else {
+				if lst != "" {
+					log.Info("Service is alive")
+				}
+				return
+			}
+		}
+		if lst != msg {
+			log.Warning("Service unavailable: " + msg)
+			lst = msg
+		}
+		time.Sleep(time.Second / 10)
+	}
+	log.Error("Wait service alive timeout")
+	os.Exit(EXIT_WAIT_ALIVE_TIMEOUT)
 }
 
 func main() {
@@ -123,6 +176,6 @@ func main() {
 		cli.Tree(cmdVersion),
 	).Run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		os.Exit(EXIT_INVALID_COMMAND)
 	}
 }

@@ -30,10 +30,10 @@ type Validator struct {
 	filter Filter
 }
 
-var httpTransport *http.Transport
+var HttpTransport *http.Transport
 
 func init() {
-	httpTransport = &http.Transport{
+	HttpTransport = &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 }
@@ -133,7 +133,7 @@ func (self *Validator) RoundTrip(req *http.Request) (*http.Response, error) {
 		self.report.AddError(err)
 		return nil, err
 	}
-	res, err := httpTransport.RoundTrip(req)
+	res, err := HttpTransport.RoundTrip(req)
 	if err != nil {
 		self.report.AddError(err)
 		return nil, err
