@@ -28,6 +28,18 @@ func init() {
 	})
 }
 
+func filterThreads(data interface{}) interface{} {
+	threads := data.(*[]models.Thread)
+	for i := range *threads {
+		thread := &(*threads)[i]
+		if thread.Created != nil {
+			created := strfmt.DateTime(time.Time(*thread.Created).UTC())
+			thread.Created = &created
+		}
+	}
+	return threads
+}
+
 func CheckForumGetThreadsSimple(c *client.Forum, m *Modify) {
 	forum := CreateForum(c, nil, nil)
 	threads := []models.Thread{}
@@ -58,7 +70,7 @@ func CheckForumGetThreadsSimple(c *client.Forum, m *Modify) {
 	c.Operations.ForumGetThreads(operations.NewForumGetThreadsParams().
 		WithSlug(forum.Slug).
 		WithDesc(desc).
-		WithContext(Expected(200, &threads, nil)))
+		WithContext(Expected(200, &threads, filterThreads)))
 
 	// Check read by 4 records
 	limit := int32(4)
@@ -74,7 +86,7 @@ func CheckForumGetThreadsSimple(c *client.Forum, m *Modify) {
 			WithLimit(&limit).
 			WithDesc(desc).
 			WithSince(since).
-			WithContext(Expected(200, &expected, nil)))
+			WithContext(Expected(200, &expected, filterThreads)))
 		since = threads[m-1].Created
 	}
 
