@@ -84,7 +84,7 @@ func CheckThreadVoteSimple(c *client.Forum) {
 			Nickname: user1.Nickname,
 			Voice:    1,
 		}).
-		WithContext(Expected(200, &thread, nil)))
+		WithContext(Expected(200, thread, filterThread)))
 	CheckNil(err)
 	// Like user2
 	thread.Votes = 2
@@ -94,7 +94,7 @@ func CheckThreadVoteSimple(c *client.Forum) {
 			Nickname: user2.Nickname,
 			Voice:    1,
 		}).
-		WithContext(Expected(200, &thread, nil)))
+		WithContext(Expected(200, thread, filterThread)))
 	// Like user3
 	thread.Votes = 3
 	_, err = c.Operations.ThreadVote(operations.NewThreadVoteParams().
@@ -103,7 +103,7 @@ func CheckThreadVoteSimple(c *client.Forum) {
 			Nickname: user3.Nickname,
 			Voice:    1,
 		}).
-		WithContext(Expected(200, &thread, nil)))
+		WithContext(Expected(200, thread, filterThread)))
 	// Dislike user2
 	thread.Votes = 1
 	_, err = c.Operations.ThreadVote(operations.NewThreadVoteParams().
@@ -112,7 +112,7 @@ func CheckThreadVoteSimple(c *client.Forum) {
 			Nickname: user2.Nickname,
 			Voice:    -1,
 		}).
-		WithContext(Expected(200, &thread, nil)))
+		WithContext(Expected(200, thread, filterThread)))
 	// Dislike user2 again
 	thread.Votes = 1
 	_, err = c.Operations.ThreadVote(operations.NewThreadVoteParams().
@@ -121,6 +121,6 @@ func CheckThreadVoteSimple(c *client.Forum) {
 			Nickname: user2.Nickname,
 			Voice:    -1,
 		}).
-		WithContext(Expected(200, &thread, nil)))
+		WithContext(Expected(200, thread, filterThread)))
 	CheckNil(err)
 }

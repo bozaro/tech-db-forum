@@ -187,6 +187,6 @@ func CheckThreadCreateConflict(c *client.Forum, m *Modify) {
 	_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
 		WithSlug(forum.Slug).
 		WithThread(conflict).
-		WithContext(Expected(409, thread, nil)))
+		WithContext(Expected(409, thread, filterThread)))
 	CheckIsType(operations.NewThreadCreateConflict(), err)
 }

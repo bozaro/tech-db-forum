@@ -28,14 +28,19 @@ func init() {
 	})
 }
 
+func filterThread(data interface{}) interface{} {
+	thread := data.(*models.Thread)
+	if thread.Created != nil {
+		created := strfmt.DateTime(time.Time(*thread.Created).UTC())
+		thread.Created = &created
+	}
+	return thread
+}
+
 func filterThreads(data interface{}) interface{} {
 	threads := data.(*[]models.Thread)
 	for i := range *threads {
-		thread := &(*threads)[i]
-		if thread.Created != nil {
-			created := strfmt.DateTime(time.Time(*thread.Created).UTC())
-			thread.Created = &created
-		}
+		filterThread(&(*threads)[i])
 	}
 	return threads
 }

@@ -33,7 +33,7 @@ func CheckThreadGetOneSimple(c *client.Forum, m *Modify) {
 	// Check
 	c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
 		WithSlugOrID(id).
-		WithContext(Expected(200, &expected, nil)))
+		WithContext(Expected(200, expected, filterThread)))
 
 	CheckThread(c, expected)
 }
