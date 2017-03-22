@@ -108,7 +108,7 @@ func CreateThread(c *client.Forum, thread *models.Thread, forum *models.Forum, a
 func CheckThread(c *client.Forum, thread *models.Thread) {
 	_, err := c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
 		WithSlugOrID(fmt.Sprintf("%d", thread.ID)).
-		WithContext(Expected(200, thread, nil)))
+		WithContext(Expected(200, thread, filterThread)))
 	CheckNil(err)
 }
 
@@ -187,6 +187,6 @@ func CheckThreadCreateConflict(c *client.Forum, m *Modify) {
 	_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
 		WithSlug(forum.Slug).
 		WithThread(conflict).
-		WithContext(Expected(409, thread, nil)))
+		WithContext(Expected(409, thread, filterThread)))
 	CheckIsType(operations.NewThreadCreateConflict(), err)
 }

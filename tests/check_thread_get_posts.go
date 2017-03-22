@@ -5,8 +5,10 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/go-openapi/strfmt"
 	"math/rand"
 	"sort"
+	"time"
 )
 
 type OrderedPost struct {
@@ -235,7 +237,7 @@ func CheckThreadGetPosts(c *client.Forum, m *Modify, tree [][]int, limit int32) 
 		if len(page.Marker) > 0 {
 			page.Marker = fake_marker
 		}
-		return page
+		return filterPostPage(page)
 	}
 	all_posts := SortPosts(posts_tree, desc != nil && *desc, limitType, 0)[0]
 	full_size := int32(len(all_posts) + 10)
@@ -278,8 +280,19 @@ func CheckThreadGetPosts(c *client.Forum, m *Modify, tree [][]int, limit int32) 
 			WithContext(Expected(200, &models.PostPage{
 				Marker: *marker,
 				Posts:  []*models.Post{},
-			}, nil)))
+			}, filterPostPage)))
 	}
+}
+
+func filterPostPage(data interface{}) interface{} {
+	page := data.(*models.PostPage)
+	for _, post := range page.Posts {
+		if post.Created != nil {
+			created := strfmt.DateTime(time.Time(*post.Created).UTC())
+			post.Created = &created
+		}
+	}
+	return page
 }
 
 func CheckThreadGetPostsNotFound(c *client.Forum) {

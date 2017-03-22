@@ -284,7 +284,7 @@ func CheckForumGetUsersVote(c *client.Forum, m *Modify) {
 			Nickname: user.Nickname,
 			Voice:    1,
 		}).
-		WithContext(Expected(200, &thread, nil)))
+		WithContext(Expected(200, thread, filterThread)))
 	CheckNil(err)
 
 	thread.Votes = 1
