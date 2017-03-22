@@ -277,7 +277,7 @@ func CheckThreadGetPosts(c *client.Forum, m *Modify, tree [][]int, limit int32) 
 			WithLimit(&limit).
 			WithDesc(desc).
 			WithMarker(marker).
-			WithContext(Expected(200, models.PostPage{
+			WithContext(Expected(200, &models.PostPage{
 				Marker: *marker,
 				Posts:  []*models.Post{},
 			}, filterPostPage)))

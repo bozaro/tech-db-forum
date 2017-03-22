@@ -24,6 +24,7 @@ func (self *Report) AddError(err interface{}) {
 		if len(self.Pass) == 0 {
 			self.Pass = []ReportPass{{Name: ""}}
 		}
+		//debug.PrintStack()
 		pass := &self.Pass[len(self.Pass)-1]
 		pass.Failure = fmt.Sprintf("%s", err)
 		self.Result = Failed
@@ -65,6 +66,7 @@ func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *ht
 			log.Warningf("Expected response like:\n%s", reportMessage.Example.String())
 		}
 		log.Errorf("Error:\n%s", DeltaToText(*delta))
+		//debug.PrintStack()
 		self.Result = Failed
 	}
 	// Добавляем сообщение в отчет

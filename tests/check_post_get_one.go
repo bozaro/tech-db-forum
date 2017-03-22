@@ -72,7 +72,15 @@ func CheckPostGetOneRelated(c *client.Forum, m *Modify) {
 	c.Operations.PostGetOne(operations.NewPostGetOneParams().
 		WithID(post.ID).
 		WithRelated(related).
-		WithContext(Expected(200, &expected, nil)))
+		WithContext(Expected(200, &expected, filterPostFull)))
+}
+
+func filterPostFull(data interface{}) interface{} {
+	full := data.(*models.PostFull)
+	if full.Thread != nil {
+		filterThread(full.Thread)
+	}
+	return full
 }
 
 func CheckPostGetOneNotFound(c *client.Forum, m *Modify) {

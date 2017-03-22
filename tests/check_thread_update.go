@@ -58,7 +58,7 @@ func CheckThreadUpdateSimple(c *client.Forum, m *Modify) {
 	c.Operations.ThreadUpdate(operations.NewThreadUpdateParams().
 		WithSlugOrID(id).
 		WithThread(&update).
-		WithContext(Expected(200, &expected, nil)))
+		WithContext(Expected(200, &expected, filterThread)))
 
 	CheckThread(c, &expected)
 }
@@ -69,7 +69,7 @@ func CheckThreadUpdateEmpty(c *client.Forum) {
 	c.Operations.ThreadUpdate(operations.NewThreadUpdateParams().
 		WithSlugOrID(thread.Slug).
 		WithThread(&models.ThreadUpdate{}).
-		WithContext(Expected(200, thread, nil)))
+		WithContext(Expected(200, thread, filterThread)))
 
 	CheckThread(c, thread)
 }
@@ -96,7 +96,7 @@ func CheckThreadUpdatePart(c *client.Forum, m *Modify) {
 	c.Operations.ThreadUpdate(operations.NewThreadUpdateParams().
 		WithSlugOrID(id).
 		WithThread(update).
-		WithContext(Expected(200, &expected, nil)))
+		WithContext(Expected(200, expected, filterThread)))
 
 	CheckThread(c, expected)
 }
