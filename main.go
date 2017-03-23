@@ -58,8 +58,9 @@ func (parser *parserRegexp) Parse(s string) error {
 
 type CmdCommonT struct {
 	cli.Helper
-	Url       *url.URL `cli:"u,url" usage:"base url for testing API" parser:"url" dft:"http://localhost:5000/api"`
-	WaitAlive int      `cli:"wait" usage:"wait before remote API make alive (while connection refused or 5XX error on base url)" dft:"30"`
+	Url             *url.URL `cli:"u,url" usage:"base url for testing API" parser:"url" dft:"http://localhost:5000/api"`
+	WaitAlive       int      `cli:"wait" usage:"wait before remote API make alive (while connection refused or 5XX error on base url)" dft:"30"`
+	DontCheckUpdate bool     `cli:"no-check" usage:"do not check version update"`
 }
 
 var root = &cli.Command{
@@ -85,7 +86,7 @@ var cmdFunc = &cli.Command{
 	Argv: func() interface{} { return new(CmdFuncT) },
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdFuncT)
-		waitAlive(argv.CmdCommonT)
+		commonPrepare(argv.CmdCommonT)
 		if tests.Run(argv.Url, argv.Test, argv.Report, argv.Keep) > 0 {
 			os.Exit(EXIT_FUNC_FAILED)
 		}
@@ -103,7 +104,7 @@ var cmdFill = &cli.Command{
 	Argv: func() interface{} { return new(CmdFillT) },
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdFillT)
-		waitAlive(argv.CmdCommonT)
+		commonPrepare(argv.CmdCommonT)
 		if tests.Fill(argv.Url) > 0 {
 			os.Exit(EXIT_FILL_FAILED)
 		}
@@ -117,10 +118,33 @@ var cmdVersion = &cli.Command{
 	Argv: func() interface{} { return new(CmdFillT) },
 	Fn: func(ctx *cli.Context) error {
 		fmt.Println(tests.VersionFull())
+		if ver, err := tests.VersionCheck(); err == nil {
+			switch ver {
+			case tests.VERSION_LATEST:
+				log.Infof("You use latest version of %s tool.", tests.Project)
+			case tests.VERSION_LOCAL:
+				log.Infof("You use local build of %s tool.", tests.Project)
+			case tests.VERSION_OUTDATE:
+				log.Warningf("You use outdated version of %s tool. Please update.", tests.Project)
+			}
+		}
 		return nil
 	},
 }
 var log = logging.MustGetLogger("main")
+
+func commonPrepare(argv CmdCommonT) {
+	checkUpdate(argv)
+	waitAlive(argv)
+}
+
+func checkUpdate(argv CmdCommonT) {
+	if !argv.DontCheckUpdate {
+		if ver, _ := tests.VersionCheck(); ver == tests.VERSION_OUTDATE {
+			log.Warningf("You use outdated version of %s tool. Please update.", tests.Project)
+		}
+	}
+}
 
 func waitAlive(argv CmdCommonT) {
 	req, err := http.NewRequest("GET", argv.Url.String(), nil)
