@@ -123,9 +123,9 @@ func (abc *Abc) Encode(val, bits uint) []rune {
 	nsymbols := uint(0)
 	randBits := uint(2)
 	if bits > 0 {
-		nsymbols = uint(math.Ceil(math.Log2(float64(val)) / (abc.bits - float64(randBits))))
-	} else if val > 0 {
 		nsymbols = uint(math.Ceil(float64(bits) / (abc.bits - float64(randBits))))
+	} else if val > 0 {
+		nsymbols = uint(math.Ceil(math.Log2(float64(val+1)) / (abc.bits - float64(randBits))))
 	}
 	if nsymbols == 0 {
 		return []rune{}
