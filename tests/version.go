@@ -3,10 +3,10 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/git-lfs/git-lfs/errors"
 	"io/ioutil"
 	"net/http"
 	"runtime"
+	"errors"
 )
 
 var (
