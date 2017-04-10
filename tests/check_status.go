@@ -14,6 +14,11 @@ func init() {
 			"posts_create_simple",
 		},
 	})
+	PerfRegister(PerfTest{
+		Name:   "status",
+		Mode:   ModeRead,
+		Weight: WeightRare,
+	})
 }
 
 func CheckStatus(c *client.Forum) {
@@ -49,4 +54,20 @@ func CheckStatus(c *client.Forum) {
 	_, err = c.Operations.Status(operations.NewStatusParams().
 		WithContext(Expected(200, &status, nil)))
 	CheckNil(err)
+}
+
+func PerfStatus(p *Perf) {
+	global_old := p.data.Status()
+	result, err := p.c.Operations.Status(operations.NewStatusParams().
+		WithContext(Expected(200, nil, nil)))
+	CheckNil(err)
+	global_new := p.data.Status()
+
+	p.Validate(func(v PerfValidator) {
+		payload := result.Payload
+		v.CheckBetween(int(global_old.Forum), int(payload.Forum), int(global_new.Forum), "Incorrect Forum count")
+		v.CheckBetween(int(global_old.Post), int(payload.Post), int(global_new.Post), "Incorrect Post count")
+		v.CheckBetween(int(global_old.User), int(payload.User), int(global_new.User), "Incorrect User count")
+		v.CheckBetween(int(global_old.Thread), int(payload.Thread), int(global_new.Thread), "Incorrect Thread count")
+	})
 }
