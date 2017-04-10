@@ -38,6 +38,18 @@ func init() {
 			"posts_create_simple",
 		},
 	})
+	PerfRegister(PerfTest{
+		Name:   "forum_get_one_success",
+		Mode:   ModeRead,
+		Weight: WeightNormal,
+		FnPerf: PerfForumGetOneSuccess,
+	})
+	PerfRegister(PerfTest{
+		Name:   "forum_get_one_not_found",
+		Mode:   ModeRead,
+		Weight: WeightRare,
+		FnPerf: PerfForumGetOneNotFound,
+	})
 }
 
 func CheckForumGetOneSimple(c *client.Forum) {
@@ -81,4 +93,28 @@ func CheckForumGetOneCounter(c *client.Forum) {
 	f2.Threads = 1
 	f2.Posts = 4
 	CheckForum(c, f2)
+}
+
+func PerfForumGetOneSuccess(p *Perf) {
+	idx := p.data.GetForumIndex()
+	forum_old := p.data.GetForumData(idx, false)
+	result, err := p.c.Operations.ForumGetOne(operations.NewForumGetOneParams().
+		WithSlug(forum_old.Slug).
+		WithContext(Expected(200, nil, nil)))
+	CheckNil(err)
+
+	p.Validate(func(v PerfValidator) {
+		forum_new := p.data.GetForumData(idx, true)
+		payload := result.Payload
+		v.CheckBetween(int(forum_old.Posts), int(payload.Posts), int(forum_new.Posts), "Incorrect Posts count")
+		v.CheckBetween(int(forum_old.Threads), int(payload.Threads), int(forum_new.Threads), "Incorrect Threads count")
+	})
+}
+
+func PerfForumGetOneNotFound(p *Perf) {
+	slug := RandomForum().Slug
+	_, err := p.c.Operations.ForumGetOne(operations.NewForumGetOneParams().
+		WithSlug(slug).
+		WithContext(Expected(404, nil, nil)))
+	CheckIsType(operations.NewForumGetOneNotFound(), err)
 }

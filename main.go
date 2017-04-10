@@ -105,7 +105,25 @@ var cmdFill = &cli.Command{
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdFillT)
 		commonPrepare(argv.CmdCommonT)
-		if tests.Fill(argv.Url) > 0 {
+		if tests.Fill(argv.Url) != nil {
+			os.Exit(EXIT_FILL_FAILED)
+		}
+		return nil
+	},
+}
+
+type CmdPerfT struct {
+	CmdCommonT
+}
+
+var cmdPerf = &cli.Command{
+	Name: "perf",
+	Desc: "run performance testing",
+	Argv: func() interface{} { return new(CmdPerfT) },
+	Fn: func(ctx *cli.Context) error {
+		argv := ctx.Argv().(*CmdPerfT)
+		commonPrepare(argv.CmdCommonT)
+		if tests.Fill(argv.Url) != nil {
 			os.Exit(EXIT_FILL_FAILED)
 		}
 		return nil
@@ -197,6 +215,7 @@ func main() {
 	if err := cli.Root(root,
 		cli.Tree(cmdFunc),
 		cli.Tree(cmdFill),
+		cli.Tree(cmdPerf),
 		cli.Tree(cmdVersion),
 	).Run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
