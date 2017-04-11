@@ -58,17 +58,18 @@ func CheckStatus(c *client.Forum) {
 }
 
 func PerfStatus(p *Perf) {
-	global_old := p.data.Status(false)
+	status := p.data.Status
+	version := status.Version
 	result, err := p.c.Operations.Status(operations.NewStatusParams().
 		WithContext(Expected(200, nil, nil)))
 	CheckNil(err)
 
 	p.Validate(func(v PerfValidator) {
-		global_new := p.data.Status(true)
 		payload := result.Payload
-		v.CheckBetween(int(global_old.Forum), int(payload.Forum), int(global_new.Forum), "Incorrect Forum count")
-		v.CheckBetween(int(global_old.Post), int(payload.Post), int(global_new.Post), "Incorrect Post count")
-		v.CheckBetween(int(global_old.User), int(payload.User), int(global_new.User), "Incorrect User count")
-		v.CheckBetween(int(global_old.Thread), int(payload.Thread), int(global_new.Thread), "Incorrect Thread count")
+		v.CheckInt(status.Forum, int(payload.Forum), "Incorrect Forum count")
+		v.CheckInt(status.Post, int(payload.Post), "Incorrect Post count")
+		v.CheckInt(status.User, int(payload.User), "Incorrect User count")
+		v.CheckInt(status.Thread, int(payload.Thread), "Incorrect Thread count")
+		v.Finish(version, status.Version)
 	})
 }

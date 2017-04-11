@@ -1,29 +1,39 @@
 package tests
 
 import (
-	"github.com/bozaro/tech-db-forum/generated/models"
 	"github.com/go-openapi/strfmt"
 	"math/rand"
 )
 
 type PerfData struct {
-	Users []*PerfUser
+	Status *PStatus
+	Users  []*PUser
+	Forums []*PForum
 }
 
-type PerfUser struct {
-	AboutHash    PerfHash
+type PStatus struct {
+	Version PVersion
+	Forum   int
+	Post    int
+	Thread  int
+	User    int
+}
+
+type PUser struct {
+	Version      PVersion
+	AboutHash    PHash
 	Email        strfmt.Email
-	FullnameHash PerfHash
+	FullnameHash PHash
 	Nickname     string
 }
 
-func (self *PerfData) Status(with_pending bool) models.Status {
-	return models.Status{
-		Forum:  0,
-		Post:   0,
-		User:   0,
-		Thread: 0,
-	}
+type PForum struct {
+	Version   PVersion
+	Posts     int
+	Slug      string
+	Threads   int
+	TitleHash PHash
+	User      *PUser
 }
 
 func (self *PerfData) GetForumIndex() int {
@@ -41,20 +51,16 @@ func getRandomIndex(count int) int {
 	return rand.Intn(count)
 }
 
-func (self *PerfData) GetForumData(index int, with_pending bool) models.Forum {
-	return models.Forum{
-		Posts:   0,
-		Slug:    "slug",
-		Threads: 0,
-		Title:   "title",
-		User:    "jack",
+func (self *PerfData) GetForum(index int) *PForum {
+	if index < 0 {
+		index = self.GetForumIndex()
 	}
+	return self.Forums[index]
 }
 
-func (self *PerfData) GetUser() *PerfUser {
-	return self.GetUserData(self.GetUserIndex(), false)
-}
-
-func (self *PerfData) GetUserData(index int, with_pending bool) *PerfUser {
+func (self *PerfData) GetUser(index int) *PUser {
+	if index < 0 {
+		index = self.GetUserIndex()
+	}
 	return self.Users[index]
 }

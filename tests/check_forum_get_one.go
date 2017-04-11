@@ -96,18 +96,18 @@ func CheckForumGetOneCounter(c *client.Forum) {
 }
 
 func PerfForumGetOneSuccess(p *Perf) {
-	idx := p.data.GetForumIndex()
-	forum_old := p.data.GetForumData(idx, false)
+	forum := p.data.GetForum(-1)
+	version := forum.Version
 	result, err := p.c.Operations.ForumGetOne(operations.NewForumGetOneParams().
-		WithSlug(forum_old.Slug).
+		WithSlug(forum.Slug).
 		WithContext(Expected(200, nil, nil)))
 	CheckNil(err)
 
 	p.Validate(func(v PerfValidator) {
-		forum_new := p.data.GetForumData(idx, true)
 		payload := result.Payload
-		v.CheckBetween(int(forum_old.Posts), int(payload.Posts), int(forum_new.Posts), "Incorrect Posts count")
-		v.CheckBetween(int(forum_old.Threads), int(payload.Threads), int(forum_new.Threads), "Incorrect Threads count")
+		v.CheckInt(forum.Posts, int(payload.Posts), "Incorrect Posts count")
+		v.CheckInt(forum.Threads, int(payload.Threads), "Incorrect Threads count")
+		v.Finish(version, forum.Version)
 	})
 }
 

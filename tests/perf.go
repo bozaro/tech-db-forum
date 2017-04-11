@@ -10,7 +10,8 @@ type Perf struct {
 	data *PerfData
 }
 
-type PerfHash [16]byte
+type PHash [16]byte
+type PVersion uint32
 
 type PerfTest struct {
 	Name   string
@@ -40,9 +41,15 @@ func PerfRegister(test PerfTest) {
 }
 
 func (self *Perf) Validate(callback func(validator PerfValidator)) {
-
+	callback(&PerfSession{})
 }
 
-func Hash(data string) PerfHash {
-	return PerfHash(md5.Sum([]byte(data)))
+func Hash(data string) PHash {
+	return PHash(md5.Sum([]byte(data)))
+}
+
+func (self *Perf) Run() {
+	for _, p := range registeredPerfs {
+		p.FnPerf(self)
+	}
 }

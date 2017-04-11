@@ -123,9 +123,12 @@ var cmdPerf = &cli.Command{
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdPerfT)
 		commonPrepare(argv.CmdCommonT)
-		if tests.Fill(argv.Url) != nil {
+		perf := tests.Fill(argv.Url)
+		if perf == nil {
 			os.Exit(EXIT_FILL_FAILED)
 		}
+
+		perf.Run()
 		return nil
 	},
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func FillUsers(c *client.Forum, data *PerfData, parallel int, count int) {
-	results := make(chan *PerfUser, 64)
+	results := make(chan *PUser, 64)
 	var need int32 = int32(count)
 
 	// spawn four worker goroutines
@@ -20,7 +20,7 @@ func FillUsers(c *client.Forum, data *PerfData, parallel int, count int) {
 		go func() {
 			for atomic.AddInt32(&need, -1) >= 0 {
 				user := CreateUser(c, nil)
-				results <- &PerfUser{
+				results <- &PUser{
 					AboutHash:    Hash(user.About),
 					Email:        user.Email,
 					FullnameHash: Hash(user.Fullname),
@@ -32,7 +32,7 @@ func FillUsers(c *client.Forum, data *PerfData, parallel int, count int) {
 	}
 
 	// get result
-	data.Users = make([]*PerfUser, count)
+	data.Users = make([]*PUser, count)
 	for i := 0; i < count; i++ {
 		data.Users[i] = <-results
 	}
@@ -42,7 +42,7 @@ func FillUsers(c *client.Forum, data *PerfData, parallel int, count int) {
 	wg.Wait()
 }
 
-func Fill(url *url.URL) *PerfData {
+func Fill(url *url.URL) *Perf {
 
 	transport := CreateTransport(url)
 	c := client.New(transport, nil)
@@ -52,25 +52,34 @@ func Fill(url *url.URL) *PerfData {
 	data := &PerfData{}
 
 	log.Info("Creating users (multiple threads)")
-	FillUsers(c, data, 8, 10000)
+	FillUsers(c, data, 8, 1000)
 
 	log.Info("Creating forums")
-	forums := []*models.Forum{}
 	for i := 0; i < 20; i++ {
+		user := data.GetUser(-1)
 		forum := RandomForum()
-		forum.User = data.GetUser().Nickname
-		forums = append(forums, CreateForum(c, forum, nil))
+		forum.User = user.Nickname
+		forum = CreateForum(c, forum, nil)
+		data.Forums = append(data.Forums, &PForum{
+			Slug:      forum.Slug,
+			TitleHash: Hash(forum.Title),
+			User:      user,
+		})
 	}
 
 	log.Info("Creating threads")
 	threads := []*models.Thread{}
 	for i := 0; i < 1000; i++ {
+		author := data.GetUser(-1)
+		forum := data.GetForum(-1)
 		thread := RandomThread()
-		if rand.Intn(100) >= 5 {
+		if rand.Intn(100) >= 25 {
 			thread.Slug = ""
 		}
-		thread.Author = data.GetUser().Nickname
-		threads = append(threads, CreateThread(c, thread, forums[rand.Intn(len(forums))], nil))
+		thread.Author = author.Nickname
+		thread.Forum = forum.Slug
+		threads = append(threads, CreateThread(c, thread, nil, nil))
+		forum.Threads++
 	}
 
 	log.Info("Creating posts")
@@ -80,13 +89,22 @@ func Fill(url *url.URL) *PerfData {
 		thread := threads[rand.Intn(len(threads))].ID
 		for j := 0; j < 100; j++ {
 			post := RandomPost()
-			post.Author = data.GetUser().Nickname
+			post.Author = data.GetUser(-1).Nickname
 			post.Thread = thread
 			batch = append(batch, post)
 		}
 		posts = append(posts, CreatePosts(c, batch, nil)...)
 	}
 
+	data.Status = &PStatus{
+		User:   len(data.Users),
+		Forum:  len(data.Forums),
+		Thread: len(threads),
+		Post:   len(posts),
+	}
+
 	log.Info("Done")
-	return data
+	return &Perf{c: c,
+		data: data,
+	}
 }
