@@ -32,9 +32,8 @@ func FillUsers(c *client.Forum, data *PerfData, parallel int, count int) {
 	}
 
 	// get result
-	data.Users = make([]*PUser, count)
 	for i := 0; i < count; i++ {
-		data.Users[i] = <-results
+		data.AddUser(<-results)
 	}
 	close(results)
 
@@ -49,7 +48,13 @@ func Fill(url *url.URL) *Perf {
 	_, err := c.Operations.Clear(nil)
 	CheckNil(err)
 
-	data := &PerfData{}
+	data := &PerfData{
+		Status:         &PStatus{},
+		Users:          []*PUser{},
+		Posts:          []*PPost{},
+		userByNickname: map[string]*PUser{},
+		postById:       map[int64]*PPost{},
+	}
 
 	log.Info("Creating users (multiple threads)")
 	FillUsers(c, data, 8, 1000)
@@ -60,7 +65,7 @@ func Fill(url *url.URL) *Perf {
 		forum := RandomForum()
 		forum.User = user.Nickname
 		forum = CreateForum(c, forum, nil)
-		data.Forums = append(data.Forums, &PForum{
+		data.AddForum(&PForum{
 			Slug:      forum.Slug,
 			TitleHash: Hash(forum.Title),
 			User:      user,
@@ -68,7 +73,6 @@ func Fill(url *url.URL) *Perf {
 	}
 
 	log.Info("Creating threads")
-	threads := []*models.Thread{}
 	for i := 0; i < 1000; i++ {
 		author := data.GetUser(-1)
 		forum := data.GetForum(-1)
@@ -78,29 +82,39 @@ func Fill(url *url.URL) *Perf {
 		}
 		thread.Author = author.Nickname
 		thread.Forum = forum.Slug
-		threads = append(threads, CreateThread(c, thread, nil, nil))
-		forum.Threads++
+		thread = CreateThread(c, thread, nil, nil)
+		data.AddThread(&PThread{
+			ID:          thread.ID,
+			Slug:        thread.Slug,
+			Author:      author,
+			Forum:       forum,
+			MessageHash: Hash(thread.Message),
+			TitleHash:   Hash(thread.Title),
+			Created:     *thread.Created,
+		})
 	}
 
 	log.Info("Creating posts")
-	posts := []*models.Post{}
 	for i := 0; i < 100; i++ {
 		batch := []*models.Post{}
-		thread := threads[rand.Intn(len(threads))].ID
+		thread := data.GetThread(-1)
 		for j := 0; j < 100; j++ {
 			post := RandomPost()
 			post.Author = data.GetUser(-1).Nickname
-			post.Thread = thread
+			post.Thread = thread.ID
 			batch = append(batch, post)
 		}
-		posts = append(posts, CreatePosts(c, batch, nil)...)
-	}
-
-	data.Status = &PStatus{
-		User:   len(data.Users),
-		Forum:  len(data.Forums),
-		Thread: len(threads),
-		Post:   len(posts),
+		for _, post := range CreatePosts(c, batch, nil) {
+			data.AddPost(&PPost{
+				ID:          post.ID,
+				Author:      data.GetUserByNickname(post.Author),
+				Thread:      thread,
+				Parent:      data.GetPostById(post.Parent),
+				Created:     *post.Created,
+				IsEdited:    false,
+				MessageHash: Hash(post.Message),
+			})
+		}
 	}
 
 	log.Info("Done")
