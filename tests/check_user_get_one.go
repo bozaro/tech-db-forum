@@ -30,6 +30,18 @@ func init() {
 			"user_get_one_simple",
 		},
 	})
+	/*PerfRegister(PerfTest{
+		Name:   "user_get_one_success",
+		Mode:   ModeRead,
+		Weight: WeightNormal,
+		FnPerf: PerfUserGetOneSuccess,
+	})
+	PerfRegister(PerfTest{
+		Name:   "user_get_one_not_found",
+		Mode:   ModeRead,
+		Weight: WeightRare,
+		FnPerf: PerfUserGetOneNotFound,
+	})*/
 }
 
 func CheckUserGetOneSimple(c *client.Forum) {

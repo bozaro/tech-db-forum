@@ -31,6 +31,24 @@ func init() {
 			"post_get_one_simple",
 		},
 	})
+	/*PerfRegister(PerfTest{
+		Name:   "post_get_one_success",
+		Mode:   ModeRead,
+		Weight: WeightNormal,
+		FnPerf: PerfPostGetOneSuccess,
+	})
+	PerfRegister(PerfTest{
+		Name:   "post_get_one_not_found",
+		Mode:   ModeRead,
+		Weight: WeightRare,
+		FnPerf: PerfPostGetOneNotFound,
+	})
+	PerfRegister(PerfTest{
+		Name:   "post_get_one_related",
+		Mode:   ModeRead,
+		Weight: WeightNormal,
+		FnPerf: PerfPostGetOneRelated,
+	})*/
 }
 
 func CheckPostGetOneSimple(c *client.Forum) {
