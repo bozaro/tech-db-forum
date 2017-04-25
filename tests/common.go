@@ -95,5 +95,19 @@ func GetSlugOrId(slug string, id int64) string {
 	if (len(slug) != 0) && (rand.Intn(4) == 1) {
 		return slug
 	}
-	return fmt.Sprint("%d", id)
+	return fmt.Sprintf("%d", id)
+}
+
+func GetRandomCase(s string) string {
+	r := rand.Intn(6)
+	switch r {
+	case 0:
+		return strings.ToLower(s)
+	case 1:
+		return strings.ToUpper(s)
+	case 2:
+		return InvertCase(s)
+	default:
+		return s
+	}
 }

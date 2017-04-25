@@ -66,8 +66,9 @@ func CheckThreadGetOneNotFound(c *client.Forum) {
 func PerfThreadGetOneSuccess(p *Perf) {
 	thread := p.data.GetThread(-1)
 	version := thread.Version
+	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
 	result, err := p.c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
-		WithSlugOrID(GetSlugOrId(thread.Slug, int64(thread.ID))).
+		WithSlugOrID(slugOrId).
 		WithContext(Expected(200, nil, nil)))
 	CheckNil(err)
 
@@ -87,8 +88,9 @@ func PerfThreadGetOneSuccess(p *Perf) {
 
 func PerfThreadGetOneNotFound(p *Perf) {
 	thread := RandomThread()
+	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
 	_, err := p.c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
-		WithSlugOrID(GetSlugOrId(thread.Slug, int64(thread.ID))).
+		WithSlugOrID(slugOrId).
 		WithContext(Expected(404, nil, nil)))
 	CheckIsType(operations.NewThreadGetOneNotFound(), err)
 }
