@@ -5,6 +5,7 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
 	"github.com/go-openapi/strfmt"
+	"math/rand"
 	"sort"
 	"time"
 )
@@ -25,6 +26,18 @@ func init() {
 		Deps: []string{
 			"thread_create_simple",
 		},
+	})
+	PerfRegister(PerfTest{
+		Name:   "forum_get_threads_success",
+		Mode:   ModeRead,
+		Weight: WeightNormal,
+		//todo: FnPerf: PerfForumGetThreadsSuccess,
+	})
+	PerfRegister(PerfTest{
+		Name:   "forum_get_threads_not_found",
+		Mode:   ModeRead,
+		Weight: WeightRare,
+		FnPerf: PerfForumGetThreadsNotFound,
 	})
 }
 
@@ -135,6 +148,23 @@ func CheckForumGetThreadsNotFound(c *client.Forum, m *Modify) {
 	_, err := c.Operations.ForumGetThreads(operations.NewForumGetThreadsParams().
 		WithSlug(forum.Slug).
 		WithLimit(limit).
+		WithSince(since).
+		WithDesc(desc).
+		WithContext(Expected(404, nil, nil)))
+	CheckIsType(operations.NewForumGetThreadsNotFound(), err)
+}
+
+func PerfForumGetThreadsNotFound(p *Perf) {
+	slug := RandomForum().Slug
+	limit := GetRandomLimit()
+	var since *strfmt.DateTime
+	if rand.Int()&1 == 0 {
+		since = &p.data.GetThread(-1).Created
+	}
+	desc := GetRandomDesc()
+	_, err := p.c.Operations.ForumGetThreads(operations.NewForumGetThreadsParams().
+		WithSlug(slug).
+		WithLimit(&limit).
 		WithSince(since).
 		WithDesc(desc).
 		WithContext(Expected(404, nil, nil)))

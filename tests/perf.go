@@ -50,6 +50,11 @@ func Hash(data string) PHash {
 
 func (self *Perf) Run() {
 	for _, p := range registeredPerfs {
+		if p.FnPerf == nil {
+			log.Warning(p.Name)
+			continue
+		}
+		log.Info(p.Name)
 		p.FnPerf(self)
 	}
 }

@@ -51,6 +51,18 @@ func init() {
 			"thread_create_vote_simple",
 		},
 	})
+	PerfRegister(PerfTest{
+		Name:   "forum_get_users_success",
+		Mode:   ModeRead,
+		Weight: WeightNormal,
+		//todo: FnPerf: PerfForumGetUsersSuccess,
+	})
+	PerfRegister(PerfTest{
+		Name:   "forum_get_users_not_found",
+		Mode:   ModeRead,
+		Weight: WeightRare,
+		//todo: FnPerf: PerfForumGetUsersNotFound,
+	})
 }
 
 func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {

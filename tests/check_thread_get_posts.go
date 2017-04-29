@@ -49,6 +49,18 @@ func init() {
 			"thread_get_posts_simple",
 		},
 	})
+	PerfRegister(PerfTest{
+		Name:   "thread_get_posts_success",
+		Mode:   ModeRead,
+		Weight: WeightNormal,
+		//todo: FnPerf: PerfThreadGetPostsSuccess,
+	})
+	PerfRegister(PerfTest{
+		Name:   "thread_get_posts_not_found",
+		Mode:   ModeRead,
+		Weight: WeightRare,
+		//todo: FnPerf: PerfThreadGetPostsNotFound,
+	})
 }
 
 func CreateTree(c *client.Forum, thread *models.Thread, tree [][]int) []OrderedPost {

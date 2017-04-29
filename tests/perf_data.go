@@ -158,3 +158,20 @@ func (self *PPost) GetParentId() int64 {
 	}
 	return self.Parent.ID
 }
+
+func GetRandomLimit() int32 {
+	return 15 + rand.Int31n(5)
+}
+
+func GetRandomDesc() *bool {
+	switch rand.Intn(3) {
+	case 0:
+		v := false
+		return &v
+	case 1:
+		v := true
+		return &v
+	default:
+		return nil
+	}
+}
