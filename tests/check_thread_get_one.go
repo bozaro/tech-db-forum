@@ -3,6 +3,7 @@ package tests
 import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
+	"github.com/bozaro/tech-db-forum/generated/models"
 	"math/rand"
 )
 
@@ -64,6 +65,18 @@ func CheckThreadGetOneNotFound(c *client.Forum) {
 	CheckIsType(operations.NewThreadGetOneNotFound(), err)
 }
 
+func (self *PThread) Validate(v PerfValidator, thread *models.Thread, version PVersion) {
+	v.CheckInt(int(self.ID), int(thread.ID), "ID")
+	v.CheckStr(self.Forum.Slug, thread.Forum, "Forum")
+	v.CheckStr(self.Slug, thread.Slug, "Slug")
+	v.CheckStr(self.Author.Nickname, thread.Author, "Author")
+	v.CheckHash(self.MessageHash, thread.Message, "Message")
+	v.CheckHash(self.TitleHash, thread.Title, "Title")
+	v.CheckDate(&self.Created, thread.Created, "Created")
+	v.CheckInt(int(self.Votes), int(thread.Votes), "Votes")
+	v.Finish(version, self.Version)
+}
+
 func PerfThreadGetOneSuccess(p *Perf) {
 	thread := p.data.GetThread(-1)
 	version := thread.Version
@@ -74,16 +87,7 @@ func PerfThreadGetOneSuccess(p *Perf) {
 	CheckNil(err)
 
 	p.Validate(func(v PerfValidator) {
-		payload := result.Payload
-		v.CheckInt(int(thread.ID), int(payload.ID), "Incorrect ID")
-		v.CheckStr(thread.Forum.Slug, payload.Forum, "Incorrect Forum")
-		v.CheckStr(thread.Slug, payload.Slug, "Incorrect Slug")
-		v.CheckStr(thread.Author.Nickname, payload.Author, "Incorrect Author")
-		v.CheckHash(thread.MessageHash, payload.Message, "Incorrect Message")
-		v.CheckHash(thread.TitleHash, payload.Title, "Incorrect Title")
-		v.CheckDate(&thread.Created, payload.Created, "Incorrect Created")
-		v.CheckInt(int(thread.Votes), int(payload.Votes), "Incorrect Votes")
-		v.Finish(version, thread.Version)
+		thread.Validate(v, result.Payload, version)
 	})
 }
 

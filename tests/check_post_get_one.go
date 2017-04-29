@@ -5,6 +5,7 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
 	"math/rand"
+	"strings"
 )
 
 func init() {
@@ -44,12 +45,6 @@ func init() {
 		Weight: WeightRare,
 		FnPerf: PerfPostGetOneNotFound,
 	})
-	/*PerfRegister(PerfTest{
-		Name:   "post_get_one_related",
-		Mode:   ModeRead,
-		Weight: WeightNormal,
-		FnPerf: PerfPostGetOneRelated,
-	})*/
 }
 
 func CheckPostGetOneSimple(c *client.Forum) {
@@ -125,26 +120,50 @@ func CheckPostGetOneNotFound(c *client.Forum, m *Modify) {
 	CheckIsType(err, operations.NewPostGetOneNotFound())
 }
 
+func (self *PPost) Validate(v PerfValidator, post *models.Post, version PVersion) {
+	v.CheckInt64(self.ID, post.ID, "Post.ID")
+	v.CheckStr(self.Thread.Forum.Slug, post.Forum, "Post.Forum")
+	v.CheckInt(int(self.Thread.ID), int(post.Thread), "Post.Thread")
+	v.CheckStr(self.Author.Nickname, post.Author, "Post.Author")
+	v.CheckHash(self.MessageHash, post.Message, "Post.Message")
+	v.CheckInt64(self.GetParentId(), post.Parent, "Post.Parent")
+	v.CheckBool(self.IsEdited, post.IsEdited, "Post.IsEditer")
+	v.CheckDate(&self.Created, post.Created, "Created")
+	v.Finish(version, self.Version)
+}
+
 func PerfPostGetOneSuccess(p *Perf) {
-	thread := p.data.GetThread(-1)
-	version := thread.Version
-	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
-	result, err := p.c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
-		WithSlugOrID(slugOrId).
+	post := p.data.GetPost(-1)
+	postVersion := post.Version
+
+	userVersion := post.Author.Version
+	threadVersion := post.Thread.Version
+	forumVersion := post.Thread.Forum.Version
+
+	related := GetRandomRelated()
+	result, err := p.c.Operations.PostGetOne(operations.NewPostGetOneParams().
+		WithID(post.ID).
+		WithRelated(related).
 		WithContext(Expected(200, nil, nil)))
 	CheckNil(err)
 
+	relatedStr := strings.Join(related, ",")
 	p.Validate(func(v PerfValidator) {
 		payload := result.Payload
-		v.CheckInt(int(thread.ID), int(payload.ID), "Incorrect ID")
-		v.CheckStr(thread.Forum.Slug, payload.Forum, "Incorrect Forum")
-		v.CheckStr(thread.Slug, payload.Slug, "Incorrect Slug")
-		v.CheckStr(thread.Author.Nickname, payload.Author, "Incorrect Author")
-		v.CheckHash(thread.MessageHash, payload.Message, "Incorrect Message")
-		v.CheckHash(thread.TitleHash, payload.Title, "Incorrect Title")
-		v.CheckDate(&thread.Created, payload.Created, "Incorrect Created")
-		v.CheckInt(int(thread.Votes), int(payload.Votes), "Incorrect Votes")
-		v.Finish(version, thread.Version)
+		post.Validate(v, payload.Post, postVersion)
+
+		if strings.Contains(relatedStr, "user") {
+			CheckIsType(payload.Author, &models.User{})
+			post.Author.Validate(v, payload.Author, userVersion)
+		}
+		if strings.Contains(relatedStr, "forum") {
+			CheckIsType(payload.Forum, &models.Forum{})
+			post.Thread.Forum.Validate(v, payload.Forum, forumVersion)
+		}
+		if strings.Contains(relatedStr, "thread") {
+			CheckIsType(payload.Thread, &models.Thread{})
+			post.Thread.Validate(v, payload.Thread, threadVersion)
+		}
 	})
 }
 

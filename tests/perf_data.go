@@ -151,3 +151,10 @@ func (self *PerfData) GetPost(index int) *PPost {
 	}
 	return self.posts[index]
 }
+
+func (self *PPost) GetParentId() int64 {
+	if self.Parent == nil {
+		return 0
+	}
+	return self.Parent.ID
+}

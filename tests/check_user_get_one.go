@@ -3,6 +3,7 @@ package tests
 import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 func init() {
@@ -66,6 +67,14 @@ func CheckUserGetOneNocase(c *client.Forum, m *Modify) {
 	CheckNil(err)
 }
 
+func (self *PUser) Validate(v PerfValidator, user *models.User, version PVersion) {
+	v.CheckHash(self.AboutHash, user.About, "About")
+	v.CheckStr(self.Email.String(), user.Email.String(), "Email")
+	v.CheckHash(self.FullnameHash, user.Fullname, "Fullname")
+	v.CheckStr(self.Nickname, user.Nickname, "Nickname")
+	v.Finish(version, self.Version)
+}
+
 func PerfUserGetOneSuccess(p *Perf) {
 	user := p.data.GetUser(-1)
 	version := user.Version
@@ -75,12 +84,7 @@ func PerfUserGetOneSuccess(p *Perf) {
 	CheckNil(err)
 
 	p.Validate(func(v PerfValidator) {
-		payload := result.Payload
-		v.CheckHash(user.AboutHash, payload.About, "Incorrect About")
-		v.CheckStr(user.Email.String(), payload.Email.String(), "Incorrect Email")
-		v.CheckHash(user.FullnameHash, payload.Fullname, "Incorrect Fullname")
-		v.CheckStr(user.Nickname, payload.Nickname, "Incorrect Nickname")
-		v.Finish(version, user.Version)
+		user.Validate(v, result.Payload, version)
 	})
 }
 

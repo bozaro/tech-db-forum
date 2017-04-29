@@ -57,9 +57,8 @@ func CheckPostUpdateSimple(c *client.Forum) {
 	update := &models.PostUpdate{}
 	update.Message = temp.Message
 
-	edited := true
 	expected := *post
-	expected.IsEdited = &edited
+	expected.IsEdited = true
 	expected.Message = update.Message
 
 	c.Operations.PostUpdate(operations.NewPostUpdateParams().
@@ -93,10 +92,9 @@ func CheckPostUpdateSame(c *client.Forum) {
 }
 
 func CheckPostUpdateCase(c *client.Forum) {
-	edited := true
 	post := CreatePost(c, nil, nil)
 	post.Message = strings.ToUpper(post.Message)
-	post.IsEdited = &edited
+	post.IsEdited = true
 	c.Operations.PostUpdate(operations.NewPostUpdateParams().
 		WithID(post.ID).
 		WithPost(&models.PostUpdate{

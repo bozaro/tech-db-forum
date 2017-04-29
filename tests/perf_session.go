@@ -5,7 +5,17 @@ import "github.com/go-openapi/strfmt"
 type PerfSession struct {
 }
 
+func (self *PerfSession) CheckBool(expected bool, actual bool, message string) {
+	if expected != actual {
+		panic(message)
+	}
+}
 func (self *PerfSession) CheckInt(expected int, actual int, message string) {
+	if expected != actual {
+		panic(message)
+	}
+}
+func (self *PerfSession) CheckInt64(expected int64, actual int64, message string) {
 	if expected != actual {
 		panic(message)
 	}

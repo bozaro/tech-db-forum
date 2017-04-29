@@ -66,10 +66,9 @@ func RandomThread() *models.Thread {
 }
 
 func RandomPost() *models.Post {
-	edited := false
 	return &models.Post{
 		Message:  lorem.Paragraph(1, 20),
-		IsEdited: &edited,
+		IsEdited: false,
 	}
 }
 

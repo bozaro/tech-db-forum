@@ -3,6 +3,7 @@ package tests
 import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 func init() {
@@ -95,6 +96,12 @@ func CheckForumGetOneCounter(c *client.Forum) {
 	CheckForum(c, f2)
 }
 
+func (self *PForum) Validate(v PerfValidator, forum *models.Forum, version PVersion) {
+	v.CheckInt(self.Posts, int(forum.Posts), "Posts")
+	v.CheckInt(self.Threads, int(forum.Threads), "Threads")
+	v.Finish(version, self.Version)
+}
+
 func PerfForumGetOneSuccess(p *Perf) {
 	forum := p.data.GetForum(-1)
 	version := forum.Version
@@ -104,10 +111,7 @@ func PerfForumGetOneSuccess(p *Perf) {
 	CheckNil(err)
 
 	p.Validate(func(v PerfValidator) {
-		payload := result.Payload
-		v.CheckInt(forum.Posts, int(payload.Posts), "Incorrect Posts count")
-		v.CheckInt(forum.Threads, int(payload.Threads), "Incorrect Threads count")
-		v.Finish(version, forum.Version)
+		forum.Validate(v, result.Payload, version)
 	})
 }
 
