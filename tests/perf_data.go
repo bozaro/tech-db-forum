@@ -7,13 +7,14 @@ import (
 
 type PerfData struct {
 	Status  *PStatus
-	Users   []*PUser
-	Forums  []*PForum
-	Threads []*PThread
-	Posts   []*PPost
+	users   []*PUser
+	forums  []*PForum
+	threads []*PThread
+	posts   []*PPost
 
 	userByNickname map[string]*PUser
 	postById       map[int64]*PPost
+	threadById     map[int32]*PThread
 }
 
 type PStatus struct {
@@ -65,24 +66,21 @@ type PPost struct {
 	MessageHash PHash
 }
 
+func NewPerfData() *PerfData {
+	return &PerfData{
+		Status:         &PStatus{},
+		forums:         []*PForum{},
+		users:          []*PUser{},
+		threads:        []*PThread{},
+		posts:          []*PPost{},
+		userByNickname: map[string]*PUser{},
+		threadById:     map[int32]*PThread{},
+		postById:       map[int64]*PPost{},
+	}
+}
+
 func (self *PerfData) GetUserByNickname(nickname string) *PUser {
 	return self.userByNickname[nickname]
-}
-
-func (self *PerfData) GetForumIndex() int {
-	return 0
-}
-
-func (self *PerfData) GetUserIndex() int {
-	return getRandomIndex(len(self.Users))
-}
-
-func (self *PerfData) GetThreadIndex() int {
-	return getRandomIndex(len(self.Threads))
-}
-
-func (self *PerfData) GetPostIndex() int {
-	return getRandomIndex(len(self.Posts))
 }
 
 func getRandomIndex(count int) int {
@@ -93,41 +91,46 @@ func getRandomIndex(count int) int {
 }
 
 func (self *PerfData) AddForum(forum *PForum) {
-	self.Forums = append(self.Forums, forum)
+	self.forums = append(self.forums, forum)
 	self.Status.Forum++
 }
 
 func (self *PerfData) GetForum(index int) *PForum {
 	if index < 0 {
-		index = self.GetForumIndex()
+		index = getRandomIndex(len(self.forums))
 	}
-	return self.Forums[index]
+	return self.forums[index]
 }
 
 func (self *PerfData) AddUser(user *PUser) {
-	self.Users = append(self.Users, user)
+	self.users = append(self.users, user)
 	self.userByNickname[user.Nickname] = user
 	self.Status.User++
 }
 
 func (self *PerfData) GetUser(index int) *PUser {
 	if index < 0 {
-		index = self.GetUserIndex()
+		index = getRandomIndex(len(self.users))
 	}
-	return self.Users[index]
+	return self.users[index]
 }
 
 func (self *PerfData) AddThread(thread *PThread) {
-	self.Threads = append(self.Threads, thread)
+	self.threads = append(self.threads, thread)
+	self.threadById[thread.ID] = thread
 	thread.Forum.Threads++
 	self.Status.Thread++
 }
 
 func (self *PerfData) GetThread(index int) *PThread {
 	if index < 0 {
-		index = self.GetThreadIndex()
+		index = getRandomIndex(len(self.threads))
 	}
-	return self.Threads[index]
+	return self.threads[index]
+}
+
+func (self *PerfData) GetThreadById(id int32) *PThread {
+	return self.threadById[id]
 }
 
 func (self *PerfData) GetPostById(id int64) *PPost {
@@ -135,7 +138,7 @@ func (self *PerfData) GetPostById(id int64) *PPost {
 }
 
 func (self *PerfData) AddPost(post *PPost) {
-	self.Posts = append(self.Posts, post)
+	self.posts = append(self.posts, post)
 	self.postById[post.ID] = post
 	post.Thread.Forum.Posts++
 	post.Thread.Posts++
@@ -144,7 +147,7 @@ func (self *PerfData) AddPost(post *PPost) {
 
 func (self *PerfData) GetPost(index int) *PPost {
 	if index < 0 {
-		index = self.GetPostIndex()
+		index = getRandomIndex(len(self.posts))
 	}
-	return self.Posts[index]
+	return self.posts[index]
 }

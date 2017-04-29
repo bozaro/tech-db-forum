@@ -48,13 +48,7 @@ func Fill(url *url.URL) *Perf {
 	_, err := c.Operations.Clear(nil)
 	CheckNil(err)
 
-	data := &PerfData{
-		Status:         &PStatus{},
-		Users:          []*PUser{},
-		Posts:          []*PPost{},
-		userByNickname: map[string]*PUser{},
-		postById:       map[int64]*PPost{},
-	}
+	data := NewPerfData()
 
 	log.Info("Creating users (multiple threads)")
 	FillUsers(c, data, 8, 1000)

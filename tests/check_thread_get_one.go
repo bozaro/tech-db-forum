@@ -3,6 +3,7 @@ package tests
 import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
+	"math/rand"
 )
 
 func init() {
@@ -88,6 +89,12 @@ func PerfThreadGetOneSuccess(p *Perf) {
 
 func PerfThreadGetOneNotFound(p *Perf) {
 	thread := RandomThread()
+	for {
+		thread.ID = rand.Int31n(100000000)
+		if p.data.GetThreadById(thread.ID) == nil {
+			break
+		}
+	}
 	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
 	_, err := p.c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
 		WithSlugOrID(slugOrId).
