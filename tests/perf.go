@@ -3,6 +3,10 @@ package tests
 import "github.com/bozaro/tech-db-forum/generated/client"
 import (
 	"crypto/md5"
+	"math/rand"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 type Perf struct {
@@ -34,10 +38,14 @@ const (
 	WeightNormal            = 10
 )
 
-var registeredPerfs []PerfTest
+var (
+	registeredPerfsWeight int32 = 0
+	registeredPerfs       []PerfTest
+)
 
 func PerfRegister(test PerfTest) {
 	registeredPerfs = append(registeredPerfs, test)
+	registeredPerfsWeight += int32(test.Weight)
 }
 
 func (self *Perf) Validate(callback func(validator PerfValidator)) {
@@ -48,15 +56,46 @@ func Hash(data string) PHash {
 	return PHash(md5.Sum([]byte(data)))
 }
 
-func (self *Perf) Run() {
-	for pass := 0; pass < 100; pass++ {
-		for _, p := range registeredPerfs {
-			if p.FnPerf == nil {
-				log.Warning(p.Name)
-				continue
-			}
-			log.Info(p.Name)
-			p.FnPerf(self)
+func GetRandomPerfTest() *PerfTest {
+	index := rand.Int31n(registeredPerfsWeight)
+	for _, item := range registeredPerfs {
+		index -= int32(item.Weight)
+		if index < 0 {
+			return &item
 		}
 	}
+	panic("Invalid state")
+}
+
+func (self *Perf) Run() {
+	log.Info("BEFORE")
+
+	var done int32 = 0
+	var counter int64 = 0
+	// spawn four worker goroutines
+	var wg sync.WaitGroup
+	for i := 0; i < /*parallel*/ 20; i++ {
+		wg.Add(1)
+		go func() {
+			for {
+				if atomic.LoadInt32(&done) != 0 {
+					break
+				}
+				p := GetRandomPerfTest()
+				p.FnPerf(self)
+				atomic.AddInt64(&counter, 1)
+			}
+			wg.Done()
+		}()
+	}
+
+	log.Info(atomic.LoadInt64(&counter))
+	time.Sleep(time.Second * 10)
+	log.Info(atomic.LoadInt64(&counter))
+	time.Sleep(time.Second * 10)
+	log.Info(atomic.LoadInt64(&counter))
+	done = 1
+
+	// wait for the workers to finish
+	wg.Wait()
 }
