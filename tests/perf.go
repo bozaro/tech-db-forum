@@ -27,7 +27,7 @@ type PerfTest struct {
 type PerfMode int
 
 const (
-	ModeRead PerfMode = iota
+	ModeRead  PerfMode = iota
 	ModeWrite
 )
 
@@ -89,11 +89,13 @@ func (self *Perf) Run(threads int) {
 		}()
 	}
 
-	log.Info(atomic.LoadInt64(&counter))
-	time.Sleep(time.Second * 10)
-	log.Info(atomic.LoadInt64(&counter))
-	time.Sleep(time.Second * 10)
-	log.Info(atomic.LoadInt64(&counter))
+	lst := atomic.LoadInt64(&counter)
+	for i := 0; i < 18; i++ {
+		time.Sleep(time.Second * 10)
+		cur := atomic.LoadInt64(&counter)
+		log.Info(cur - lst)
+		lst = cur
+	}
 	done = 1
 
 	// wait for the workers to finish

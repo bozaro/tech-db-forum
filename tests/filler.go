@@ -89,7 +89,7 @@ func Fill(url *url.URL) *Perf {
 	}
 
 	log.Info("Creating posts")
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10000; i++ {
 		batch := []*models.Post{}
 		thread := data.GetThread(-1)
 		for j := 0; j < 100; j++ {
