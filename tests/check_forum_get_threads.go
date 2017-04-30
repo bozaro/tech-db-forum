@@ -31,7 +31,7 @@ func init() {
 		Name:   "forum_get_threads_success",
 		Mode:   ModeRead,
 		Weight: WeightNormal,
-		//todo: FnPerf: PerfForumGetThreadsSuccess,
+		FnPerf: PerfForumGetThreadsSuccess,
 	})
 	PerfRegister(PerfTest{
 		Name:   "forum_get_threads_not_found",
@@ -39,6 +39,16 @@ func init() {
 		Weight: WeightRare,
 		FnPerf: PerfForumGetThreadsNotFound,
 	})
+}
+
+type PThreadByCreated []*PThread
+
+func (a PThreadByCreated) Len() int      { return len(a) }
+func (a PThreadByCreated) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a PThreadByCreated) Less(i, j int) bool {
+	time_i := time.Time(a[i].Created)
+	time_j := time.Time(a[j].Created)
+	return time_i.Before(time_j)
 }
 
 func filterThread(data interface{}) interface{} {
@@ -152,6 +162,62 @@ func CheckForumGetThreadsNotFound(c *client.Forum, m *Modify) {
 		WithDesc(desc).
 		WithContext(Expected(404, nil, nil)))
 	CheckIsType(operations.NewForumGetThreadsNotFound(), err)
+}
+
+func PerfForumGetThreadsSuccess(p *Perf) {
+	forum := p.data.GetForum(-1)
+	version := forum.Version
+
+	slug := forum.Slug
+	limit := GetRandomLimit()
+	var since *strfmt.DateTime
+	if rand.Int()&1 == 0 {
+		since = &p.data.GetThread(-1).Created
+	}
+	desc := GetRandomDesc()
+	result, err := p.c.Operations.ForumGetThreads(operations.NewForumGetThreadsParams().
+		WithSlug(slug).
+		WithLimit(&limit).
+		WithSince(since).
+		WithDesc(desc).
+		WithContext(Expected(404, nil, nil)))
+
+	CheckNil(err)
+
+	p.Validate(func(v PerfValidator) {
+		if v.CheckVersion(version, forum.Version) {
+			expected := p.data.GetForumThreads(forum)
+			asc := (desc == nil) || (*desc == false)
+			// Filter
+			if since != nil {
+				threads := expected
+				expected = []*PThread{}
+				for _, thread := range threads {
+					if asc == time.Time(thread.Created).After(time.Time(*since)) {
+						expected = append(expected, thread)
+					}
+				}
+			}
+			// Sort
+			var sorter sort.Interface = PThreadByCreated(expected)
+			if !asc {
+				sorter = sort.Reverse(sorter)
+			}
+			sort.Sort(sorter)
+			// Check
+			if len(expected) > int(limit) {
+				expected = expected[0:limit]
+			}
+
+			payload := result.Payload
+			v.CheckInt(len(expected), len(payload), "len()")
+			for i, item := range expected {
+				item.Validate(v, payload[i], item.Version)
+			}
+		}
+		// todo: Validate result
+		v.Finish(version, forum.Version)
+	})
 }
 
 func PerfForumGetThreadsNotFound(p *Perf) {

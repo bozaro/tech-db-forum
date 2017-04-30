@@ -15,6 +15,7 @@ type PerfData struct {
 	userByNickname map[string]*PUser
 	postById       map[int64]*PPost
 	threadById     map[int32]*PThread
+	threadsByForum map[string][]*PThread
 }
 
 type PStatus struct {
@@ -73,6 +74,7 @@ func NewPerfData() *PerfData {
 		users:          []*PUser{},
 		threads:        []*PThread{},
 		posts:          []*PPost{},
+		threadsByForum: map[string][]*PThread{},
 		userByNickname: map[string]*PUser{},
 		threadById:     map[int32]*PThread{},
 		postById:       map[int64]*PPost{},
@@ -118,6 +120,11 @@ func (self *PerfData) GetUser(index int) *PUser {
 func (self *PerfData) AddThread(thread *PThread) {
 	self.threads = append(self.threads, thread)
 	self.threadById[thread.ID] = thread
+	threads := self.threadsByForum[thread.Forum.Slug]
+	if threads == nil {
+		threads = []*PThread{}
+	}
+	self.threadsByForum[thread.Forum.Slug] = append(threads, thread)
 	thread.Forum.Threads++
 	self.Status.Thread++
 }
@@ -135,6 +142,14 @@ func (self *PerfData) GetThreadById(id int32) *PThread {
 
 func (self *PerfData) GetPostById(id int64) *PPost {
 	return self.postById[id]
+}
+
+func (self *PerfData) GetForumThreads(forum *PForum) []*PThread {
+	result := self.threadsByForum[forum.Slug]
+	if result == nil {
+		return []*PThread{}
+	}
+	return result
 }
 
 func (self *PerfData) AddPost(post *PPost) {

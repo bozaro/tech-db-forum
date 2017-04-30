@@ -35,6 +35,9 @@ func (self *PerfSession) CheckDate(expected *strfmt.DateTime, actual *strfmt.Dat
 		panic(message)
 	}
 }
+func (self *PerfSession) CheckVersion(before PVersion, after PVersion) bool {
+	return true
+}
 func (self *PerfSession) Finish(before PVersion, after PVersion) {
 
 }
