@@ -12,10 +12,11 @@ type PerfData struct {
 	threads []*PThread
 	posts   []*PPost
 
+	threadsByForum map[string][]*PThread
+	usersByForum   map[string]map[*PUser]bool
 	userByNickname map[string]*PUser
 	postById       map[int64]*PPost
 	threadById     map[int32]*PThread
-	threadsByForum map[string][]*PThread
 }
 
 type PStatus struct {
@@ -75,6 +76,7 @@ func NewPerfData() *PerfData {
 		threads:        []*PThread{},
 		posts:          []*PPost{},
 		threadsByForum: map[string][]*PThread{},
+		usersByForum:   map[string]map[*PUser]bool{},
 		userByNickname: map[string]*PUser{},
 		threadById:     map[int32]*PThread{},
 		postById:       map[int64]*PPost{},
@@ -94,6 +96,8 @@ func getRandomIndex(count int) int {
 
 func (self *PerfData) AddForum(forum *PForum) {
 	self.forums = append(self.forums, forum)
+	self.usersByForum[forum.Slug] = map[*PUser]bool{}
+	self.threadsByForum[forum.Slug] = []*PThread{}
 	self.Status.Forum++
 }
 
@@ -120,11 +124,8 @@ func (self *PerfData) GetUser(index int) *PUser {
 func (self *PerfData) AddThread(thread *PThread) {
 	self.threads = append(self.threads, thread)
 	self.threadById[thread.ID] = thread
-	threads := self.threadsByForum[thread.Forum.Slug]
-	if threads == nil {
-		threads = []*PThread{}
-	}
-	self.threadsByForum[thread.Forum.Slug] = append(threads, thread)
+	self.threadsByForum[thread.Forum.Slug] = append(self.threadsByForum[thread.Forum.Slug], thread)
+	self.usersByForum[thread.Forum.Slug][thread.Author] = true
 	thread.Forum.Threads++
 	self.Status.Thread++
 }
@@ -152,9 +153,22 @@ func (self *PerfData) GetForumThreads(forum *PForum) []*PThread {
 	return result
 }
 
+func (self *PerfData) GetForumUsers(forum *PForum) []*PUser {
+	users := self.usersByForum[forum.Slug]
+	if users == nil {
+		return []*PUser{}
+	}
+	result := make([]*PUser, 0, len(users))
+	for k := range users {
+		result = append(result, k)
+	}
+	return result
+}
+
 func (self *PerfData) AddPost(post *PPost) {
 	self.posts = append(self.posts, post)
 	self.postById[post.ID] = post
+	self.usersByForum[post.Thread.Forum.Slug][post.Author] = true
 	post.Thread.Forum.Posts++
 	post.Thread.Posts++
 	self.Status.Post++

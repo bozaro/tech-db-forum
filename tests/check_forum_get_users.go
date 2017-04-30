@@ -6,6 +6,7 @@ import (
 	"github.com/bozaro/tech-db-forum/generated/models"
 	"math/rand"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -55,14 +56,22 @@ func init() {
 		Name:   "forum_get_users_success",
 		Mode:   ModeRead,
 		Weight: WeightNormal,
-		//todo: FnPerf: PerfForumGetUsersSuccess,
+		FnPerf: PerfForumGetUsersSuccess,
 	})
 	PerfRegister(PerfTest{
 		Name:   "forum_get_users_not_found",
 		Mode:   ModeRead,
 		Weight: WeightRare,
-		//todo: FnPerf: PerfForumGetUsersNotFound,
+		FnPerf: PerfForumGetUsersNotFound,
 	})
+}
+
+type PUserByNickname []*PUser
+
+func (a PUserByNickname) Len() int      { return len(a) }
+func (a PUserByNickname) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a PUserByNickname) Less(i, j int) bool {
+	return strings.ToLower(a[i].Nickname) < strings.ToLower(a[j].Nickname)
 }
 
 func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
@@ -112,9 +121,11 @@ func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
 		sort.Sort(sort.Reverse(UserByNickname(all_expected)))
 	}
 
+	slug := m.Case(forum.Slug)
+
 	// Check read all
 	c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
-		WithSlug(forum.Slug).
+		WithSlug(slug).
 		WithDesc(desc).
 		WithContext(Expected(200, &all_expected, nil)))
 
@@ -131,7 +142,7 @@ func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
 			since = &all_expected[n-1].Nickname
 		}
 		c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
-			WithSlug(forum.Slug).
+			WithSlug(slug).
 			WithLimit(&limit).
 			WithDesc(desc).
 			WithSince(since).
@@ -140,7 +151,7 @@ func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
 
 	// Check read after all
 	c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
-		WithSlug(forum.Slug).
+		WithSlug(slug).
 		WithLimit(&limit).
 		WithDesc(desc).
 		WithSince(&all_expected[len(all_expected)-1].Nickname).
@@ -341,6 +352,82 @@ func CheckForumGetUsersNotFound(c *client.Forum, m *Modify) {
 	_, err := c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
 		WithSlug(forum.Slug).
 		WithLimit(limit).
+		WithSince(since).
+		WithDesc(desc).
+		WithContext(Expected(404, nil, nil)))
+	CheckIsType(operations.NewForumGetUsersNotFound(), err)
+}
+
+func PerfForumGetUsersSuccess(p *Perf) {
+	forum := p.data.GetForum(-1)
+	version := forum.Version
+
+	slug := forum.Slug
+	limit := GetRandomLimit()
+	var since *string
+	if rand.Int()&1 == 0 {
+		nick := GetRandomCase(p.data.GetUser(-1).Nickname)
+		since = &nick
+	}
+	desc := GetRandomDesc()
+	result, err := p.c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
+		WithSlug(GetRandomCase(slug)).
+		WithLimit(&limit).
+		WithSince(since).
+		WithDesc(desc).
+		WithContext(Expected(404, nil, nil)))
+
+	CheckNil(err)
+
+	p.Validate(func(v PerfValidator) {
+		if v.CheckVersion(version, forum.Version) {
+			expected := p.data.GetForumUsers(forum)
+			asc := (desc == nil) || (*desc == false)
+			// Filter
+			if since != nil {
+				users := expected
+				expected = []*PUser{}
+				n1 := strings.ToLower(*since)
+				for _, user := range users {
+					n2 := strings.ToLower(user.Nickname)
+					if (asc == (n2 > n1)) && (n2 != n1) {
+						expected = append(expected, user)
+					}
+				}
+			}
+			// Sort
+			var sorter sort.Interface = PUserByNickname(expected)
+			if !asc {
+				sorter = sort.Reverse(sorter)
+			}
+			sort.Sort(sorter)
+			// Check
+			if len(expected) > int(limit) {
+				expected = expected[0:limit]
+			}
+
+			payload := result.Payload
+			v.CheckInt(len(expected), len(payload), "len()")
+			for i, item := range expected {
+				item.Validate(v, payload[i], item.Version)
+			}
+			v.Finish(version, forum.Version)
+		}
+	})
+}
+
+func PerfForumGetUsersNotFound(p *Perf) {
+	slug := RandomForum().Slug
+	limit := GetRandomLimit()
+	var since *string
+	if rand.Int()&1 == 0 {
+		nick := GetRandomCase(p.data.GetUser(-1).Nickname)
+		since = &nick
+	}
+	desc := GetRandomDesc()
+	_, err := p.c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
+		WithSlug(slug).
+		WithLimit(&limit).
 		WithSince(since).
 		WithDesc(desc).
 		WithContext(Expected(404, nil, nil)))

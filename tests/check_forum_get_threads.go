@@ -94,9 +94,12 @@ func CheckForumGetThreadsSimple(c *client.Forum, m *Modify) {
 		desc = &v
 	}
 
+	// Slug
+	slug := m.Case(forum.Slug)
+
 	// Check read all
 	c.Operations.ForumGetThreads(operations.NewForumGetThreadsParams().
-		WithSlug(forum.Slug).
+		WithSlug(slug).
 		WithDesc(desc).
 		WithContext(Expected(200, &threads, filterThreads)))
 
@@ -110,7 +113,7 @@ func CheckForumGetThreadsSimple(c *client.Forum, m *Modify) {
 		}
 		expected := threads[n:m]
 		c.Operations.ForumGetThreads(operations.NewForumGetThreadsParams().
-			WithSlug(forum.Slug).
+			WithSlug(slug).
 			WithLimit(&limit).
 			WithDesc(desc).
 			WithSince(since).
@@ -121,7 +124,7 @@ func CheckForumGetThreadsSimple(c *client.Forum, m *Modify) {
 	// Check read after all
 	after_last := strfmt.DateTime(time.Time(*threads[len(threads)-1].Created).Add(small))
 	c.Operations.ForumGetThreads(operations.NewForumGetThreadsParams().
-		WithSlug(forum.Slug).
+		WithSlug(slug).
 		WithLimit(&limit).
 		WithDesc(desc).
 		WithSince(&after_last).
@@ -176,7 +179,7 @@ func PerfForumGetThreadsSuccess(p *Perf) {
 	}
 	desc := GetRandomDesc()
 	result, err := p.c.Operations.ForumGetThreads(operations.NewForumGetThreadsParams().
-		WithSlug(slug).
+		WithSlug(GetRandomCase(slug)).
 		WithLimit(&limit).
 		WithSince(since).
 		WithDesc(desc).
@@ -192,8 +195,10 @@ func PerfForumGetThreadsSuccess(p *Perf) {
 			if since != nil {
 				threads := expected
 				expected = []*PThread{}
+				t1 := time.Time(*since)
 				for _, thread := range threads {
-					if asc == time.Time(thread.Created).After(time.Time(*since)) {
+					t2 := time.Time(thread.Created)
+					if (asc == t2.After(t1)) || t1.Equal(t2) {
 						expected = append(expected, thread)
 					}
 				}
@@ -214,9 +219,8 @@ func PerfForumGetThreadsSuccess(p *Perf) {
 			for i, item := range expected {
 				item.Validate(v, payload[i], item.Version)
 			}
+			v.Finish(version, forum.Version)
 		}
-		// todo: Validate result
-		v.Finish(version, forum.Version)
 	})
 }
 

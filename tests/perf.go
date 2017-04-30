@@ -49,12 +49,14 @@ func Hash(data string) PHash {
 }
 
 func (self *Perf) Run() {
-	for _, p := range registeredPerfs {
-		if p.FnPerf == nil {
-			log.Warning(p.Name)
-			continue
+	for pass := 0; pass < 100; pass++ {
+		for _, p := range registeredPerfs {
+			if p.FnPerf == nil {
+				log.Warning(p.Name)
+				continue
+			}
+			log.Info(p.Name)
+			p.FnPerf(self)
 		}
-		log.Info(p.Name)
-		p.FnPerf(self)
 	}
 }
