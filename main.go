@@ -114,6 +114,7 @@ var cmdFill = &cli.Command{
 
 type CmdPerfT struct {
 	CmdCommonT
+	Threads int `cli:"thread" usage:"number of threads for performance testing" dft:"8"`
 }
 
 var cmdPerf = &cli.Command{
@@ -128,7 +129,7 @@ var cmdPerf = &cli.Command{
 			os.Exit(EXIT_FILL_FAILED)
 		}
 
-		perf.Run()
+		perf.Run(argv.Threads)
 		return nil
 	},
 }

@@ -67,14 +67,14 @@ func GetRandomPerfTest() *PerfTest {
 	panic("Invalid state")
 }
 
-func (self *Perf) Run() {
+func (self *Perf) Run(threads int) {
 	log.Info("BEFORE")
 
 	var done int32 = 0
 	var counter int64 = 0
 	// spawn four worker goroutines
 	var wg sync.WaitGroup
-	for i := 0; i < /*parallel*/ 20; i++ {
+	for i := 0; i < threads; i++ {
 		wg.Add(1)
 		go func() {
 			for {
