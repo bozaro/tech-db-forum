@@ -375,7 +375,7 @@ func PerfForumGetUsersSuccess(p *Perf) {
 		WithLimit(&limit).
 		WithSince(since).
 		WithDesc(desc).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(Expected(200, nil, nil)))
 
 	CheckNil(err)
 

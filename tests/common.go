@@ -93,7 +93,7 @@ func Modifications(checker func(c *client.Forum, modify *Modify)) func(c *client
 
 func GetSlugOrId(slug string, id int64) string {
 	if (len(slug) != 0) && (rand.Intn(4) == 1) {
-		return slug
+		return GetRandomCase(slug)
 	}
 	return fmt.Sprintf("%d", id)
 }

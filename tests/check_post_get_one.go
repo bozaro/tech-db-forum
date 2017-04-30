@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+const (
+	RELATED_FORUM  = "forum"
+	RELATED_USER   = "user"
+	RELATED_THREAD = "thread"
+)
+
 func init() {
 	Register(Checker{
 		Name:        "post_get_one_simple",
@@ -68,17 +74,17 @@ func CheckPostGetOneRelated(c *client.Forum, m *Modify) {
 	related := []string{}
 	// User
 	if m.Bool() {
-		related = append(related, "user")
+		related = append(related, RELATED_USER)
 		expected.Author = user
 	}
 	// Thread
 	if m.Bool() {
-		related = append(related, "thread")
+		related = append(related, RELATED_THREAD)
 		expected.Thread = thread
 	}
 	// Forum
 	if m.Bool() {
-		related = append(related, "forum")
+		related = append(related, RELATED_FORUM)
 		expected.Forum = forum
 	}
 
@@ -101,15 +107,15 @@ func CheckPostGetOneNotFound(c *client.Forum, m *Modify) {
 	related := []string{}
 	// User
 	if m.Bool() {
-		related = append(related, "user")
+		related = append(related, RELATED_USER)
 	}
 	// Thread
 	if m.Bool() {
-		related = append(related, "thread")
+		related = append(related, RELATED_THREAD)
 	}
 	// Forum
 	if m.Bool() {
-		related = append(related, "forum")
+		related = append(related, RELATED_FORUM)
 	}
 
 	// Check
@@ -152,15 +158,15 @@ func PerfPostGetOneSuccess(p *Perf) {
 		payload := result.Payload
 		post.Validate(v, payload.Post, postVersion)
 
-		if strings.Contains(relatedStr, "user") {
+		if strings.Contains(relatedStr, RELATED_USER) {
 			CheckIsType(payload.Author, &models.User{})
 			post.Author.Validate(v, payload.Author, userVersion)
 		}
-		if strings.Contains(relatedStr, "forum") {
+		if strings.Contains(relatedStr, RELATED_FORUM) {
 			CheckIsType(payload.Forum, &models.Forum{})
 			post.Thread.Forum.Validate(v, payload.Forum, forumVersion)
 		}
-		if strings.Contains(relatedStr, "thread") {
+		if strings.Contains(relatedStr, RELATED_THREAD) {
 			CheckIsType(payload.Thread, &models.Thread{})
 			post.Thread.Validate(v, payload.Thread, threadVersion)
 		}
@@ -188,15 +194,15 @@ func GetRandomRelated() []string {
 	r := rand.Int()
 	// User
 	if r&1 != 0 {
-		related = append(related, "user")
+		related = append(related, RELATED_USER)
 	}
 	// Thread
 	if r&2 != 0 {
-		related = append(related, "thread")
+		related = append(related, RELATED_THREAD)
 	}
 	// Forum
 	if r&4 != 0 {
-		related = append(related, "forum")
+		related = append(related, RELATED_FORUM)
 	}
 	return related
 }

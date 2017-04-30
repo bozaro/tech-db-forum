@@ -11,6 +11,12 @@ import (
 	"time"
 )
 
+const (
+	SORT_FLAT   = "flat"
+	SORT_TREE   = "tree"
+	SORT_PARENT = "parent_tree"
+)
+
 type OrderedPost struct {
 	idx  int
 	top  int
@@ -23,6 +29,47 @@ type PostSortTree []OrderedPost
 func (a PostSortTree) Len() int           { return len(a) }
 func (a PostSortTree) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a PostSortTree) Less(i, j int) bool { return a[i].path < a[j].path }
+
+type PPostSortFlat []*PPost
+
+func (a PPostSortFlat) Len() int      { return len(a) }
+func (a PPostSortFlat) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a PPostSortFlat) Less(i, j int) bool {
+	return a[i].Index < a[j].Index
+}
+
+type PPostSortTree []*PPost
+
+func (a PPostSortTree) Len() int      { return len(a) }
+func (a PPostSortTree) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a PPostSortTree) Less(i, j int) bool {
+	return a.ComparePath(&a[i].Path, &a[j].Path) < 0
+}
+func (a PPostSortTree) ComparePath(p1 *[]int32, p2 *[]int32) int {
+	l1 := len(*p1)
+	l2 := len(*p2)
+	lm := l2
+	if l1 < l2 {
+		lm = l1
+	}
+	for i := 0; i < lm; i++ {
+		v1 := (*p1)[i]
+		v2 := (*p2)[i]
+		if v1 < v2 {
+			return -1
+		}
+		if v1 > v2 {
+			return 1
+		}
+	}
+	if l1 < l2 {
+		return -1
+	}
+	if l1 > l2 {
+		return 1
+	}
+	return 0
+}
 
 func init() {
 	Register(Checker{
@@ -53,13 +100,13 @@ func init() {
 		Name:   "thread_get_posts_success",
 		Mode:   ModeRead,
 		Weight: WeightNormal,
-		//todo: FnPerf: PerfThreadGetPostsSuccess,
+		FnPerf: PerfThreadGetPostsSuccess,
 	})
 	PerfRegister(PerfTest{
 		Name:   "thread_get_posts_not_found",
 		Mode:   ModeRead,
 		Weight: WeightRare,
-		//todo: FnPerf: PerfThreadGetPostsNotFound,
+		FnPerf: PerfThreadGetPostsNotFound,
 	})
 }
 
@@ -221,14 +268,14 @@ func CheckThreadGetPosts(c *client.Forum, m *Modify, tree [][]int, limit int32) 
 	case 0:
 		sortType = nil
 	case 1:
-		v := "flat"
+		v := SORT_FLAT
 		sortType = &v
 	case 2:
-		v := "tree"
+		v := SORT_TREE
 		sortType = &v
 		sort.Sort(PostSortTree(posts_tree))
 	case 3:
-		v := "parent_tree"
+		v := SORT_PARENT
 		sortType = &v
 		sort.Sort(PostSortTree(posts_tree))
 		limitType = func(post OrderedPost) int {
@@ -318,4 +365,125 @@ func CheckThreadGetPostsNotFound(c *client.Forum) {
 		WithSlugOrID(THREAD_FAKE_ID).
 		WithContext(Expected(404, nil, nil)))
 	CheckIsType(operations.NewThreadGetPostsNotFound(), err)
+}
+
+func PerfThreadGetPostsSuccess(p *Perf) {
+	thread := p.data.GetThread(-1)
+	version := thread.Version
+
+	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
+	limit := GetRandomLimit()
+	desc := GetRandomDesc()
+	order := GetRandomSort()
+
+	part1, err := p.c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
+		WithSlugOrID(slugOrId).
+		WithLimit(&limit).
+		WithSort(&order).
+		WithMarker(nil).
+		WithDesc(desc).
+		WithContext(Expected(200, nil, nil)))
+
+	CheckNil(err)
+
+	part2, err := p.c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
+		WithSlugOrID(slugOrId).
+		WithLimit(&limit).
+		WithSort(&order).
+		WithMarker(&part1.Payload.Marker).
+		WithDesc(desc).
+		WithContext(Expected(200, nil, nil)))
+
+	CheckNil(err)
+
+	p.Validate(func(v PerfValidator) {
+		if v.CheckVersion(version, thread.Version) {
+			expected := p.data.GetThreadPosts(thread)
+			// Sort
+			limitType := func(post *PPost) int32 {
+				return post.Index
+			}
+			var sorter sort.Interface
+			switch order {
+			case SORT_FLAT:
+				sorter = PPostSortFlat(expected)
+			case SORT_TREE:
+				sorter = PPostSortTree(expected)
+			case SORT_PARENT:
+				sorter = PPostSortTree(expected)
+				limitType = func(post *PPost) int32 {
+					return post.Path[0]
+				}
+			default:
+				panic("Unexpected sort type: " + order)
+			}
+			if (desc != nil) && (*desc == true) {
+				sorter = sort.Reverse(sorter)
+			}
+			sort.Sort(sorter)
+			// Check
+			postSplit := func(full []*PPost) ([]*PPost, []*PPost) {
+				count := int32(0)
+				last := int32(0)
+				for i, item := range full {
+					if last != limitType(item) {
+						if count == limit {
+							return full[0:i], full[i:]
+						}
+						count++
+						last = limitType(item)
+					}
+				}
+				return full, []*PPost{}
+			}
+
+			expected1, expected := postSplit(expected)
+			expected2, expected := postSplit(expected)
+
+			validate := func(posts []*PPost, actual []*models.Post) {
+				v.CheckInt(len(posts), len(actual), "len()")
+				for i, item := range posts {
+					item.Validate(v, actual[i], item.Version)
+				}
+			}
+			validate(expected1, part1.Payload.Posts)
+			validate(expected2, part2.Payload.Posts)
+
+			v.Finish(version, thread.Version)
+		}
+	})
+}
+
+func PerfThreadGetPostsNotFound(p *Perf) {
+	thread := RandomThread()
+	for {
+		thread.ID = rand.Int31n(100000000)
+		if p.data.GetThreadById(thread.ID) == nil {
+			break
+		}
+	}
+	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
+
+	limit := GetRandomLimit()
+	order := GetRandomSort()
+	desc := GetRandomDesc()
+	_, err := p.c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
+		WithSlugOrID(slugOrId).
+		WithLimit(&limit).
+		WithSort(&order).
+		WithDesc(desc).
+		WithContext(Expected(404, nil, nil)))
+	CheckIsType(operations.NewThreadGetPostsNotFound(), err)
+}
+
+func GetRandomSort() string {
+	switch rand.Intn(3) {
+	case 0:
+		return SORT_FLAT
+	case 1:
+		return SORT_TREE
+	case 2:
+		return SORT_PARENT
+	}
+	panic("Invalid internal state")
 }

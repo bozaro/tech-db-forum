@@ -3,6 +3,7 @@ package tests
 import (
 	"github.com/go-openapi/strfmt"
 	"math/rand"
+	"sync/atomic"
 )
 
 type PerfData struct {
@@ -12,8 +13,11 @@ type PerfData struct {
 	threads []*PThread
 	posts   []*PPost
 
+	lastIndex int32
+
 	threadsByForum map[string][]*PThread
 	usersByForum   map[string]map[*PUser]bool
+	postsByThread  map[int32][]*PPost
 	userByNickname map[string]*PUser
 	postById       map[int64]*PPost
 	threadById     map[int32]*PThread
@@ -66,6 +70,8 @@ type PPost struct {
 	Created     strfmt.DateTime
 	IsEdited    bool
 	MessageHash PHash
+	Index       int32
+	Path        []int32
 }
 
 func NewPerfData() *PerfData {
@@ -77,6 +83,7 @@ func NewPerfData() *PerfData {
 		posts:          []*PPost{},
 		threadsByForum: map[string][]*PThread{},
 		usersByForum:   map[string]map[*PUser]bool{},
+		postsByThread:  map[int32][]*PPost{},
 		userByNickname: map[string]*PUser{},
 		threadById:     map[int32]*PThread{},
 		postById:       map[int64]*PPost{},
@@ -124,6 +131,7 @@ func (self *PerfData) GetUser(index int) *PUser {
 func (self *PerfData) AddThread(thread *PThread) {
 	self.threads = append(self.threads, thread)
 	self.threadById[thread.ID] = thread
+	self.postsByThread[thread.ID] = []*PPost{}
 	self.threadsByForum[thread.Forum.Slug] = append(self.threadsByForum[thread.Forum.Slug], thread)
 	self.usersByForum[thread.Forum.Slug][thread.Author] = true
 	thread.Forum.Threads++
@@ -165,10 +173,26 @@ func (self *PerfData) GetForumUsers(forum *PForum) []*PUser {
 	return result
 }
 
+func (self *PerfData) GetThreadPosts(thread *PThread) []*PPost {
+	result := self.postsByThread[thread.ID]
+	if result == nil {
+		return []*PPost{}
+	}
+	return result
+}
+
 func (self *PerfData) AddPost(post *PPost) {
 	self.posts = append(self.posts, post)
 	self.postById[post.ID] = post
 	self.usersByForum[post.Thread.Forum.Slug][post.Author] = true
+	self.postsByThread[post.Thread.ID] = append(self.postsByThread[post.Thread.ID], post)
+
+	post.Index = atomic.AddInt32(&self.lastIndex, 1)
+	if post.Parent != nil {
+		post.Path = append(post.Parent.Path, post.Index)
+	} else {
+		post.Path = []int32{post.Index}
+	}
 	post.Thread.Forum.Posts++
 	post.Thread.Posts++
 	self.Status.Post++
