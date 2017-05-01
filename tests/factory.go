@@ -3,7 +3,7 @@ package tests
 import (
 	"github.com/Pallinder/go-randomdata"
 	"github.com/bozaro/tech-db-forum/generated/models"
-	"github.com/drhodes/golorem"
+	"github.com/bozaro/golorem"
 	"github.com/go-openapi/strfmt"
 	"math/rand"
 	"time"
@@ -31,16 +31,19 @@ func RandomTime() time.Time {
 }
 
 func RandomEmail() strfmt.Email {
-	return strfmt.Email(RandomNickname() + "@" + lorem.Host())
+	l := lorem.New()
+	return strfmt.Email(RandomNickname() + "@" + l.Host())
 }
 
 func RandomNickname() string {
-	return lorem.Word(1, 10) + "." + nick_id.Generate()
+	l := lorem.New()
+	return l.Word(1, 10) + "." + nick_id.Generate()
 }
 
 func RandomUser() *models.User {
+	l := lorem.New()
 	return &models.User{
-		About:    lorem.Paragraph(1, 10),
+		About:    l.Paragraph(1, 10),
 		Email:    RandomEmail(),
 		Fullname: randomdata.FullName(-1),
 		Nickname: RandomNickname(),
@@ -48,26 +51,29 @@ func RandomUser() *models.User {
 }
 
 func RandomForum() *models.Forum {
+	l := lorem.New()
 	return &models.Forum{
 		Posts: 0,
 		Slug:  slug_id.Generate(),
-		Title: lorem.Sentence(1, 10),
+		Title: l.Sentence(1, 10),
 	}
 }
 
 func RandomThread() *models.Thread {
+	l := lorem.New()
 	created := strfmt.DateTime(RandomTime())
 	return &models.Thread{
-		Message: lorem.Paragraph(1, 20),
+		Message: l.Paragraph(1, 20),
 		Slug:    slug_id.Generate(),
-		Title:   lorem.Sentence(1, 10),
+		Title:   l.Sentence(1, 10),
 		Created: &created,
 	}
 }
 
 func RandomPost() *models.Post {
+	l := lorem.New()
 	return &models.Post{
-		Message:  lorem.Paragraph(1, 20),
+		Message:  l.Paragraph(1, 20),
 		IsEdited: false,
 	}
 }
