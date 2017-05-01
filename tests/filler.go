@@ -22,13 +22,15 @@ func NewPerfConfig() *PerfConfig {
 		UserCount:   1000,
 		ForumCount:  20,
 		ThreadCount: 1000,
-		PostCount:   1000000,
+		PostCount:   10000, //00,
 		PostBatch:   100,
 	}
 }
 
-func FillUsers(c *client.Forum, data *PerfData, parallel int, count int) {
+func FillUsers(perf *Perf, parallel int, count int) {
 	var need int32 = int32(count)
+	c := perf.c
+	data := perf.data
 
 	// spawn four worker goroutines
 	var wg sync.WaitGroup
@@ -53,8 +55,10 @@ func FillUsers(c *client.Forum, data *PerfData, parallel int, count int) {
 	wg.Wait()
 }
 
-func FillThreads(c *client.Forum, data *PerfData, parallel int, count int) {
+func FillThreads(perf *Perf, parallel int, count int) {
 	var need int32 = int32(count)
+	c := perf.c
+	data := perf.data
 
 	// spawn four worker goroutines
 	var wg sync.WaitGroup
@@ -90,8 +94,10 @@ func FillThreads(c *client.Forum, data *PerfData, parallel int, count int) {
 	wg.Wait()
 }
 
-func FillPosts(c *client.Forum, data *PerfData, parallel int, count int, batchSize int) {
+func FillPosts(perf *Perf, parallel int, count int, batchSize int) {
 	var need int32 = int32(count)
+	c := perf.c
+	data := perf.data
 
 	// spawn four worker goroutines
 	var wg sync.WaitGroup
@@ -103,6 +109,8 @@ func FillPosts(c *client.Forum, data *PerfData, parallel int, count int, batchSi
 
 				batch := make([]*models.Post, 0, batchSize)
 				thread := data.GetThread(-1)
+				thread.mutex.Lock() // todo: Потом исправить
+
 				for j := 0; j < batchSize; j++ {
 					post := f.RandomPost()
 					post.Author = data.GetUser(-1).Nickname
@@ -120,6 +128,7 @@ func FillPosts(c *client.Forum, data *PerfData, parallel int, count int, batchSi
 						MessageHash: Hash(post.Message),
 					})
 				}
+				thread.mutex.Unlock()
 			}
 			wg.Done()
 		}()
@@ -129,26 +138,33 @@ func FillPosts(c *client.Forum, data *PerfData, parallel int, count int, batchSi
 	wg.Wait()
 }
 
-func Fill(url *url.URL, threads int, config *PerfConfig) *Perf {
-
+func NewPerf(url *url.URL, config *PerfConfig) *Perf {
 	transport := CreateTransport(url)
 	c := client.New(transport, nil)
-	_, err := c.Operations.Clear(nil)
-	CheckNil(err)
 
 	data := NewPerfData(config)
+	return &Perf{c: c,
+		data: data,
+	}
+}
+
+func (self *Perf) Fill(threads int, config *PerfConfig) {
 	f := NewFactory()
 
+	log.Infof("Clear data")
+	_, err := self.c.Operations.Clear(nil)
+	CheckNil(err)
+
 	log.Infof("Creating users (%d threads)", threads)
-	FillUsers(c, data, threads, config.UserCount)
+	FillUsers(self, threads, config.UserCount)
 
 	log.Info("Creating forums")
 	for i := 0; i < config.ForumCount; i++ {
-		user := data.GetUser(-1)
+		user := self.data.GetUser(-1)
 		forum := f.RandomForum()
 		forum.User = user.Nickname
-		forum = f.CreateForum(c, forum, nil)
-		data.AddForum(&PForum{
+		forum = f.CreateForum(self.c, forum, nil)
+		self.data.AddForum(&PForum{
 			Slug:      forum.Slug,
 			TitleHash: Hash(forum.Title),
 			User:      user,
@@ -156,13 +172,10 @@ func Fill(url *url.URL, threads int, config *PerfConfig) *Perf {
 	}
 
 	log.Infof("Creating threads (%d threads)", threads)
-	FillThreads(c, data, threads, config.ThreadCount)
+	FillThreads(self, threads, config.ThreadCount)
 
 	log.Infof("Creating posts (%d threads)", threads)
-	FillPosts(c, data, threads, config.PostCount, config.PostBatch)
+	FillPosts(self, threads, config.PostCount, config.PostBatch)
 
 	log.Info("Done")
-	return &Perf{c: c,
-		data: data,
-	}
 }

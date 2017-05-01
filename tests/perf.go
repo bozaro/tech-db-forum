@@ -89,10 +89,11 @@ func (self *Perf) Run(threads int) {
 	}
 
 	lst := atomic.LoadInt64(&counter)
+	step := time.Duration(10)
 	for i := 0; i < 18; i++ {
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Second * step)
 		cur := atomic.LoadInt64(&counter)
-		log.Info(cur - lst)
+		log.Info(float32(cur-lst) / float32(step))
 		lst = cur
 	}
 	done = 1
@@ -102,7 +103,9 @@ func (self *Perf) Run(threads int) {
 }
 
 func (self *Perf) Load(reader io.Reader) error {
-	return self.data.Load(reader)
+	var err error
+	self.data, err = LoadPerfData(reader)
+	return err
 }
 func (self *Perf) Save(writer io.Writer) error {
 	return self.data.Save(writer)

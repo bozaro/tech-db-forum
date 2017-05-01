@@ -66,10 +66,10 @@ func PerfStatus(p *Perf, f *Factory) {
 
 	p.Validate(func(v PerfValidator) {
 		payload := result.Payload
-		v.CheckInt(status.Forum, int(payload.Forum), "Incorrect Forum count")
-		v.CheckInt(status.Post, int(payload.Post), "Incorrect Post count")
-		v.CheckInt(status.User, int(payload.User), "Incorrect User count")
-		v.CheckInt(status.Thread, int(payload.Thread), "Incorrect Thread count")
+		v.CheckInt32(status.Forum, payload.Forum, "Incorrect Forum count")
+		v.CheckInt64(status.Post, payload.Post, "Incorrect Post count")
+		v.CheckInt32(status.User, payload.User, "Incorrect User count")
+		v.CheckInt32(status.Thread, payload.Thread, "Incorrect Thread count")
 		v.Finish(version, status.Version)
 	})
 }

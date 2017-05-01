@@ -32,6 +32,7 @@ type PerfData struct {
 	usersByForum   map[string]map[*PUser]bool
 	postsByThread  map[int32][]*PPost
 	userByNickname map[string]*PUser
+	forumBySlug    map[string]*PForum
 	postById       map[int64]*PPost
 	threadById     map[int32]*PThread
 }
@@ -39,10 +40,10 @@ type PerfData struct {
 //msgp:ignore PStatus
 type PStatus struct {
 	Version PVersion
-	Forum   int
-	Post    int
-	Thread  int
-	User    int
+	Forum   int32
+	Post    int64
+	Thread  int32
+	User    int32
 }
 
 type PUser struct {
@@ -54,6 +55,8 @@ type PUser struct {
 }
 
 type PThread struct {
+	mutex sync.RWMutex
+
 	Version     PVersion        `msg:"-"`
 	ID          int32           `msg:"id"`
 	Slug        string          `msg:"slug"`
@@ -63,14 +66,14 @@ type PThread struct {
 	TitleHash   PHash           `msg:"title"`
 	Created     strfmt.DateTime `msg:"created"`
 	Votes       int32           `msg:"-"`
-	Posts       int             `msg:"-"`
+	Posts       int32           `msg:"-"`
 }
 
 type PForum struct {
 	Version   PVersion `msg:"-"`
-	Posts     int      `msg:"-"`
+	Posts     int64    `msg:"-"`
 	Slug      string   `msg:"slug"`
-	Threads   int      `msg:"-"`
+	Threads   int32    `msg:"-"`
 	TitleHash PHash    `msg:"title"`
 	User      *PUser   `msg:"-"`
 }
@@ -99,9 +102,17 @@ func NewPerfData(config *PerfConfig) *PerfData {
 		usersByForum:   map[string]map[*PUser]bool{},
 		postsByThread:  map[int32][]*PPost{},
 		userByNickname: map[string]*PUser{},
+		forumBySlug:    map[string]*PForum{},
 		threadById:     map[int32]*PThread{},
 		postById:       map[int64]*PPost{},
 	}
+}
+
+func (self *PerfData) GetForumBySlug(slug string) *PForum {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
+	return self.forumBySlug[slug]
 }
 
 func (self *PerfData) GetUserByNickname(nickname string) *PUser {
@@ -123,9 +134,10 @@ func (self *PerfData) AddForum(forum *PForum) {
 	defer self.mutex.Unlock()
 
 	self.forums = append(self.forums, forum)
+	self.forumBySlug[forum.Slug] = forum
 	self.usersByForum[forum.Slug] = map[*PUser]bool{}
 	self.threadsByForum[forum.Slug] = []*PThread{}
-	self.Status.Forum++
+	atomic.AddInt32(&self.Status.Forum, 1)
 }
 
 func (self *PerfData) GetForum(index int) *PForum {
@@ -144,7 +156,7 @@ func (self *PerfData) AddUser(user *PUser) {
 
 	self.users = append(self.users, user)
 	self.userByNickname[user.Nickname] = user
-	self.Status.User++
+	atomic.AddInt32(&self.Status.User, 1)
 }
 
 func (self *PerfData) GetUser(index int) *PUser {
@@ -166,8 +178,8 @@ func (self *PerfData) AddThread(thread *PThread) {
 	self.postsByThread[thread.ID] = []*PPost{}
 	self.threadsByForum[thread.Forum.Slug] = append(self.threadsByForum[thread.Forum.Slug], thread)
 	self.usersByForum[thread.Forum.Slug][thread.Author] = true
-	thread.Forum.Threads++
-	self.Status.Thread++
+	atomic.AddInt32(&thread.Forum.Threads, 1)
+	atomic.AddInt32(&self.Status.Thread, 1)
 }
 
 func (self *PerfData) GetThread(index int) *PThread {
@@ -198,9 +210,9 @@ func (self *PerfData) GetForumThreads(forum *PForum) []*PThread {
 	self.mutex.RLock()
 	defer self.mutex.RUnlock()
 
-	result := self.threadsByForum[forum.Slug]
-	if result == nil {
-		return []*PThread{}
+	result := []*PThread{}
+	if result != nil {
+		result = append(result, self.threadsByForum[forum.Slug]...)
 	}
 	return result
 }
@@ -246,9 +258,9 @@ func (self *PerfData) AddPost(post *PPost) {
 	} else {
 		post.Path = []int32{post.Index}
 	}
-	post.Thread.Forum.Posts++
-	post.Thread.Posts++
-	self.Status.Post++
+	atomic.AddInt64(&post.Thread.Forum.Posts, 1)
+	atomic.AddInt32(&post.Thread.Posts, 1)
+	atomic.AddInt64(&self.Status.Post, 1)
 }
 
 func (self *PerfData) GetPost(index int) *PPost {

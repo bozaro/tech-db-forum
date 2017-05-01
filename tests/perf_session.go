@@ -15,6 +15,11 @@ func (self *PerfSession) CheckInt(expected int, actual int, message string) {
 		panic(message)
 	}
 }
+func (self *PerfSession) CheckInt32(expected int32, actual int32, message string) {
+	if expected != actual {
+		panic(message)
+	}
+}
 func (self *PerfSession) CheckInt64(expected int64, actual int64, message string) {
 	if expected != actual {
 		panic(message)

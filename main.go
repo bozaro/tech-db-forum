@@ -107,18 +107,20 @@ var cmdFill = &cli.Command{
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdFillT)
 		commonPrepare(argv.CmdCommonT)
-		perf := tests.Fill(argv.Url, argv.Threads, tests.NewPerfConfig())
+		perf := tests.NewPerf(argv.Url, tests.NewPerfConfig())
+		perf.Fill(argv.Threads, tests.NewPerfConfig())
 		if perf == nil {
 			os.Exit(EXIT_FILL_FAILED)
 		}
 		file, err := os.Create(argv.StateFile)
+		defer file.Close()
 		if err != nil {
 			log.Error("Can't create file: " + argv.StateFile)
 			os.Exit(EXIT_FILL_FAILED)
 		}
 		err = perf.Save(file)
 		if err != nil {
-			log.Error("Can't save to file file: " + argv.StateFile)
+			log.Error("Can't save to file: " + argv.StateFile)
 			os.Exit(EXIT_FILL_FAILED)
 		}
 		return nil
@@ -127,7 +129,8 @@ var cmdFill = &cli.Command{
 
 type CmdPerfT struct {
 	CmdCommonT
-	Threads int `cli:"t,thread" usage:"number of threads for performance testing" dft:"8"`
+	Threads   int    `cli:"t,thread" usage:"number of threads for performance testing" dft:"8"`
+	StateFile string `cli:"i,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat"`
 }
 
 var cmdPerf = &cli.Command{
@@ -137,9 +140,22 @@ var cmdPerf = &cli.Command{
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdPerfT)
 		commonPrepare(argv.CmdCommonT)
-		perf := tests.Fill(argv.Url, argv.Threads, tests.NewPerfConfig())
-		if perf == nil {
-			os.Exit(EXIT_FILL_FAILED)
+
+		perf := tests.NewPerf(argv.Url, tests.NewPerfConfig())
+		if argv.StateFile == "" {
+			perf.Fill(argv.Threads, tests.NewPerfConfig())
+		} else {
+			file, err := os.Open(argv.StateFile)
+			defer file.Close()
+			if err != nil {
+				log.Error("Can't open file: " + argv.StateFile)
+				os.Exit(EXIT_FILL_FAILED)
+			}
+			err = perf.Load(file)
+			if err != nil {
+				log.Error("Can't load from file: " + argv.StateFile)
+				os.Exit(EXIT_FILL_FAILED)
+			}
 		}
 
 		perf.Run(argv.Threads)

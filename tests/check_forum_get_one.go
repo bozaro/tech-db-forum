@@ -97,8 +97,8 @@ func CheckForumGetOneCounter(c *client.Forum, f *Factory) {
 }
 
 func (self *PForum) Validate(v PerfValidator, forum *models.Forum, version PVersion) {
-	v.CheckInt(self.Posts, int(forum.Posts), "Posts")
-	v.CheckInt(self.Threads, int(forum.Threads), "Threads")
+	v.CheckInt64(self.Posts, forum.Posts, "Posts")
+	v.CheckInt32(self.Threads, forum.Threads, "Threads")
 	v.Finish(version, self.Version)
 }
 

@@ -66,14 +66,14 @@ func CheckThreadGetOneNotFound(c *client.Forum, f *Factory) {
 }
 
 func (self *PThread) Validate(v PerfValidator, thread *models.Thread, version PVersion) {
-	v.CheckInt(int(self.ID), int(thread.ID), "ID")
+	v.CheckInt32(self.ID, thread.ID, "ID")
 	v.CheckStr(self.Forum.Slug, thread.Forum, "Forum")
 	v.CheckStr(self.Slug, thread.Slug, "Slug")
 	v.CheckStr(self.Author.Nickname, thread.Author, "Author")
 	v.CheckHash(self.MessageHash, thread.Message, "Message")
 	v.CheckHash(self.TitleHash, thread.Title, "Title")
 	v.CheckDate(&self.Created, thread.Created, "Created")
-	v.CheckInt(int(self.Votes), int(thread.Votes), "Votes")
+	v.CheckInt32(self.Votes, thread.Votes, "Votes")
 	v.Finish(version, self.Version)
 }
 
