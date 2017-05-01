@@ -2,10 +2,20 @@ package tests
 
 import (
 	"github.com/go-openapi/strfmt"
-	"math/rand"
 	"sync/atomic"
 )
 
+//go:generate msgp
+//msgp:shim strfmt.DateTime as:string using:(strfmt.DateTime).String/parseDateTime
+//msgp:shim strfmt.Email as:string using:(strfmt.Email).String/strfmt.Email
+import (
+	"math/rand"
+)
+
+type PVersion uint32
+type PHash [16]byte
+
+//msgp:ignore PerfData
 type PerfData struct {
 	Status  *PStatus
 	users   []*PUser
@@ -23,6 +33,7 @@ type PerfData struct {
 	threadById     map[int32]*PThread
 }
 
+//msgp:ignore PStatus
 type PStatus struct {
 	Version PVersion
 	Forum   int
@@ -32,46 +43,46 @@ type PStatus struct {
 }
 
 type PUser struct {
-	Version      PVersion
-	AboutHash    PHash
-	Email        strfmt.Email
-	FullnameHash PHash
-	Nickname     string
+	Version      PVersion     `msg:"-"`
+	AboutHash    PHash        `msg:"about"`
+	Email        strfmt.Email `msg:"email"`
+	FullnameHash PHash        `msg:"name"`
+	Nickname     string       `msg:"nick"`
 }
 
 type PThread struct {
-	Version     PVersion
-	ID          int32
-	Slug        string
-	Author      *PUser
-	Forum       *PForum
-	MessageHash PHash
-	TitleHash   PHash
-	Created     strfmt.DateTime
-	Votes       int32
-	Posts       int
+	Version     PVersion        `msg:"-"`
+	ID          int32           `msg:"id"`
+	Slug        string          `msg:"slug"`
+	Author      *PUser          `msg:"-"`
+	Forum       *PForum         `msg:"-"`
+	MessageHash PHash           `msg:"message"`
+	TitleHash   PHash           `msg:"title"`
+	Created     strfmt.DateTime `msg:"created"`
+	Votes       int32           `msg:"-"`
+	Posts       int             `msg:"-"`
 }
 
 type PForum struct {
-	Version   PVersion
-	Posts     int
-	Slug      string
-	Threads   int
-	TitleHash PHash
-	User      *PUser
+	Version   PVersion `msg:"-"`
+	Posts     int      `msg:"-"`
+	Slug      string   `msg:"slug"`
+	Threads   int      `msg:"-"`
+	TitleHash PHash    `msg:"title"`
+	User      *PUser   `msg:"-"`
 }
 
 type PPost struct {
-	Version     PVersion
-	ID          int64
-	Author      *PUser
-	Thread      *PThread
-	Parent      *PPost
-	Created     strfmt.DateTime
-	IsEdited    bool
-	MessageHash PHash
-	Index       int32
-	Path        []int32
+	Version     PVersion        `msg:"-"`
+	ID          int64           `msg:"id"`
+	Author      *PUser          `msg:"-"`
+	Thread      *PThread        `msg:"-"`
+	Parent      *PPost          `msg:"-"`
+	Created     strfmt.DateTime `msg:"created"`
+	IsEdited    bool            `msg:"edited"`
+	MessageHash PHash           `msg:"message"`
+	Index       int32           `msg:"-"`
+	Path        []int32         `msg:"-"`
 }
 
 func NewPerfData() *PerfData {
@@ -227,4 +238,9 @@ func GetRandomDesc() *bool {
 	default:
 		return nil
 	}
+}
+
+func parseDateTime(value string) strfmt.DateTime {
+	date, _ := strfmt.ParseDateTime(value)
+	return date
 }

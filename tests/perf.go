@@ -3,6 +3,7 @@ package tests
 import "github.com/bozaro/tech-db-forum/generated/client"
 import (
 	"crypto/md5"
+	"io"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -14,9 +15,6 @@ type Perf struct {
 	data *PerfData
 }
 
-type PHash [16]byte
-type PVersion uint32
-
 type PerfTest struct {
 	Name   string
 	Mode   PerfMode
@@ -27,7 +25,7 @@ type PerfTest struct {
 type PerfMode int
 
 const (
-	ModeRead  PerfMode = iota
+	ModeRead PerfMode = iota
 	ModeWrite
 )
 
@@ -100,4 +98,11 @@ func (self *Perf) Run(threads int) {
 
 	// wait for the workers to finish
 	wg.Wait()
+}
+
+func (self *Perf) Load(reader io.Reader) error {
+	return self.data.Load(reader)
+}
+func (self *Perf) Save(writer io.Writer) error {
+	return self.data.Save(writer)
 }

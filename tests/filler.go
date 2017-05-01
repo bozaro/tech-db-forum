@@ -41,7 +41,7 @@ func FillUsers(c *client.Forum, data *PerfData, parallel int, count int) {
 	wg.Wait()
 }
 
-func Fill(url *url.URL) *Perf {
+func Fill(url *url.URL, threads int) *Perf {
 
 	transport := CreateTransport(url)
 	c := client.New(transport, nil)
@@ -51,7 +51,7 @@ func Fill(url *url.URL) *Perf {
 	data := NewPerfData()
 
 	log.Info("Creating users (multiple threads)")
-	FillUsers(c, data, 8, 1000)
+	FillUsers(c, data, threads, 1000)
 
 	log.Info("Creating forums")
 	for i := 0; i < 20; i++ {
