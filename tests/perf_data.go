@@ -10,6 +10,7 @@ import (
 //msgp:shim strfmt.Email as:string using:(strfmt.Email).String/strfmt.Email
 import (
 	"math/rand"
+	"sync"
 )
 
 type PVersion uint32
@@ -17,6 +18,8 @@ type PHash [16]byte
 
 //msgp:ignore PerfData
 type PerfData struct {
+	mutex sync.RWMutex
+
 	Status  *PStatus
 	users   []*PUser
 	forums  []*PForum
@@ -85,13 +88,13 @@ type PPost struct {
 	Path        []int32         `msg:"-"`
 }
 
-func NewPerfData() *PerfData {
+func NewPerfData(config *PerfConfig) *PerfData {
 	return &PerfData{
 		Status:         &PStatus{},
-		forums:         []*PForum{},
-		users:          []*PUser{},
-		threads:        []*PThread{},
-		posts:          []*PPost{},
+		forums:         make([]*PForum, 0, config.ForumCount),
+		users:          make([]*PUser, 0, config.UserCount),
+		threads:        make([]*PThread, 0, config.ThreadCount),
+		posts:          make([]*PPost, 0, config.PostCount),
 		threadsByForum: map[string][]*PThread{},
 		usersByForum:   map[string]map[*PUser]bool{},
 		postsByThread:  map[int32][]*PPost{},
@@ -102,6 +105,9 @@ func NewPerfData() *PerfData {
 }
 
 func (self *PerfData) GetUserByNickname(nickname string) *PUser {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
 	return self.userByNickname[nickname]
 }
 
@@ -113,6 +119,9 @@ func getRandomIndex(count int) int {
 }
 
 func (self *PerfData) AddForum(forum *PForum) {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+
 	self.forums = append(self.forums, forum)
 	self.usersByForum[forum.Slug] = map[*PUser]bool{}
 	self.threadsByForum[forum.Slug] = []*PThread{}
@@ -120,6 +129,9 @@ func (self *PerfData) AddForum(forum *PForum) {
 }
 
 func (self *PerfData) GetForum(index int) *PForum {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
 	if index < 0 {
 		index = getRandomIndex(len(self.forums))
 	}
@@ -127,12 +139,18 @@ func (self *PerfData) GetForum(index int) *PForum {
 }
 
 func (self *PerfData) AddUser(user *PUser) {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+
 	self.users = append(self.users, user)
 	self.userByNickname[user.Nickname] = user
 	self.Status.User++
 }
 
 func (self *PerfData) GetUser(index int) *PUser {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
 	if index < 0 {
 		index = getRandomIndex(len(self.users))
 	}
@@ -140,6 +158,9 @@ func (self *PerfData) GetUser(index int) *PUser {
 }
 
 func (self *PerfData) AddThread(thread *PThread) {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+
 	self.threads = append(self.threads, thread)
 	self.threadById[thread.ID] = thread
 	self.postsByThread[thread.ID] = []*PPost{}
@@ -150,6 +171,9 @@ func (self *PerfData) AddThread(thread *PThread) {
 }
 
 func (self *PerfData) GetThread(index int) *PThread {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
 	if index < 0 {
 		index = getRandomIndex(len(self.threads))
 	}
@@ -157,14 +181,23 @@ func (self *PerfData) GetThread(index int) *PThread {
 }
 
 func (self *PerfData) GetThreadById(id int32) *PThread {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
 	return self.threadById[id]
 }
 
 func (self *PerfData) GetPostById(id int64) *PPost {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
 	return self.postById[id]
 }
 
 func (self *PerfData) GetForumThreads(forum *PForum) []*PThread {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
 	result := self.threadsByForum[forum.Slug]
 	if result == nil {
 		return []*PThread{}
@@ -173,6 +206,9 @@ func (self *PerfData) GetForumThreads(forum *PForum) []*PThread {
 }
 
 func (self *PerfData) GetForumUsers(forum *PForum) []*PUser {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
 	users := self.usersByForum[forum.Slug]
 	if users == nil {
 		return []*PUser{}
@@ -185,6 +221,9 @@ func (self *PerfData) GetForumUsers(forum *PForum) []*PUser {
 }
 
 func (self *PerfData) GetThreadPosts(thread *PThread) []*PPost {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
 	result := self.postsByThread[thread.ID]
 	if result == nil {
 		return []*PPost{}
@@ -193,6 +232,9 @@ func (self *PerfData) GetThreadPosts(thread *PThread) []*PPost {
 }
 
 func (self *PerfData) AddPost(post *PPost) {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+
 	self.posts = append(self.posts, post)
 	self.postById[post.ID] = post
 	self.usersByForum[post.Thread.Forum.Slug][post.Author] = true
@@ -210,6 +252,9 @@ func (self *PerfData) AddPost(post *PPost) {
 }
 
 func (self *PerfData) GetPost(index int) *PPost {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
 	if index < 0 {
 		index = getRandomIndex(len(self.posts))
 	}

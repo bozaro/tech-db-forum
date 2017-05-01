@@ -107,7 +107,7 @@ var cmdFill = &cli.Command{
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdFillT)
 		commonPrepare(argv.CmdCommonT)
-		perf := tests.Fill(argv.Url, argv.Threads)
+		perf := tests.Fill(argv.Url, argv.Threads, tests.NewPerfConfig())
 		if perf == nil {
 			os.Exit(EXIT_FILL_FAILED)
 		}
@@ -137,7 +137,7 @@ var cmdPerf = &cli.Command{
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdPerfT)
 		commonPrepare(argv.CmdCommonT)
-		perf := tests.Fill(argv.Url, argv.Threads)
+		perf := tests.Fill(argv.Url, argv.Threads, tests.NewPerfConfig())
 		if perf == nil {
 			os.Exit(EXIT_FILL_FAILED)
 		}
