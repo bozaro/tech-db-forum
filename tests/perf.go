@@ -19,7 +19,7 @@ type PerfTest struct {
 	Name   string
 	Mode   PerfMode
 	Weight PerfWeight
-	FnPerf func(p *Perf)
+	FnPerf func(p *Perf, f *Factory)
 }
 
 type PerfMode int
@@ -75,12 +75,13 @@ func (self *Perf) Run(threads int) {
 	for i := 0; i < threads; i++ {
 		wg.Add(1)
 		go func() {
+			f := NewFactory()
 			for {
 				if atomic.LoadInt32(&done) != 0 {
 					break
 				}
 				p := GetRandomPerfTest()
-				p.FnPerf(self)
+				p.FnPerf(self, f)
 				atomic.AddInt64(&counter, 1)
 			}
 			wg.Done()

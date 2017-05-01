@@ -45,21 +45,21 @@ func init() {
 	})
 }
 
-func CheckUserGetOneSimple(c *client.Forum) {
-	user := CreateUser(c, nil)
+func CheckUserGetOneSimple(c *client.Forum, f *Factory) {
+	user := f.CreateUser(c, nil)
 	CheckUser(c, user)
 }
 
-func CheckUserGetOneNotFound(c *client.Forum) {
-	user := RandomUser()
+func CheckUserGetOneNotFound(c *client.Forum, f *Factory) {
+	user := f.RandomUser()
 	_, err := c.Operations.UserGetOne(operations.NewUserGetOneParams().
 		WithNickname(user.Nickname).
 		WithContext(Expected(404, nil, nil)))
 	CheckIsType(operations.NewUserGetOneNotFound(), err)
 }
 
-func CheckUserGetOneNocase(c *client.Forum, m *Modify) {
-	user := CreateUser(c, nil)
+func CheckUserGetOneNocase(c *client.Forum, f *Factory, m *Modify) {
+	user := f.CreateUser(c, nil)
 	nickname := m.Case(user.Nickname)
 	_, err := c.Operations.UserGetOne(operations.NewUserGetOneParams().
 		WithNickname(nickname).
@@ -75,7 +75,7 @@ func (self *PUser) Validate(v PerfValidator, user *models.User, version PVersion
 	v.Finish(version, self.Version)
 }
 
-func PerfUserGetOneSuccess(p *Perf) {
+func PerfUserGetOneSuccess(p *Perf, f *Factory) {
 	user := p.data.GetUser(-1)
 	version := user.Version
 	result, err := p.c.Operations.UserGetOne(operations.NewUserGetOneParams().
@@ -88,8 +88,8 @@ func PerfUserGetOneSuccess(p *Perf) {
 	})
 }
 
-func PerfUserGetOneNotFound(p *Perf) {
-	nickname := RandomUser().Nickname
+func PerfUserGetOneNotFound(p *Perf, f *Factory) {
+	nickname := f.RandomNickname()
 	_, err := p.c.Operations.UserGetOne(operations.NewUserGetOneParams().
 		WithNickname(nickname).
 		WithContext(Expected(404, nil, nil)))

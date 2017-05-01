@@ -72,8 +72,8 @@ func GetBody(stream *io.ReadCloser) ([]byte, error) {
 
 }
 
-func Modifications(checker func(c *client.Forum, modify *Modify)) func(c *client.Forum) {
-	return func(c *client.Forum) {
+func Modifications(checker func(c *client.Forum, f *Factory, modify *Modify)) func(c *client.Forum, f *Factory) {
+	return func(c *client.Forum, f *Factory) {
 		pass := 0
 		for true {
 			pass++
@@ -82,7 +82,7 @@ func Modifications(checker func(c *client.Forum, modify *Modify)) func(c *client
 			}
 			modify := Modify(pass)
 			// Run check
-			checker(c, &modify)
+			checker(c, f, &modify)
 			// Done?
 			if modify != 0 {
 				break

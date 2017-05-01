@@ -38,8 +38,8 @@ func init() {
 	})
 }
 
-func CheckThreadGetOneSimple(c *client.Forum, m *Modify) {
-	expected := CreateThread(c, nil, nil, nil)
+func CheckThreadGetOneSimple(c *client.Forum, f *Factory, m *Modify) {
+	expected := f.CreateThread(c, nil, nil, nil)
 
 	// Slug or ID
 	id := m.SlugOrId(expected)
@@ -52,8 +52,8 @@ func CheckThreadGetOneSimple(c *client.Forum, m *Modify) {
 	CheckThread(c, expected)
 }
 
-func CheckThreadGetOneNotFound(c *client.Forum) {
-	thread := RandomThread()
+func CheckThreadGetOneNotFound(c *client.Forum, f *Factory) {
+	thread := f.RandomThread()
 	_, err := c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
 		WithSlugOrID(thread.Slug).
 		WithContext(Expected(404, nil, nil)))
@@ -77,7 +77,7 @@ func (self *PThread) Validate(v PerfValidator, thread *models.Thread, version PV
 	v.Finish(version, self.Version)
 }
 
-func PerfThreadGetOneSuccess(p *Perf) {
+func PerfThreadGetOneSuccess(p *Perf, f *Factory) {
 	thread := p.data.GetThread(-1)
 	version := thread.Version
 	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
@@ -91,15 +91,16 @@ func PerfThreadGetOneSuccess(p *Perf) {
 	})
 }
 
-func PerfThreadGetOneNotFound(p *Perf) {
-	thread := RandomThread()
+func PerfThreadGetOneNotFound(p *Perf, f *Factory) {
+	var id int32
+	slug := f.RandomSlug()
 	for {
-		thread.ID = rand.Int31n(100000000)
-		if p.data.GetThreadById(thread.ID) == nil {
+		id = rand.Int31n(100000000)
+		if p.data.GetThreadById(id) == nil {
 			break
 		}
 	}
-	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
+	slugOrId := GetSlugOrId(slug, int64(id))
 	_, err := p.c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
 		WithSlugOrID(slugOrId).
 		WithContext(Expected(404, nil, nil)))

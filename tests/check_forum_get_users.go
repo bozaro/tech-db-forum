@@ -74,8 +74,8 @@ func (a PUserByNickname) Less(i, j int) bool {
 	return strings.ToLower(a[i].Nickname) < strings.ToLower(a[j].Nickname)
 }
 
-func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
-	forum := CreateForum(c, nil, nil)
+func CheckForumGetUsersSimple(c *client.Forum, f *Factory, m *Modify) {
+	forum := f.CreateForum(c, nil, nil)
 	threads := []*models.Thread{}
 	users := []*models.User{}
 	created := time.Now()
@@ -83,16 +83,16 @@ func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
 
 	forum_users := map[string]*models.User{}
 	// Пост, который не участвует в данном форуме
-	CreatePost(c, nil, nil)
+	f.CreatePost(c, nil, nil)
 	// Пользователи
 	for i := 0; i < 8; i++ {
-		user := CreateUser(c, nil)
+		user := f.CreateUser(c, nil)
 		users = append(users, user)
 	}
 	// Ветви
 	for i := 0; i < 4; i++ {
 		user := users[i/2]
-		thread := CreateThread(c, nil, forum, user)
+		thread := f.CreateThread(c, nil, forum, user)
 		threads = append(threads, thread)
 		forum_users[user.Nickname] = user
 	}
@@ -100,9 +100,9 @@ func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
 	for i := 0; i < 10; i++ {
 		user := users[i%(len(users)-1)+1]
 		thread := threads[rand.Intn(len(threads))]
-		post := RandomPost()
+		post := f.RandomPost()
 		post.Author = user.Nickname
-		CreatePost(c, post, thread)
+		f.CreatePost(c, post, thread)
 		forum_users[user.Nickname] = user
 	}
 
@@ -158,8 +158,8 @@ func CheckForumGetUsersSimple(c *client.Forum, m *Modify) {
 		WithContext(Expected(200, &[]models.Thread{}, nil)))
 }
 
-func CheckForumGetUsersCollation(c *client.Forum, m *Modify) {
-	forum := CreateForum(c, nil, nil)
+func CheckForumGetUsersCollation(c *client.Forum, f *Factory, m *Modify) {
+	forum := f.CreateForum(c, nil, nil)
 	threads := []*models.Thread{}
 	users := []*models.User{}
 	created := time.Now()
@@ -167,7 +167,7 @@ func CheckForumGetUsersCollation(c *client.Forum, m *Modify) {
 
 	forum_users := map[string]*models.User{}
 	// Пост, который не участвует в данном форуме
-	CreatePost(c, nil, nil)
+	f.CreatePost(c, nil, nil)
 	// Суффиксы пользователей
 	prefix := nick_id.Generate() + "."
 	suffixes := []string{
@@ -181,15 +181,15 @@ func CheckForumGetUsersCollation(c *client.Forum, m *Modify) {
 	}
 	// Пользователи
 	for _, suffix := range suffixes {
-		user := RandomUser()
+		user := f.RandomUser()
 		user.Nickname = prefix + suffix
-		user = CreateUser(c, user)
+		user = f.CreateUser(c, user)
 		users = append(users, user)
 	}
 	// Ветви
 	for i := 0; i < 4; i++ {
 		user := users[i/2]
-		thread := CreateThread(c, nil, forum, user)
+		thread := f.CreateThread(c, nil, forum, user)
 		threads = append(threads, thread)
 		forum_users[user.Nickname] = user
 	}
@@ -197,9 +197,9 @@ func CheckForumGetUsersCollation(c *client.Forum, m *Modify) {
 	for i := 0; i < 10; i++ {
 		user := users[i%(len(users)-1)+1]
 		thread := threads[rand.Intn(len(threads))]
-		post := RandomPost()
+		post := f.RandomPost()
 		post.Author = user.Nickname
-		CreatePost(c, post, thread)
+		f.CreatePost(c, post, thread)
 		forum_users[user.Nickname] = user
 	}
 
@@ -253,12 +253,12 @@ func CheckForumGetUsersCollation(c *client.Forum, m *Modify) {
 		WithContext(Expected(200, &[]models.Thread{}, nil)))
 }
 
-func CheckForumGetUsersEmpty(c *client.Forum, m *Modify) {
+func CheckForumGetUsersEmpty(c *client.Forum, f *Factory, m *Modify) {
 	var limit *int32
 	var since *string
 	var desc *bool
 
-	forum := CreateForum(c, nil, nil)
+	forum := f.CreateForum(c, nil, nil)
 	// Limit
 	if m.Bool() {
 		v := int32(10)
@@ -266,7 +266,7 @@ func CheckForumGetUsersEmpty(c *client.Forum, m *Modify) {
 	}
 	// Since
 	if m.Bool() {
-		v := RandomNickname()
+		v := f.RandomNickname()
 		since = &v
 	}
 	// Desc
@@ -288,16 +288,16 @@ func CheckForumGetUsersEmpty(c *client.Forum, m *Modify) {
 		WithContext(Expected(200, &[]models.User{}, nil)))
 }
 
-func CheckForumGetUsersVote(c *client.Forum, m *Modify) {
+func CheckForumGetUsersVote(c *client.Forum, f *Factory, m *Modify) {
 	var limit *int32
 	var since *string
 	var desc *bool
 
-	forum := CreateForum(c, nil, nil)
+	forum := f.CreateForum(c, nil, nil)
 
-	user := CreateUser(c, nil)
-	author := CreateUser(c, nil)
-	thread := CreateThread(c, nil, forum, author)
+	user := f.CreateUser(c, nil)
+	author := f.CreateUser(c, nil)
+	thread := f.CreateThread(c, nil, forum, author)
 	var err error
 	// Like user1
 	thread.Votes = 1
@@ -322,12 +322,12 @@ func CheckForumGetUsersVote(c *client.Forum, m *Modify) {
 		WithContext(Expected(200, &[]models.User{*author}, nil)))
 }
 
-func CheckForumGetUsersNotFound(c *client.Forum, m *Modify) {
+func CheckForumGetUsersNotFound(c *client.Forum, f *Factory, m *Modify) {
 	var limit *int32
 	var since *string
 	var desc *bool
 
-	forum := RandomForum()
+	forum := f.RandomForum()
 	// Limit
 	if m.Bool() {
 		v := int32(10)
@@ -335,7 +335,7 @@ func CheckForumGetUsersNotFound(c *client.Forum, m *Modify) {
 	}
 	// Since
 	if m.Bool() {
-		v := RandomNickname()
+		v := f.RandomNickname()
 		since = &v
 	}
 	// Desc
@@ -358,7 +358,7 @@ func CheckForumGetUsersNotFound(c *client.Forum, m *Modify) {
 	CheckIsType(operations.NewForumGetUsersNotFound(), err)
 }
 
-func PerfForumGetUsersSuccess(p *Perf) {
+func PerfForumGetUsersSuccess(p *Perf, f *Factory) {
 	forum := p.data.GetForum(-1)
 	version := forum.Version
 
@@ -416,8 +416,8 @@ func PerfForumGetUsersSuccess(p *Perf) {
 	})
 }
 
-func PerfForumGetUsersNotFound(p *Perf) {
-	slug := RandomForum().Slug
+func PerfForumGetUsersNotFound(p *Perf, f *Factory) {
+	slug := f.RandomSlug()
 	limit := GetRandomLimit()
 	var since *string
 	if rand.Int()&1 == 0 {

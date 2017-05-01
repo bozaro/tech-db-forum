@@ -53,20 +53,20 @@ func init() {
 	})
 }
 
-func CheckPostGetOneSimple(c *client.Forum) {
-	post := CreatePost(c, nil, nil)
+func CheckPostGetOneSimple(c *client.Forum, f *Factory) {
+	post := f.CreatePost(c, nil, nil)
 	CheckPost(c, post)
 }
 
-func CheckPostGetOneRelated(c *client.Forum, m *Modify) {
-	user := CreateUser(c, nil)
-	forum := CreateForum(c, nil, nil)
+func CheckPostGetOneRelated(c *client.Forum, f *Factory, m *Modify) {
+	user := f.CreateUser(c, nil)
+	forum := f.CreateForum(c, nil, nil)
 	forum.Threads = 1
 	forum.Posts = 1
-	thread := CreateThread(c, nil, forum, nil)
-	temp := RandomPost()
+	thread := f.CreateThread(c, nil, forum, nil)
+	temp := f.RandomPost()
 	temp.Author = user.Nickname
-	post := CreatePost(c, temp, thread)
+	post := f.CreatePost(c, temp, thread)
 	expected := models.PostFull{
 		Post: post,
 	}
@@ -103,7 +103,7 @@ func filterPostFull(data interface{}) interface{} {
 	return full
 }
 
-func CheckPostGetOneNotFound(c *client.Forum, m *Modify) {
+func CheckPostGetOneNotFound(c *client.Forum, f *Factory, m *Modify) {
 	related := []string{}
 	// User
 	if m.Bool() {
@@ -138,7 +138,7 @@ func (self *PPost) Validate(v PerfValidator, post *models.Post, version PVersion
 	v.Finish(version, self.Version)
 }
 
-func PerfPostGetOneSuccess(p *Perf) {
+func PerfPostGetOneSuccess(p *Perf, f *Factory) {
 	post := p.data.GetPost(-1)
 	postVersion := post.Version
 
@@ -173,7 +173,7 @@ func PerfPostGetOneSuccess(p *Perf) {
 	})
 }
 
-func PerfPostGetOneNotFound(p *Perf) {
+func PerfPostGetOneNotFound(p *Perf, f *Factory) {
 	related := GetRandomRelated()
 	var id int64
 	for {

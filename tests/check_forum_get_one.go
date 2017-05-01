@@ -53,21 +53,21 @@ func init() {
 	})
 }
 
-func CheckForumGetOneSimple(c *client.Forum) {
-	forum := CreateForum(c, nil, nil)
+func CheckForumGetOneSimple(c *client.Forum, f *Factory) {
+	forum := f.CreateForum(c, nil, nil)
 	CheckForum(c, forum)
 }
 
-func CheckForumGetOneNotFound(c *client.Forum) {
-	forum := RandomForum()
+func CheckForumGetOneNotFound(c *client.Forum, f *Factory) {
+	forum := f.RandomForum()
 	_, err := c.Operations.ForumGetOne(operations.NewForumGetOneParams().
 		WithSlug(forum.Slug).
 		WithContext(Expected(404, nil, nil)))
 	CheckIsType(operations.NewForumGetOneNotFound(), err)
 }
 
-func CheckForumGetOneNocase(c *client.Forum, m *Modify) {
-	forum := CreateForum(c, nil, nil)
+func CheckForumGetOneNocase(c *client.Forum, f *Factory, m *Modify) {
+	forum := f.CreateForum(c, nil, nil)
 	slug := m.Case(forum.Slug)
 	_, err := c.Operations.ForumGetOne(operations.NewForumGetOneParams().
 		WithSlug(slug).
@@ -75,17 +75,17 @@ func CheckForumGetOneNocase(c *client.Forum, m *Modify) {
 	CheckNil(err)
 }
 
-func CheckForumGetOneCounter(c *client.Forum) {
-	f1 := CreateForum(c, nil, nil)
-	f2 := CreateForum(c, nil, nil)
+func CheckForumGetOneCounter(c *client.Forum, f *Factory) {
+	f1 := f.CreateForum(c, nil, nil)
+	f2 := f.CreateForum(c, nil, nil)
 
-	t1 := CreateThread(c, nil, f1, nil)
-	CreatePosts(c, RandomPosts(3), t1)
-	t2 := CreateThread(c, nil, f1, nil)
-	CreatePosts(c, RandomPosts(5), t2)
-	CreatePosts(c, RandomPosts(2), t1)
-	t3 := CreateThread(c, nil, f2, nil)
-	CreatePosts(c, RandomPosts(4), t3)
+	t1 := f.CreateThread(c, nil, f1, nil)
+	f.CreatePosts(c, f.RandomPosts(3), t1)
+	t2 := f.CreateThread(c, nil, f1, nil)
+	f.CreatePosts(c, f.RandomPosts(5), t2)
+	f.CreatePosts(c, f.RandomPosts(2), t1)
+	t3 := f.CreateThread(c, nil, f2, nil)
+	f.CreatePosts(c, f.RandomPosts(4), t3)
 
 	f1.Threads = 2
 	f1.Posts = 10
@@ -102,7 +102,7 @@ func (self *PForum) Validate(v PerfValidator, forum *models.Forum, version PVers
 	v.Finish(version, self.Version)
 }
 
-func PerfForumGetOneSuccess(p *Perf) {
+func PerfForumGetOneSuccess(p *Perf, f *Factory) {
 	forum := p.data.GetForum(-1)
 	version := forum.Version
 	result, err := p.c.Operations.ForumGetOne(operations.NewForumGetOneParams().
@@ -115,8 +115,8 @@ func PerfForumGetOneSuccess(p *Perf) {
 	})
 }
 
-func PerfForumGetOneNotFound(p *Perf) {
-	slug := RandomForum().Slug
+func PerfForumGetOneNotFound(p *Perf, f *Factory) {
+	slug := f.RandomSlug()
 	_, err := p.c.Operations.ForumGetOne(operations.NewForumGetOneParams().
 		WithSlug(slug).
 		WithContext(Expected(404, nil, nil)))

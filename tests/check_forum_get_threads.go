@@ -68,13 +68,13 @@ func filterThreads(data interface{}) interface{} {
 	return threads
 }
 
-func CheckForumGetThreadsSimple(c *client.Forum, m *Modify) {
-	forum := CreateForum(c, nil, nil)
+func CheckForumGetThreadsSimple(c *client.Forum, f *Factory, m *Modify) {
+	forum := f.CreateForum(c, nil, nil)
 	threads := []models.Thread{}
 	created := time.Now()
 	created.Round(time.Millisecond)
 	for i := 0; i < 10; i++ {
-		thread := CreateThread(c, nil, forum, nil)
+		thread := f.CreateThread(c, nil, forum, nil)
 		threads = append(threads, *thread)
 	}
 	sort.Sort(ThreadByCreated(threads))
@@ -131,12 +131,12 @@ func CheckForumGetThreadsSimple(c *client.Forum, m *Modify) {
 		WithContext(Expected(200, &[]models.Thread{}, nil)))
 }
 
-func CheckForumGetThreadsNotFound(c *client.Forum, m *Modify) {
+func CheckForumGetThreadsNotFound(c *client.Forum, f *Factory, m *Modify) {
 	var limit *int32
 	var since *strfmt.DateTime
 	var desc *bool
 
-	forum := RandomForum()
+	forum := f.RandomForum()
 	// Limit
 	if m.Bool() {
 		v := int32(10)
@@ -167,7 +167,7 @@ func CheckForumGetThreadsNotFound(c *client.Forum, m *Modify) {
 	CheckIsType(operations.NewForumGetThreadsNotFound(), err)
 }
 
-func PerfForumGetThreadsSuccess(p *Perf) {
+func PerfForumGetThreadsSuccess(p *Perf, f *Factory) {
 	forum := p.data.GetForum(-1)
 	version := forum.Version
 
@@ -224,8 +224,8 @@ func PerfForumGetThreadsSuccess(p *Perf) {
 	})
 }
 
-func PerfForumGetThreadsNotFound(p *Perf) {
-	slug := RandomForum().Slug
+func PerfForumGetThreadsNotFound(p *Perf, f *Factory) {
+	slug := f.RandomSlug()
 	limit := GetRandomLimit()
 	var since *strfmt.DateTime
 	if rand.Int()&1 == 0 {

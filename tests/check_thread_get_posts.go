@@ -110,7 +110,7 @@ func init() {
 	})
 }
 
-func CreateTree(c *client.Forum, thread *models.Thread, tree [][]int) []OrderedPost {
+func (f *Factory) CreateTree(c *client.Forum, thread *models.Thread, tree [][]int) []OrderedPost {
 	type node struct {
 		parent *node
 		path   string
@@ -142,13 +142,13 @@ func CreateTree(c *client.Forum, thread *models.Thread, tree [][]int) []OrderedP
 		}
 		posts := make([]*models.Post, len(batch))
 		for i, v := range batch {
-			post := RandomPost()
+			post := f.RandomPost()
 			if v.parent != nil {
 				post.Parent = v.parent.id
 			}
 			posts[i] = post
 		}
-		posts = CreatePosts(c, posts, thread)
+		posts = f.CreatePosts(c, posts, thread)
 		for i, v := range batch {
 			post := posts[i]
 			v.id = post.ID
@@ -211,7 +211,7 @@ func SortPosts(posts []OrderedPost, desc bool, limitType func(OrderedPost) int, 
 	return result
 }
 
-func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
+func CheckThreadGetPostsSimple(c *client.Forum, f *Factory, m *Modify) {
 	tree := [][]int{
 		{1},
 		{1, 2},
@@ -234,10 +234,10 @@ func CheckThreadGetPostsSimple(c *client.Forum, m *Modify) {
 		{11, 17, 20},
 		{1, 4},
 	}
-	CheckThreadGetPosts(c, m, tree, 3)
+	CheckThreadGetPosts(c, f, m, tree, 3)
 }
 
-func CheckThreadGetPostsSameTime(c *client.Forum, m *Modify) {
+func CheckThreadGetPostsSameTime(c *client.Forum, f *Factory, m *Modify) {
 	tree := [][]int{}
 	id := 0
 	top := []int{}
@@ -252,12 +252,12 @@ func CheckThreadGetPostsSameTime(c *client.Forum, m *Modify) {
 		tree = append(tree, []int{tid, id})
 	}
 
-	CheckThreadGetPosts(c, m, tree, -1)
+	CheckThreadGetPosts(c, f, m, tree, -1)
 }
 
-func CheckThreadGetPosts(c *client.Forum, m *Modify, tree [][]int, limit int32) {
-	thread := CreateThread(c, nil, nil, nil)
-	posts_tree := CreateTree(c, thread, tree)
+func CheckThreadGetPosts(c *client.Forum, f *Factory, m *Modify, tree [][]int, limit int32) {
+	thread := f.CreateThread(c, nil, nil, nil)
+	posts_tree := f.CreateTree(c, thread, tree)
 
 	// Sort order
 	var sortType *string
@@ -354,8 +354,8 @@ func filterPostPage(data interface{}) interface{} {
 	return page
 }
 
-func CheckThreadGetPostsNotFound(c *client.Forum) {
-	thread := RandomThread()
+func CheckThreadGetPostsNotFound(c *client.Forum, f *Factory) {
+	thread := f.RandomThread()
 	_, err := c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 		WithSlugOrID(thread.Slug).
 		WithContext(Expected(404, nil, nil)))
@@ -367,7 +367,7 @@ func CheckThreadGetPostsNotFound(c *client.Forum) {
 	CheckIsType(operations.NewThreadGetPostsNotFound(), err)
 }
 
-func PerfThreadGetPostsSuccess(p *Perf) {
+func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 	thread := p.data.GetThread(-1)
 	version := thread.Version
 
@@ -454,15 +454,16 @@ func PerfThreadGetPostsSuccess(p *Perf) {
 	})
 }
 
-func PerfThreadGetPostsNotFound(p *Perf) {
-	thread := RandomThread()
+func PerfThreadGetPostsNotFound(p *Perf, f *Factory) {
+	slug := f.RandomSlug()
+	var id int32
 	for {
-		thread.ID = rand.Int31n(100000000)
-		if p.data.GetThreadById(thread.ID) == nil {
+		id = rand.Int31n(100000000)
+		if p.data.GetThreadById(id) == nil {
 			break
 		}
 	}
-	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
+	slugOrId := GetSlugOrId(slug, int64(id))
 
 	limit := GetRandomLimit()
 	order := GetRandomSort()

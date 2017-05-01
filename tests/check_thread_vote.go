@@ -34,9 +34,9 @@ func init() {
 	})
 }
 
-func CheckThreadVoteThreadNotFound(c *client.Forum) {
-	user := CreateUser(c, nil)
-	thread := RandomThread()
+func CheckThreadVoteThreadNotFound(c *client.Forum, f *Factory) {
+	user := f.CreateUser(c, nil)
+	thread := f.RandomThread()
 	var err error
 	_, err = c.Operations.ThreadVote(operations.NewThreadVoteParams().
 		WithSlugOrID(thread.Slug).
@@ -57,9 +57,9 @@ func CheckThreadVoteThreadNotFound(c *client.Forum) {
 	CheckIsType(operations.NewThreadVoteNotFound(), err)
 }
 
-func CheckThreadVoteUserNotFound(c *client.Forum) {
-	user := RandomUser()
-	thread := CreateThread(c, nil, nil, nil)
+func CheckThreadVoteUserNotFound(c *client.Forum, f *Factory) {
+	user := f.RandomUser()
+	thread := f.CreateThread(c, nil, nil, nil)
 	_, err := c.Operations.ThreadVote(operations.NewThreadVoteParams().
 		WithSlugOrID(thread.Slug).
 		WithVote(&models.Vote{
@@ -70,11 +70,11 @@ func CheckThreadVoteUserNotFound(c *client.Forum) {
 	CheckIsType(operations.NewThreadVoteNotFound(), err)
 }
 
-func CheckThreadVoteSimple(c *client.Forum) {
-	user1 := CreateUser(c, nil)
-	user2 := CreateUser(c, nil)
-	user3 := CreateUser(c, nil)
-	thread := CreateThread(c, nil, nil, nil)
+func CheckThreadVoteSimple(c *client.Forum, f *Factory) {
+	user1 := f.CreateUser(c, nil)
+	user2 := f.CreateUser(c, nil)
+	user3 := f.CreateUser(c, nil)
+	thread := f.CreateThread(c, nil, nil, nil)
 	var err error
 	// Like user1
 	thread.Votes = 1

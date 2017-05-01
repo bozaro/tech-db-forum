@@ -50,9 +50,9 @@ func init() {
 	})
 }
 
-func CheckPostUpdateSimple(c *client.Forum) {
-	post := CreatePost(c, nil, nil)
-	temp := RandomPost()
+func CheckPostUpdateSimple(c *client.Forum, f *Factory) {
+	post := f.CreatePost(c, nil, nil)
+	temp := f.RandomPost()
 
 	update := &models.PostUpdate{}
 	update.Message = temp.Message
@@ -69,8 +69,8 @@ func CheckPostUpdateSimple(c *client.Forum) {
 	CheckPost(c, &expected)
 }
 
-func CheckPostUpdateEmpty(c *client.Forum) {
-	post := CreatePost(c, nil, nil)
+func CheckPostUpdateEmpty(c *client.Forum, f *Factory) {
+	post := f.CreatePost(c, nil, nil)
 	c.Operations.PostUpdate(operations.NewPostUpdateParams().
 		WithID(post.ID).
 		WithPost(&models.PostUpdate{}).
@@ -79,8 +79,8 @@ func CheckPostUpdateEmpty(c *client.Forum) {
 	CheckPost(c, post)
 }
 
-func CheckPostUpdateSame(c *client.Forum) {
-	post := CreatePost(c, nil, nil)
+func CheckPostUpdateSame(c *client.Forum, f *Factory) {
+	post := f.CreatePost(c, nil, nil)
 	c.Operations.PostUpdate(operations.NewPostUpdateParams().
 		WithID(post.ID).
 		WithPost(&models.PostUpdate{
@@ -91,8 +91,8 @@ func CheckPostUpdateSame(c *client.Forum) {
 	CheckPost(c, post)
 }
 
-func CheckPostUpdateCase(c *client.Forum) {
-	post := CreatePost(c, nil, nil)
+func CheckPostUpdateCase(c *client.Forum, f *Factory) {
+	post := f.CreatePost(c, nil, nil)
 	post.Message = strings.ToUpper(post.Message)
 	post.IsEdited = true
 	c.Operations.PostUpdate(operations.NewPostUpdateParams().
@@ -105,8 +105,8 @@ func CheckPostUpdateCase(c *client.Forum) {
 	CheckPost(c, post)
 }
 
-func CheckPostUpdateNotFound(c *client.Forum) {
-	post := RandomPost()
+func CheckPostUpdateNotFound(c *client.Forum, f *Factory) {
+	post := f.RandomPost()
 	_, err := c.Operations.PostUpdate(operations.NewPostUpdateParams().
 		WithID(post.ID).
 		WithPost(&models.PostUpdate{

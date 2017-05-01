@@ -18,8 +18,9 @@ func FillUsers(c *client.Forum, data *PerfData, parallel int, count int) {
 	for i := 0; i < parallel; i++ {
 		wg.Add(1)
 		go func() {
+			f := NewFactory()
 			for atomic.AddInt32(&need, -1) >= 0 {
-				user := CreateUser(c, nil)
+				user := f.CreateUser(c, nil)
 				results <- &PUser{
 					AboutHash:    Hash(user.About),
 					Email:        user.Email,
@@ -49,6 +50,7 @@ func Fill(url *url.URL, threads int) *Perf {
 	CheckNil(err)
 
 	data := NewPerfData()
+	f := NewFactory()
 
 	log.Info("Creating users (multiple threads)")
 	FillUsers(c, data, threads, 1000)
@@ -56,9 +58,9 @@ func Fill(url *url.URL, threads int) *Perf {
 	log.Info("Creating forums")
 	for i := 0; i < 20; i++ {
 		user := data.GetUser(-1)
-		forum := RandomForum()
+		forum := f.RandomForum()
 		forum.User = user.Nickname
-		forum = CreateForum(c, forum, nil)
+		forum = f.CreateForum(c, forum, nil)
 		data.AddForum(&PForum{
 			Slug:      forum.Slug,
 			TitleHash: Hash(forum.Title),
@@ -70,13 +72,13 @@ func Fill(url *url.URL, threads int) *Perf {
 	for i := 0; i < 1000; i++ {
 		author := data.GetUser(-1)
 		forum := data.GetForum(-1)
-		thread := RandomThread()
+		thread := f.RandomThread()
 		if rand.Intn(100) >= 25 {
 			thread.Slug = ""
 		}
 		thread.Author = author.Nickname
 		thread.Forum = forum.Slug
-		thread = CreateThread(c, thread, nil, nil)
+		thread = f.CreateThread(c, thread, nil, nil)
 		data.AddThread(&PThread{
 			ID:          thread.ID,
 			Slug:        thread.Slug,
@@ -89,16 +91,16 @@ func Fill(url *url.URL, threads int) *Perf {
 	}
 
 	log.Info("Creating posts")
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 300; i++ {
 		batch := []*models.Post{}
 		thread := data.GetThread(-1)
 		for j := 0; j < 100; j++ {
-			post := RandomPost()
+			post := f.RandomPost()
 			post.Author = data.GetUser(-1).Nickname
 			post.Thread = thread.ID
 			batch = append(batch, post)
 		}
-		for _, post := range CreatePosts(c, batch, nil) {
+		for _, post := range f.CreatePosts(c, batch, nil) {
 			data.AddPost(&PPost{
 				ID:          post.ID,
 				Author:      data.GetUserByNickname(post.Author),

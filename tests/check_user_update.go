@@ -50,10 +50,10 @@ func init() {
 	})
 }
 
-func CheckUserUpdateSimple(c *client.Forum) {
-	user := CreateUser(c, nil)
+func CheckUserUpdateSimple(c *client.Forum, f *Factory) {
+	user := f.CreateUser(c, nil)
 
-	expected := RandomUser()
+	expected := f.RandomUser()
 	expected.Nickname = user.Nickname
 	update := models.UserUpdate{
 		About:    expected.About,
@@ -69,8 +69,8 @@ func CheckUserUpdateSimple(c *client.Forum) {
 	CheckUser(c, expected)
 }
 
-func CheckUserUpdateEmpty(c *client.Forum) {
-	user := CreateUser(c, nil)
+func CheckUserUpdateEmpty(c *client.Forum, f *Factory) {
+	user := f.CreateUser(c, nil)
 
 	c.Operations.UserUpdate(operations.NewUserUpdateParams().
 		WithNickname(user.Nickname).
@@ -80,9 +80,9 @@ func CheckUserUpdateEmpty(c *client.Forum) {
 	CheckUser(c, user)
 }
 
-func CheckUserUpdatePart(c *client.Forum, m *Modify) {
-	fake := RandomUser()
-	expected := CreateUser(c, nil)
+func CheckUserUpdatePart(c *client.Forum, f *Factory, m *Modify) {
+	fake := f.RandomUser()
+	expected := f.CreateUser(c, nil)
 	update := &models.UserUpdate{}
 
 	// Email
@@ -110,17 +110,17 @@ func CheckUserUpdatePart(c *client.Forum, m *Modify) {
 	CheckUser(c, expected)
 }
 
-func CheckUserUpdateNotFound(c *client.Forum) {
-	user := RandomUser()
+func CheckUserUpdateNotFound(c *client.Forum, f *Factory) {
+	user := f.RandomUser()
 	_, err := c.Operations.UserUpdate(operations.NewUserUpdateParams().
 		WithNickname(user.Nickname).
 		WithContext(Expected(404, nil, nil)))
 	CheckIsType(operations.NewUserUpdateNotFound(), err)
 }
 
-func CheckUserUpdateConflict(c *client.Forum, m *Modify) {
-	user1 := CreateUser(c, nil)
-	user2 := CreateUser(c, nil)
+func CheckUserUpdateConflict(c *client.Forum, f *Factory, m *Modify) {
+	user1 := f.CreateUser(c, nil)
+	user2 := f.CreateUser(c, nil)
 
 	update := &models.UserUpdate{
 		Email: strfmt.Email(m.Case(user1.Email.String())),

@@ -45,10 +45,16 @@ func (sid *Shortid) Generate() string {
 			}
 		}
 		if valid {
+			rnd := sid.rnd.Int()
+			flg := 1
 			for i, c := range idrunes {
 				if (c >= 'a') && (c <= 'z') {
-					if sid.rnd.Intn(2) == 0 {
+					if rnd&flg == 0 {
 						idrunes[i] = c + 'A' - 'a'
+					}
+					flg <<= 1
+					if flg == 0 {
+						flg = 1
 					}
 				}
 			}

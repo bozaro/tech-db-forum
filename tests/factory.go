@@ -1,9 +1,8 @@
 package tests
 
 import (
-	"github.com/Pallinder/go-randomdata"
-	"github.com/bozaro/tech-db-forum/generated/models"
 	"github.com/bozaro/golorem"
+	"github.com/bozaro/tech-db-forum/generated/models"
 	"github.com/go-openapi/strfmt"
 	"math/rand"
 	"time"
@@ -16,6 +15,16 @@ const THREAD_FAKE_ID = "2139800939"
 
 var nick_id *Shortid
 var slug_id *Shortid
+
+type Factory struct {
+	lorem *lorem.Lorem
+}
+
+func NewFactory() *Factory {
+	return &Factory{
+		lorem: lorem.New(),
+	}
+}
 
 func init() {
 	nick_id = NewShortid(ABC_NICK)
@@ -30,58 +39,54 @@ func RandomTime() time.Time {
 		Round(time.Millisecond)
 }
 
-func RandomEmail() strfmt.Email {
-	l := lorem.New()
-	return strfmt.Email(RandomNickname() + "@" + l.Host())
+func (self *Factory) RandomEmail() strfmt.Email {
+	return strfmt.Email(self.RandomNickname() + "@" + self.lorem.Host())
 }
 
-func RandomNickname() string {
-	l := lorem.New()
-	return l.Word(1, 10) + "." + nick_id.Generate()
+func (self *Factory) RandomNickname() string {
+	return self.lorem.Word(1, 10) + "." + nick_id.Generate()
 }
 
-func RandomUser() *models.User {
-	l := lorem.New()
+func (self *Factory) RandomUser() *models.User {
 	return &models.User{
-		About:    l.Paragraph(1, 10),
-		Email:    RandomEmail(),
-		Fullname: randomdata.FullName(-1),
-		Nickname: RandomNickname(),
+		About:    self.lorem.Paragraph(1, 10),
+		Email:    self.RandomEmail(),
+		Fullname: self.lorem.FullName(-1),
+		Nickname: self.RandomNickname(),
 	}
 }
 
-func RandomForum() *models.Forum {
-	l := lorem.New()
+func (self *Factory) RandomForum() *models.Forum {
 	return &models.Forum{
 		Posts: 0,
 		Slug:  slug_id.Generate(),
-		Title: l.Sentence(1, 10),
+		Title: self.lorem.Sentence(1, 10),
 	}
 }
-
-func RandomThread() *models.Thread {
-	l := lorem.New()
+func (self *Factory) RandomSlug() string {
+	return slug_id.Generate()
+}
+func (self *Factory) RandomThread() *models.Thread {
 	created := strfmt.DateTime(RandomTime())
 	return &models.Thread{
-		Message: l.Paragraph(1, 20),
-		Slug:    slug_id.Generate(),
-		Title:   l.Sentence(1, 10),
+		Message: self.lorem.Paragraph(1, 20),
+		Slug:    self.RandomSlug(),
+		Title:   self.lorem.Sentence(1, 10),
 		Created: &created,
 	}
 }
 
-func RandomPost() *models.Post {
-	l := lorem.New()
+func (self *Factory) RandomPost() *models.Post {
 	return &models.Post{
-		Message:  l.Paragraph(1, 20),
+		Message:  self.lorem.Paragraph(1, 20),
 		IsEdited: false,
 	}
 }
 
-func RandomPosts(count int) []*models.Post {
+func (self *Factory) RandomPosts(count int) []*models.Post {
 	posts := make([]*models.Post, count)
 	for i := range posts {
-		posts[i] = RandomPost()
+		posts[i] = self.RandomPost()
 	}
 	return posts
 }

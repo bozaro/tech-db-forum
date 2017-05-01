@@ -84,7 +84,7 @@ func init() {
 	})
 }
 
-func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) []*models.Post {
+func (f *Factory) CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) []*models.Post {
 	if len(posts) == 0 {
 		return []*models.Post{}
 	}
@@ -103,7 +103,7 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 	var postsForum string
 	if postsThread == 0 {
 		if thread == nil {
-			thread = CreateThread(c, nil, nil, nil)
+			thread = f.CreateThread(c, nil, nil, nil)
 		} else {
 			slug = thread.Slug
 		}
@@ -117,7 +117,7 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 
 	check_forum := postsForum != ""
 	if !check_forum {
-		postsForum = RandomForum().Slug
+		postsForum = f.RandomForum().Slug
 	}
 
 	var expected []*models.Post
@@ -129,7 +129,7 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 	for n, post := range posts {
 		if post.Author == "" {
 			if author == "" {
-				author = CreateUser(c, nil).Nickname
+				author = f.CreateUser(c, nil).Nickname
 			}
 			post.Author = author
 		}
@@ -180,11 +180,11 @@ func CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) [
 	return result.Payload
 }
 
-func CreatePost(c *client.Forum, post *models.Post, thread *models.Thread) *models.Post {
+func (f *Factory) CreatePost(c *client.Forum, post *models.Post, thread *models.Thread) *models.Post {
 	if post == nil {
-		post = RandomPost()
+		post = f.RandomPost()
 	}
-	return CreatePosts(c, []*models.Post{post}, thread)[0]
+	return f.CreatePosts(c, []*models.Post{post}, thread)[0]
 }
 
 func CheckPost(c *client.Forum, post *models.Post) {
@@ -196,38 +196,38 @@ func CheckPost(c *client.Forum, post *models.Post) {
 	CheckNil(err)
 }
 
-func CheckPostCreateSimple(c *client.Forum, m *Modify) {
-	thread := CreateThread(c, nil, nil, nil)
+func CheckPostCreateSimple(c *client.Forum, f *Factory, m *Modify) {
+	thread := f.CreateThread(c, nil, nil, nil)
 	if m.Bool() {
 		thread.Slug = ""
 	}
-	CreatePost(c, nil, thread)
+	f.CreatePost(c, nil, thread)
 }
 
-func CheckPostCreateSameTime(c *client.Forum, m *Modify) {
-	thread := CreateThread(c, nil, nil, nil)
+func CheckPostCreateSameTime(c *client.Forum, f *Factory, m *Modify) {
+	thread := f.CreateThread(c, nil, nil, nil)
 	if m.Bool() {
 		thread.Slug = ""
 	}
-	CreatePosts(c, []*models.Post{
-		RandomPost(),
-		RandomPost(),
+	f.CreatePosts(c, []*models.Post{
+		f.RandomPost(),
+		f.RandomPost(),
 	}, thread)
 }
 
-func CheckPostCreateEmpty(c *client.Forum, m *Modify) {
-	thread := CreateThread(c, nil, nil, nil)
+func CheckPostCreateEmpty(c *client.Forum, f *Factory, m *Modify) {
+	thread := f.CreateThread(c, nil, nil, nil)
 	if m.Bool() {
 		thread.Slug = ""
 	}
-	CreatePosts(c, []*models.Post{}, thread)
+	f.CreatePosts(c, []*models.Post{}, thread)
 }
 
-func CheckPostCreateNoThread(c *client.Forum, m *Modify) {
+func CheckPostCreateNoThread(c *client.Forum, f *Factory, m *Modify) {
 	posts := []*models.Post{}
 	if m.Bool() {
-		post := RandomPost()
-		post.Author = CreateUser(c, nil).Nickname
+		post := f.RandomPost()
+		post.Author = f.CreateUser(c, nil).Nickname
 		posts = append(posts, post)
 	}
 	var err error
@@ -238,16 +238,16 @@ func CheckPostCreateNoThread(c *client.Forum, m *Modify) {
 	CheckIsType(operations.NewPostsCreateNotFound(), err)
 
 	_, err = c.Operations.PostsCreate(operations.NewPostsCreateParams().
-		WithSlugOrID(RandomThread().Slug).
+		WithSlugOrID(f.RandomThread().Slug).
 		WithPosts(posts).
 		WithContext(Expected(404, nil, nil)))
 	CheckIsType(operations.NewPostsCreateNotFound(), err)
 }
 
-func CheckPostCreateNoAuthor(c *client.Forum, m *Modify) {
-	post := RandomPost()
-	post.Author = RandomNickname()
-	thread := CreateThread(c, nil, nil, nil)
+func CheckPostCreateNoAuthor(c *client.Forum, f *Factory, m *Modify) {
+	post := f.RandomPost()
+	post.Author = f.RandomNickname()
+	thread := f.CreateThread(c, nil, nil, nil)
 
 	_, err := c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(m.SlugOrId(thread)).
@@ -256,13 +256,13 @@ func CheckPostCreateNoAuthor(c *client.Forum, m *Modify) {
 	CheckIsType(operations.NewPostsCreateNotFound(), err)
 }
 
-func CheckPostCreateInvalidParent(c *client.Forum, m *Modify) {
-	post := RandomPost()
-	thread := CreateThread(c, nil, nil, nil)
+func CheckPostCreateInvalidParent(c *client.Forum, f *Factory, m *Modify) {
+	post := f.RandomPost()
+	thread := f.CreateThread(c, nil, nil, nil)
 	post.Author = thread.Author
 	parentId := POST_FAKE_ID
 	if m.Bool() {
-		parentId = CreatePost(c, nil, nil).ID
+		parentId = f.CreatePost(c, nil, nil).ID
 	}
 	post.Parent = parentId
 	_, err := c.Operations.PostsCreate(operations.NewPostsCreateParams().
@@ -272,28 +272,28 @@ func CheckPostCreateInvalidParent(c *client.Forum, m *Modify) {
 	CheckIsType(operations.NewPostsCreateConflict(), err)
 }
 
-func CheckPostCreateWithParent(c *client.Forum) {
-	post := RandomPost()
-	thread := CreateThread(c, nil, nil, nil)
+func CheckPostCreateWithParent(c *client.Forum, f *Factory) {
+	post := f.RandomPost()
+	thread := f.CreateThread(c, nil, nil, nil)
 	post.Author = thread.Author
-	post.Parent = CreatePost(c, nil, thread).ID
-	CreatePost(c, post, thread)
+	post.Parent = f.CreatePost(c, nil, thread).ID
+	f.CreatePost(c, post, thread)
 }
 
-func CheckPostCreateDeepParent(c *client.Forum) {
-	thread := CreateThread(c, nil, nil, nil)
+func CheckPostCreateDeepParent(c *client.Forum, f *Factory) {
+	thread := f.CreateThread(c, nil, nil, nil)
 	var parent int64
 	for level := 0; level < 0x10; level++ {
-		post := RandomPost()
+		post := f.RandomPost()
 		post.Author = thread.Author
 		post.Parent = parent
-		CreatePost(c, post, thread)
+		f.CreatePost(c, post, thread)
 		parent = post.ID
 	}
 }
 
-func CheckPostCreateUnicode(c *client.Forum) {
-	post := RandomPost()
+func CheckPostCreateUnicode(c *client.Forum, f *Factory) {
+	post := f.RandomPost()
 	post.Message = "大象销售。不贵。"
-	CreatePost(c, post, nil)
+	f.CreatePost(c, post, nil)
 }
