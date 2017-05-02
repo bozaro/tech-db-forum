@@ -35,6 +35,7 @@ type PerfData struct {
 	forumBySlug    map[string]*PForum
 	postById       map[int64]*PPost
 	threadById     map[int32]*PThread
+	threadBySlug   map[string]*PThread
 }
 
 //msgp:ignore PStatus
@@ -103,6 +104,7 @@ func NewPerfData(config *PerfConfig) *PerfData {
 		postsByThread:  map[int32][]*PPost{},
 		userByNickname: map[string]*PUser{},
 		forumBySlug:    map[string]*PForum{},
+		threadBySlug:   map[string]*PThread{},
 		threadById:     map[int32]*PThread{},
 		postById:       map[int64]*PPost{},
 	}
@@ -133,11 +135,14 @@ func (self *PerfData) AddForum(forum *PForum) {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 
+	if _, ok := self.forumBySlug[forum.Slug]; ok {
+		panic("Internal error: forum.Slug = " + forum.Slug)
+	}
 	self.forums = append(self.forums, forum)
 	self.forumBySlug[forum.Slug] = forum
 	self.usersByForum[forum.Slug] = map[*PUser]bool{}
 	self.threadsByForum[forum.Slug] = []*PThread{}
-	atomic.AddInt32(&self.Status.Forum, 1)
+	self.Status.Forum++
 }
 
 func (self *PerfData) GetForum(index int) *PForum {
@@ -154,6 +159,9 @@ func (self *PerfData) AddUser(user *PUser) {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 
+	if _, ok := self.userByNickname[user.Nickname]; ok {
+		panic("Internal error: user.Nickname = " + user.Nickname)
+	}
 	self.users = append(self.users, user)
 	self.userByNickname[user.Nickname] = user
 	atomic.AddInt32(&self.Status.User, 1)
@@ -173,6 +181,12 @@ func (self *PerfData) AddThread(thread *PThread) {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
 
+	if thread.Slug != "" {
+		if _, ok := self.threadBySlug[thread.Slug]; ok {
+			panic("Internal error: thread.Slug = " + thread.Slug)
+		}
+		self.threadBySlug[thread.Slug] = thread
+	}
 	self.threads = append(self.threads, thread)
 	self.threadById[thread.ID] = thread
 	self.postsByThread[thread.ID] = []*PPost{}
