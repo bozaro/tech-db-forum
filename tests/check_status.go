@@ -17,7 +17,7 @@ func init() {
 	PerfRegister(PerfTest{
 		Name:   "status",
 		Mode:   ModeRead,
-		Weight: WeightRare,
+		Weight: WeightNever,
 		FnPerf: PerfStatus,
 	})
 }

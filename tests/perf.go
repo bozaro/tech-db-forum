@@ -32,7 +32,8 @@ const (
 type PerfWeight int
 
 const (
-	WeightRare   PerfWeight = 1
+	WeightNever  PerfWeight = 0
+	WeightRare              = 1
 	WeightNormal            = 10
 )
 
@@ -88,7 +89,7 @@ func (self *Perf) Run(threads int) {
 
 	lst := atomic.LoadInt64(&counter)
 	step := time.Duration(10)
-	for i := 0; i < 18; i++ {
+	for {
 		time.Sleep(time.Second * step)
 		cur := atomic.LoadInt64(&counter)
 		log.Infof("Requests per second: %5.02f", float32(cur-lst)/float32(step))
