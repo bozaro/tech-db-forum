@@ -1,9 +1,8 @@
 package tests
 
 import (
-	randc "crypto/rand"
 	"math"
-	randm "math/rand"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -17,7 +16,7 @@ type Abc struct {
 // Идентификатор
 type Shortid struct {
 	abc   Abc
-	rand  uint
+	rnd   *rand.Rand
 	epoch time.Time  // Начало времен
 	ms    uint       // Время генерации последнего значения
 	count uint       // Кол-во идентификаторов в рамках одой и той же мс.
@@ -27,6 +26,7 @@ type Shortid struct {
 // Создание нового генератора
 func NewShortid(alphabet string) *Shortid {
 	return &Shortid{
+		rnd:   rand.New(rand.NewSource(time.Now().UnixNano())),
 		abc:   NewAbc(alphabet),
 		epoch: time.Date(2017, time.January, 1, 0, 0, 0, 0, time.UTC),
 		ms:    0,
@@ -45,10 +45,16 @@ func (sid *Shortid) Generate() string {
 			}
 		}
 		if valid {
+			rnd := sid.rnd.Int()
+			flg := 1
 			for i, c := range idrunes {
 				if (c >= 'a') && (c <= 'z') {
-					if randm.Intn(2) == 0 {
+					if rnd&flg == 0 {
 						idrunes[i] = c + 'A' - 'a'
+					}
+					flg <<= 1
+					if flg == 0 {
+						flg = 1
 					}
 				}
 			}
@@ -61,9 +67,9 @@ func (sid *Shortid) Generate() string {
 // Generate generates a new short Id.
 func (sid *Shortid) GenerateRandom() []rune {
 	ms, count := sid.getMsAndCounter(sid.epoch)
-	idrunes := sid.abc.Encode(ms, 40)
+	idrunes := sid.abc.Encode(sid.rnd, ms, 40)
 	if count > 0 {
-		idrunes = append(idrunes, sid.abc.Encode(count, 0)...)
+		idrunes = append(idrunes, sid.abc.Encode(sid.rnd, count, 0)...)
 	}
 	return idrunes
 }
@@ -119,7 +125,7 @@ func (abc *Abc) shuffle(alphabet string, seed uint64) {
 // can be represented by 4 symbols in the alphabet (permitting at most 16 values), 5 -- every value
 // can be represented by 2 symbols in the alphabet (permitting at most 32 values), 6 -- every value
 // is represented by exactly 1 symbol with no randomness (permitting 64 values).
-func (abc *Abc) Encode(val, bits uint) []rune {
+func (abc *Abc) Encode(rnd *rand.Rand, val, bits uint) []rune {
 	nsymbols := uint(0)
 	randBits := uint(2)
 	if bits > 0 {
@@ -135,24 +141,9 @@ func (abc *Abc) Encode(val, bits uint) []rune {
 	data := val
 	for i := range res {
 		index := data % uint(len(abc.alphabet)>>randBits)
-		index = (index << randBits) | uint(randm.Int31n(1<<randBits))
+		index = (index << randBits) | uint(rnd.Int31n(1<<randBits))
 		res[i] = abc.alphabet[index]
 		data /= uint(len(abc.alphabet) >> randBits)
 	}
 	return res
-}
-
-func maskedRandomInts(size, mask int) []int {
-	ints := make([]int, size)
-	bytes := make([]byte, size)
-	if _, err := randc.Read(bytes); err == nil {
-		for i, b := range bytes {
-			ints[i] = int(b) & mask
-		}
-	} else {
-		for i := range ints {
-			ints[i] = randm.Intn(0xff) & mask
-		}
-	}
-	return ints
 }

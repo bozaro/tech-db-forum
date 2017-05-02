@@ -781,6 +781,7 @@ definitions:
         type: boolean
         description: Истина, если данное сообщение было изменено.
         readOnly: true
+        x-isnullable: false
       forum:
         type: string
         format: identity

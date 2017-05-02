@@ -96,6 +96,8 @@ var cmdFunc = &cli.Command{
 
 type CmdFillT struct {
 	CmdCommonT
+	Threads   int    `cli:"t,thread" usage:"number of threads for generating data" dft:"8"`
+	StateFile string `cli:"o,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat"`
 }
 
 var cmdFill = &cli.Command{
@@ -105,9 +107,58 @@ var cmdFill = &cli.Command{
 	Fn: func(ctx *cli.Context) error {
 		argv := ctx.Argv().(*CmdFillT)
 		commonPrepare(argv.CmdCommonT)
-		if tests.Fill(argv.Url) > 0 {
+		perf := tests.NewPerf(argv.Url, tests.NewPerfConfig())
+		perf.Fill(argv.Threads, tests.NewPerfConfig())
+		if perf == nil {
 			os.Exit(EXIT_FILL_FAILED)
 		}
+		file, err := os.Create(argv.StateFile)
+		defer file.Close()
+		if err != nil {
+			log.Error("Can't create file: " + argv.StateFile)
+			os.Exit(EXIT_FILL_FAILED)
+		}
+		err = perf.Save(file)
+		if err != nil {
+			log.Error("Can't save to file: " + argv.StateFile)
+			os.Exit(EXIT_FILL_FAILED)
+		}
+		return nil
+	},
+}
+
+type CmdPerfT struct {
+	CmdCommonT
+	Threads   int    `cli:"t,thread" usage:"number of threads for performance testing" dft:"8"`
+	StateFile string `cli:"i,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat"`
+}
+
+var cmdPerf = &cli.Command{
+	Name: "perf",
+	Desc: "run performance testing",
+	Argv: func() interface{} { return new(CmdPerfT) },
+	Fn: func(ctx *cli.Context) error {
+		argv := ctx.Argv().(*CmdPerfT)
+		commonPrepare(argv.CmdCommonT)
+
+		perf := tests.NewPerf(argv.Url, tests.NewPerfConfig())
+		if argv.StateFile == "" {
+			perf.Fill(argv.Threads, tests.NewPerfConfig())
+		} else {
+			file, err := os.Open(argv.StateFile)
+			defer file.Close()
+			if err != nil {
+				log.Error("Can't open file: " + argv.StateFile)
+				os.Exit(EXIT_FILL_FAILED)
+			}
+			err = perf.Load(file)
+			if err != nil {
+				log.Error("Can't load from file: " + argv.StateFile)
+				os.Exit(EXIT_FILL_FAILED)
+			}
+		}
+
+		perf.Run(argv.Threads)
 		return nil
 	},
 }
@@ -197,6 +248,7 @@ func main() {
 	if err := cli.Root(root,
 		cli.Tree(cmdFunc),
 		cli.Tree(cmdFill),
+		cli.Tree(cmdPerf),
 		cli.Tree(cmdVersion),
 	).Run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)

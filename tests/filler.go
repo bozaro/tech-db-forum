@@ -9,74 +9,173 @@ import (
 	"sync/atomic"
 )
 
-func FillUsers(c *client.Forum, parallel int, count int) []*models.User {
-	results := make(chan *models.User, 64)
+type PerfConfig struct {
+	UserCount   int
+	ForumCount  int
+	ThreadCount int
+	PostCount   int
+	PostBatch   int
+}
+
+func NewPerfConfig() *PerfConfig {
+	return &PerfConfig{
+		UserCount:   1000,
+		ForumCount:  20,
+		ThreadCount: 1000,
+		PostCount:   1000000,
+		PostBatch:   100,
+	}
+}
+
+func FillUsers(perf *Perf, parallel int, count int) {
 	var need int32 = int32(count)
+	c := perf.c
+	data := perf.data
 
 	// spawn four worker goroutines
 	var wg sync.WaitGroup
 	for i := 0; i < parallel; i++ {
 		wg.Add(1)
 		go func() {
+			f := NewFactory()
 			for atomic.AddInt32(&need, -1) >= 0 {
-				results <- CreateUser(c, nil)
+				user := f.CreateUser(c, nil)
+				data.AddUser(&PUser{
+					AboutHash:    Hash(user.About),
+					Email:        user.Email,
+					FullnameHash: Hash(user.Fullname),
+					Nickname:     user.Nickname,
+				})
 			}
 			wg.Done()
 		}()
 	}
 
-	// get result
-	result := make([]*models.User, count)
-	for i := 0; i < count; i++ {
-		result[i] = <-results
+	// wait for the workers to finish
+	wg.Wait()
+}
+
+func FillThreads(perf *Perf, parallel int, count int) {
+	var need int32 = int32(count)
+	c := perf.c
+	data := perf.data
+
+	// spawn four worker goroutines
+	var wg sync.WaitGroup
+	for i := 0; i < parallel; i++ {
+		wg.Add(1)
+		go func() {
+			f := NewFactory()
+			for atomic.AddInt32(&need, -1) >= 0 {
+				author := data.GetUser(-1)
+				forum := data.GetForum(-1)
+				thread := f.RandomThread()
+				if rand.Intn(100) >= 25 {
+					thread.Slug = ""
+				}
+				thread.Author = author.Nickname
+				thread.Forum = forum.Slug
+				thread = f.CreateThread(c, thread, nil, nil)
+				data.AddThread(&PThread{
+					ID:          thread.ID,
+					Slug:        thread.Slug,
+					Author:      author,
+					Forum:       forum,
+					MessageHash: Hash(thread.Message),
+					TitleHash:   Hash(thread.Title),
+					Created:     *thread.Created,
+				})
+			}
+			wg.Done()
+		}()
 	}
-	close(results)
 
 	// wait for the workers to finish
 	wg.Wait()
-	return result
 }
 
-func Fill(url *url.URL) int {
+func FillPosts(perf *Perf, parallel int, count int, batchSize int) {
+	var need int32 = int32(count)
+	c := perf.c
+	data := perf.data
 
+	// spawn four worker goroutines
+	var wg sync.WaitGroup
+	for i := 0; i < parallel; i++ {
+		wg.Add(1)
+		go func() {
+			f := NewFactory()
+			for atomic.AddInt32(&need, -int32(batchSize)) >= 0 {
+
+				batch := make([]*models.Post, 0, batchSize)
+				thread := data.GetThread(-1)
+				thread.mutex.Lock() // todo: Потом исправить
+
+				for j := 0; j < batchSize; j++ {
+					post := f.RandomPost()
+					post.Author = data.GetUser(-1).Nickname
+					post.Thread = thread.ID
+					batch = append(batch, post)
+				}
+				for _, post := range f.CreatePosts(c, batch, nil) {
+					data.AddPost(&PPost{
+						ID:          post.ID,
+						Author:      data.GetUserByNickname(post.Author),
+						Thread:      thread,
+						Parent:      data.GetPostById(post.Parent),
+						Created:     *post.Created,
+						IsEdited:    false,
+						MessageHash: Hash(post.Message),
+					})
+				}
+				thread.mutex.Unlock()
+			}
+			wg.Done()
+		}()
+	}
+
+	// wait for the workers to finish
+	wg.Wait()
+}
+
+func NewPerf(url *url.URL, config *PerfConfig) *Perf {
 	transport := CreateTransport(url)
 	c := client.New(transport, nil)
-	_, err := c.Operations.Clear(nil)
+
+	data := NewPerfData(config)
+	return &Perf{c: c,
+		data: data,
+	}
+}
+
+func (self *Perf) Fill(threads int, config *PerfConfig) {
+	f := NewFactory()
+
+	log.Infof("Clear data")
+	_, err := self.c.Operations.Clear(nil)
 	CheckNil(err)
 
-	log.Info("Creating users (single thread)")
-	users := []*models.User{}
-	for i := 0; i < 10000; i++ {
-		users = append(users, CreateUser(c, nil))
-	}
-	log.Info("Creating users (multiple threads)")
-	users = FillUsers(c, 8, 10000)
+	log.Infof("Creating users (%d threads)", threads)
+	FillUsers(self, threads, config.UserCount)
 
 	log.Info("Creating forums")
-	forums := []*models.Forum{}
-	for i := 0; i < 20; i++ {
-		forums = append(forums, CreateForum(c, nil, users[rand.Intn(len(users))]))
+	for i := 0; i < config.ForumCount; i++ {
+		user := self.data.GetUser(-1)
+		forum := f.RandomForum()
+		forum.User = user.Nickname
+		forum = f.CreateForum(self.c, forum, nil)
+		self.data.AddForum(&PForum{
+			Slug:      forum.Slug,
+			TitleHash: Hash(forum.Title),
+			User:      user,
+		})
 	}
 
-	log.Info("Creating threads")
-	threads := []*models.Thread{}
-	for i := 0; i < 1000; i++ {
-		thread := RandomThread()
-		if rand.Intn(100) >= 5 {
-			thread.Slug = ""
-		}
-		threads = append(threads, CreateThread(c, thread, forums[rand.Intn(len(forums))], users[rand.Intn(len(users))]))
-	}
+	log.Infof("Creating threads (%d threads)", threads)
+	FillThreads(self, threads, config.ThreadCount)
 
-	log.Info("Creating posts")
-	posts := []*models.Post{}
-	for i := 0; i < 10000; i++ {
-		post := RandomPost()
-		post.Author = users[rand.Intn(len(users))].Nickname
-		post.Thread = threads[rand.Intn(len(threads))].ID
-		posts = append(posts, CreatePost(c, post, nil))
-	}
+	log.Infof("Creating posts (%d threads)", threads)
+	FillPosts(self, threads, config.PostCount, config.PostBatch)
 
 	log.Info("Done")
-	return 0
 }

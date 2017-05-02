@@ -3,6 +3,8 @@ sudo: false
 install:
 - go get -v github.com/go-swagger/go-swagger/cmd/swagger
 - go get -v github.com/jteeuwen/go-bindata/...
+- go get -v github.com/tinylib/msgp
 - go generate -x .
+- go generate -x ./tests
 script:
 - go build .

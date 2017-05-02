@@ -41,10 +41,10 @@ func init() {
 	})
 }
 
-func CheckThreadUpdateSimple(c *client.Forum, m *Modify) {
-	thread := CreateThread(c, nil, nil, nil)
+func CheckThreadUpdateSimple(c *client.Forum, f *Factory, m *Modify) {
+	thread := f.CreateThread(c, nil, nil, nil)
 
-	temp := RandomThread()
+	temp := f.RandomThread()
 	update := models.ThreadUpdate{}
 	update.Title = temp.Title
 	update.Message = temp.Message
@@ -63,8 +63,8 @@ func CheckThreadUpdateSimple(c *client.Forum, m *Modify) {
 	CheckThread(c, &expected)
 }
 
-func CheckThreadUpdateEmpty(c *client.Forum) {
-	thread := CreateThread(c, nil, nil, nil)
+func CheckThreadUpdateEmpty(c *client.Forum, f *Factory) {
+	thread := f.CreateThread(c, nil, nil, nil)
 
 	c.Operations.ThreadUpdate(operations.NewThreadUpdateParams().
 		WithSlugOrID(thread.Slug).
@@ -74,9 +74,9 @@ func CheckThreadUpdateEmpty(c *client.Forum) {
 	CheckThread(c, thread)
 }
 
-func CheckThreadUpdatePart(c *client.Forum, m *Modify) {
-	fake := RandomThread()
-	expected := CreateThread(c, nil, nil, nil)
+func CheckThreadUpdatePart(c *client.Forum, f *Factory, m *Modify) {
+	fake := f.RandomThread()
+	expected := f.CreateThread(c, nil, nil, nil)
 	update := &models.ThreadUpdate{}
 
 	// Slug or ID
@@ -101,8 +101,8 @@ func CheckThreadUpdatePart(c *client.Forum, m *Modify) {
 	CheckThread(c, expected)
 }
 
-func CheckThreadUpdateNotFound(c *client.Forum) {
-	thread := RandomThread()
+func CheckThreadUpdateNotFound(c *client.Forum, f *Factory) {
+	thread := f.RandomThread()
 	_, err := c.Operations.ThreadUpdate(operations.NewThreadUpdateParams().
 		WithSlugOrID(thread.Slug).
 		WithThread(&models.ThreadUpdate{

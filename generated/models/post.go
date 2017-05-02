@@ -33,7 +33,7 @@ type Post struct {
 
 	// Истина, если данное сообщение было изменено.
 	// Read Only: true
-	IsEdited *bool `json:"isEdited,omitempty"`
+	IsEdited bool `json:"isEdited,omitempty"`
 
 	// Собственно сообщение форума.
 	// Required: true

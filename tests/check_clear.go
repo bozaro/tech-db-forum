@@ -17,8 +17,8 @@ func init() {
 	})
 }
 
-func CheckClear(c *client.Forum) {
-	CreatePost(c, nil, nil)
+func CheckClear(c *client.Forum, f *Factory) {
+	f.CreatePost(c, nil, nil)
 	var err error
 	_, err = c.Operations.Clear(operations.NewClearParams().
 		WithContext(Expected(200, nil, nil)))

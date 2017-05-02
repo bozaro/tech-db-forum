@@ -8,6 +8,7 @@ import (
 	"github.com/go-openapi/strfmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"reflect"
 	"strings"
 	"time"
@@ -71,8 +72,8 @@ func GetBody(stream *io.ReadCloser) ([]byte, error) {
 
 }
 
-func Modifications(checker func(c *client.Forum, modify *Modify)) func(c *client.Forum) {
-	return func(c *client.Forum) {
+func Modifications(checker func(c *client.Forum, f *Factory, modify *Modify)) func(c *client.Forum, f *Factory) {
+	return func(c *client.Forum, f *Factory) {
 		pass := 0
 		for true {
 			pass++
@@ -81,11 +82,32 @@ func Modifications(checker func(c *client.Forum, modify *Modify)) func(c *client
 			}
 			modify := Modify(pass)
 			// Run check
-			checker(c, &modify)
+			checker(c, f, &modify)
 			// Done?
 			if modify != 0 {
 				break
 			}
 		}
+	}
+}
+
+func GetSlugOrId(slug string, id int64) string {
+	if (len(slug) != 0) && (rand.Intn(4) == 1) {
+		return GetRandomCase(slug)
+	}
+	return fmt.Sprintf("%d", id)
+}
+
+func GetRandomCase(s string) string {
+	r := rand.Intn(6)
+	switch r {
+	case 0:
+		return strings.ToLower(s)
+	case 1:
+		return strings.ToUpper(s)
+	case 2:
+		return InvertCase(s)
+	default:
+		return s
 	}
 }

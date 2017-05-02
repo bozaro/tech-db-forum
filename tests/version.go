@@ -2,11 +2,11 @@ package tests
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"runtime"
-	"errors"
 )
 
 var (

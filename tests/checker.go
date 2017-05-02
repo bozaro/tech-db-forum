@@ -26,7 +26,7 @@ type Checker struct {
 	// Описание текущей проверки.
 	Description string
 	// Функция для текущей проверки.
-	FnCheck func(c *client.Forum)
+	FnCheck func(c *client.Forum, f *Factory)
 	// Тесты, без которых проверка не имеет смысл.
 	Deps []string
 }
@@ -68,7 +68,7 @@ func RunCheck(check Checker, report *Report, url *url.URL) {
 			report.AddError(r)
 		}
 	}()
-	check.FnCheck(client.New(&CheckerTransport{transport, report}, nil))
+	check.FnCheck(client.New(&CheckerTransport{transport, report}, nil), NewFactory())
 }
 
 func CreateTransport(url *url.URL) *http_transport.Runtime {

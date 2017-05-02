@@ -49,23 +49,26 @@ func init() {
 	})
 }
 
-func CreateForum(c *client.Forum, forum *models.Forum, owner *models.User) *models.Forum {
+func (f *Factory) CreateForum(c *client.Forum, forum *models.Forum, owner *models.User) *models.Forum {
 	if forum == nil {
-		forum = RandomForum()
+		forum = f.RandomForum()
 	}
 	if forum.User == "" {
 		if owner == nil {
-			owner = CreateUser(c, nil)
+			owner = f.CreateUser(c, nil)
 		}
 		forum.User = owner.Nickname
 	}
 
-	_, err := c.Operations.ForumCreate(operations.NewForumCreateParams().
+	result, err := c.Operations.ForumCreate(operations.NewForumCreateParams().
 		WithForum(forum).
 		WithContext(Expected(201, forum, nil)))
 	CheckNil(err)
+	if forum.Slug != result.Payload.Slug {
+		log.Errorf("Unexpected created forum slug: %s -> %s", forum.Slug, result.Payload.Slug)
+	}
 
-	return forum
+	return result.Payload
 }
 
 func CheckForum(c *client.Forum, forum *models.Forum) {
@@ -75,13 +78,13 @@ func CheckForum(c *client.Forum, forum *models.Forum) {
 	CheckNil(err)
 }
 
-func CheckForumCreateSimple(c *client.Forum) {
-	CreateForum(c, nil, nil)
+func CheckForumCreateSimple(c *client.Forum, f *Factory) {
+	f.CreateForum(c, nil, nil)
 }
 
-func CheckForumCreateUserCase(c *client.Forum, m *Modify) {
-	user := CreateUser(c, nil)
-	forum := RandomForum()
+func CheckForumCreateUserCase(c *client.Forum, f *Factory, m *Modify) {
+	user := f.CreateUser(c, nil)
+	forum := f.RandomForum()
 
 	// Slug
 	forum.User = m.Case(user.Nickname)
@@ -97,9 +100,9 @@ func CheckForumCreateUserCase(c *client.Forum, m *Modify) {
 	CheckForum(c, &expected)
 }
 
-func CheckForumCreateUserNotFound(c *client.Forum) {
-	user := RandomUser()
-	forum := RandomForum()
+func CheckForumCreateUserNotFound(c *client.Forum, f *Factory) {
+	user := f.RandomUser()
+	forum := f.RandomForum()
 	forum.User = user.Nickname
 
 	_, err := c.Operations.ForumCreate(operations.NewForumCreateParams().
@@ -108,16 +111,16 @@ func CheckForumCreateUserNotFound(c *client.Forum) {
 	CheckIsType(err, operations.NewForumCreateNotFound())
 }
 
-func CheckForumCreateUnicode(c *client.Forum) {
-	forum := RandomForum()
+func CheckForumCreateUnicode(c *client.Forum, f *Factory) {
+	forum := f.RandomForum()
 	forum.Title = "Обсужение Unicode 😋"
-	CreateForum(c, forum, nil)
+	f.CreateForum(c, forum, nil)
 	CheckForum(c, forum)
 }
 
-func CheckForumCreateConflict(c *client.Forum, m *Modify) {
-	forum := CreateForum(c, nil, nil)
-	conflict_forum := RandomForum()
+func CheckForumCreateConflict(c *client.Forum, f *Factory, m *Modify) {
+	forum := f.CreateForum(c, nil, nil)
+	conflict_forum := f.RandomForum()
 	conflict_forum.User = forum.User
 
 	// Slug

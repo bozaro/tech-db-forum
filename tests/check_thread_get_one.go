@@ -3,6 +3,8 @@ package tests
 import (
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/bozaro/tech-db-forum/generated/client/operations"
+	"github.com/bozaro/tech-db-forum/generated/models"
+	"math/rand"
 )
 
 func init() {
@@ -22,10 +24,22 @@ func init() {
 			"thread_get_one_simple",
 		},
 	})
+	PerfRegister(PerfTest{
+		Name:   "thread_get_one_success",
+		Mode:   ModeRead,
+		Weight: WeightNormal,
+		FnPerf: PerfThreadGetOneSuccess,
+	})
+	PerfRegister(PerfTest{
+		Name:   "thread_get_one_not_found",
+		Mode:   ModeRead,
+		Weight: WeightRare,
+		FnPerf: PerfThreadGetOneNotFound,
+	})
 }
 
-func CheckThreadGetOneSimple(c *client.Forum, m *Modify) {
-	expected := CreateThread(c, nil, nil, nil)
+func CheckThreadGetOneSimple(c *client.Forum, f *Factory, m *Modify) {
+	expected := f.CreateThread(c, nil, nil, nil)
 
 	// Slug or ID
 	id := m.SlugOrId(expected)
@@ -38,8 +52,8 @@ func CheckThreadGetOneSimple(c *client.Forum, m *Modify) {
 	CheckThread(c, expected)
 }
 
-func CheckThreadGetOneNotFound(c *client.Forum) {
-	thread := RandomThread()
+func CheckThreadGetOneNotFound(c *client.Forum, f *Factory) {
+	thread := f.RandomThread()
 	_, err := c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
 		WithSlugOrID(thread.Slug).
 		WithContext(Expected(404, nil, nil)))
@@ -47,6 +61,48 @@ func CheckThreadGetOneNotFound(c *client.Forum) {
 
 	_, err = c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
 		WithSlugOrID(THREAD_FAKE_ID).
+		WithContext(Expected(404, nil, nil)))
+	CheckIsType(operations.NewThreadGetOneNotFound(), err)
+}
+
+func (self *PThread) Validate(v PerfValidator, thread *models.Thread, version PVersion) {
+	v.CheckInt32(self.ID, thread.ID, "ID")
+	v.CheckStr(self.Forum.Slug, thread.Forum, "Forum")
+	v.CheckStr(self.Slug, thread.Slug, "Slug")
+	v.CheckStr(self.Author.Nickname, thread.Author, "Author")
+	v.CheckHash(self.MessageHash, thread.Message, "Message")
+	v.CheckHash(self.TitleHash, thread.Title, "Title")
+	v.CheckDate(&self.Created, thread.Created, "Created")
+	v.CheckInt32(self.Votes, thread.Votes, "Votes")
+	v.Finish(version, self.Version)
+}
+
+func PerfThreadGetOneSuccess(p *Perf, f *Factory) {
+	thread := p.data.GetThread(-1)
+	version := thread.Version
+	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
+	result, err := p.c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
+		WithSlugOrID(slugOrId).
+		WithContext(Expected(200, nil, nil)))
+	CheckNil(err)
+
+	p.Validate(func(v PerfValidator) {
+		thread.Validate(v, result.Payload, version)
+	})
+}
+
+func PerfThreadGetOneNotFound(p *Perf, f *Factory) {
+	var id int32
+	slug := f.RandomSlug()
+	for {
+		id = rand.Int31n(100000000)
+		if p.data.GetThreadById(id) == nil {
+			break
+		}
+	}
+	slugOrId := GetSlugOrId(slug, int64(id))
+	_, err := p.c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
+		WithSlugOrID(slugOrId).
 		WithContext(Expected(404, nil, nil)))
 	CheckIsType(operations.NewThreadGetOneNotFound(), err)
 }

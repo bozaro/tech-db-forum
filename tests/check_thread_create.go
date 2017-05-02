@@ -60,19 +60,19 @@ func init() {
 	})
 }
 
-func CreateThread(c *client.Forum, thread *models.Thread, forum *models.Forum, author *models.User) *models.Thread {
+func (f *Factory) CreateThread(c *client.Forum, thread *models.Thread, forum *models.Forum, author *models.User) *models.Thread {
 	if thread == nil {
-		thread = RandomThread()
+		thread = f.RandomThread()
 	}
 	if thread.Forum == "" {
 		if forum == nil {
-			forum = CreateForum(c, nil, author)
+			forum = f.CreateForum(c, nil, author)
 		}
 		thread.Forum = forum.Slug
 	}
 	if thread.Author == "" {
 		if author == nil {
-			author = CreateUser(c, nil)
+			author = f.CreateUser(c, nil)
 		}
 		thread.Author = author.Nickname
 	}
@@ -101,6 +101,9 @@ func CreateThread(c *client.Forum, thread *models.Thread, forum *models.Forum, a
 			return thread
 		})))
 	CheckNil(err)
+	if thread.Slug != result.Payload.Slug {
+		log.Errorf("Unexpected created thread slug: %s -> %s", thread.Slug, result.Payload.Slug)
+	}
 
 	return result.Payload
 }
@@ -112,8 +115,8 @@ func CheckThread(c *client.Forum, thread *models.Thread) {
 	CheckNil(err)
 }
 
-func CheckThreadCreateSimple(c *client.Forum, m *Modify) {
-	thread := RandomThread()
+func CheckThreadCreateSimple(c *client.Forum, f *Factory, m *Modify) {
+	thread := f.RandomThread()
 	if thread.Slug == "" || thread.Created == nil {
 		panic("Incorrect thread data")
 	}
@@ -128,31 +131,31 @@ func CheckThreadCreateSimple(c *client.Forum, m *Modify) {
 	}
 
 	// Check
-	CreateThread(c, thread, nil, nil)
+	f.CreateThread(c, thread, nil, nil)
 }
 
-func CheckThreadCreateNoCase(c *client.Forum, m *Modify) {
-	forum := CreateForum(c, nil, nil)
-	thread := RandomThread()
+func CheckThreadCreateNoCase(c *client.Forum, f *Factory, m *Modify) {
+	forum := f.CreateForum(c, nil, nil)
+	thread := f.RandomThread()
 
 	// Slug
 	thread.Forum = m.Case(forum.Slug)
 
 	// Check
-	CreateThread(c, thread, forum, nil)
+	f.CreateThread(c, thread, forum, nil)
 }
 
-func CheckThreadCreateUnicode(c *client.Forum) {
-	thread := RandomThread()
+func CheckThreadCreateUnicode(c *client.Forum, f *Factory) {
+	thread := f.RandomThread()
 	thread.Title = "松尾芭蕉"
 	thread.Message = "かれ朶に烏の\nとまりけり\n秋の暮"
-	CreateThread(c, thread, nil, nil)
+	f.CreateThread(c, thread, nil, nil)
 }
 
-func CheckThreadCreateNoAuthor(c *client.Forum) {
-	thread := RandomThread()
-	forum := CreateForum(c, nil, nil)
-	thread.Author = RandomNickname()
+func CheckThreadCreateNoAuthor(c *client.Forum, f *Factory) {
+	thread := f.RandomThread()
+	forum := f.CreateForum(c, nil, nil)
+	thread.Author = f.RandomNickname()
 	_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
 		WithSlug(forum.Slug).
 		WithThread(thread).
@@ -160,11 +163,11 @@ func CheckThreadCreateNoAuthor(c *client.Forum) {
 	CheckIsType(operations.NewThreadCreateNotFound(), err)
 }
 
-func CheckThreadCreateNoForum(c *client.Forum) {
-	thread := RandomThread()
-	user := CreateUser(c, nil)
+func CheckThreadCreateNoForum(c *client.Forum, f *Factory) {
+	thread := f.RandomThread()
+	user := f.CreateUser(c, nil)
 	thread.Author = user.Nickname
-	forum := RandomForum()
+	forum := f.RandomForum()
 	_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
 		WithSlug(forum.Slug).
 		WithThread(thread).
@@ -172,11 +175,11 @@ func CheckThreadCreateNoForum(c *client.Forum) {
 	CheckIsType(operations.NewThreadCreateNotFound(), err)
 }
 
-func CheckThreadCreateConflict(c *client.Forum, m *Modify) {
-	forum := CreateForum(c, nil, nil)
-	thread := CreateThread(c, nil, nil, nil)
+func CheckThreadCreateConflict(c *client.Forum, f *Factory, m *Modify) {
+	forum := f.CreateForum(c, nil, nil)
+	thread := f.CreateThread(c, nil, nil, nil)
 
-	conflict := RandomThread()
+	conflict := f.RandomThread()
 	conflict.Author = forum.User
 	conflict.Slug = thread.Slug
 

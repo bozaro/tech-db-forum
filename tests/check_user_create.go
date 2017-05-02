@@ -34,21 +34,24 @@ func init() {
 	})
 }
 
-func CreateUser(c *client.Forum, user *models.User) *models.User {
+func (f *Factory) CreateUser(c *client.Forum, user *models.User) *models.User {
 	if user == nil {
-		user = RandomUser()
+		user = f.RandomUser()
 	}
 
 	request := *user
 	request.Nickname = ""
 
-	_, err := c.Operations.UserCreate(operations.NewUserCreateParams().
+	result, err := c.Operations.UserCreate(operations.NewUserCreateParams().
 		WithNickname(user.Nickname).
 		WithProfile(&request).
 		WithContext(Expected(201, user, nil)))
 	CheckNil(err)
+	if user.Nickname != result.Payload.Nickname {
+		log.Errorf("Unexpected created user nickname: %s -> %s", user.Nickname, result.Payload.Nickname)
+	}
 
-	return user
+	return result.Payload
 }
 
 func CheckUser(c *client.Forum, user *models.User) {
@@ -58,24 +61,24 @@ func CheckUser(c *client.Forum, user *models.User) {
 	CheckNil(err)
 }
 
-func CheckUserCreateSimple(c *client.Forum) {
-	CreateUser(c, nil)
+func CheckUserCreateSimple(c *client.Forum, f *Factory) {
+	f.CreateUser(c, nil)
 }
 
-func CheckUserCreateUnicode(c *client.Forum) {
-	user := RandomUser()
+func CheckUserCreateUnicode(c *client.Forum, f *Factory) {
+	user := f.RandomUser()
 	user.Fullname = "Маркиз О-де-Колóн"
 	user.About = "Бездельник третьего разряда 😋"
-	CreateUser(c, user)
+	f.CreateUser(c, user)
 	CheckUser(c, user)
 }
 
-func CheckUserCreateConflict(c *client.Forum, m *Modify) {
-	user1 := CreateUser(c, nil)
-	user2 := CreateUser(c, nil)
+func CheckUserCreateConflict(c *client.Forum, f *Factory, m *Modify) {
+	user1 := f.CreateUser(c, nil)
+	user2 := f.CreateUser(c, nil)
 
 	expected := []models.User{}
-	conflict_user := RandomUser()
+	conflict_user := f.RandomUser()
 
 	// Email
 	switch m.Int(4) {
