@@ -101,6 +101,9 @@ func (f *Factory) CreateThread(c *client.Forum, thread *models.Thread, forum *mo
 			return thread
 		})))
 	CheckNil(err)
+	if thread.Slug != result.Payload.Slug {
+		log.Errorf("Unexpected created thread slug: %s -> %s", thread.Slug, result.Payload.Slug)
+	}
 
 	return result.Payload
 }

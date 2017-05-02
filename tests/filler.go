@@ -22,7 +22,7 @@ func NewPerfConfig() *PerfConfig {
 		UserCount:   1000,
 		ForumCount:  20,
 		ThreadCount: 1000,
-		PostCount:   10000, //00,
+		PostCount:   1000000,
 		PostBatch:   100,
 	}
 }

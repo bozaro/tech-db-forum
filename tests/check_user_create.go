@@ -42,13 +42,16 @@ func (f *Factory) CreateUser(c *client.Forum, user *models.User) *models.User {
 	request := *user
 	request.Nickname = ""
 
-	_, err := c.Operations.UserCreate(operations.NewUserCreateParams().
+	result, err := c.Operations.UserCreate(operations.NewUserCreateParams().
 		WithNickname(user.Nickname).
 		WithProfile(&request).
 		WithContext(Expected(201, user, nil)))
 	CheckNil(err)
+	if user.Nickname != result.Payload.Nickname {
+		log.Errorf("Unexpected created user nickname: %s -> %s", user.Nickname, result.Payload.Nickname)
+	}
 
-	return user
+	return result.Payload
 }
 
 func CheckUser(c *client.Forum, user *models.User) {

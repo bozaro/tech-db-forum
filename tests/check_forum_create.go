@@ -60,12 +60,15 @@ func (f *Factory) CreateForum(c *client.Forum, forum *models.Forum, owner *model
 		forum.User = owner.Nickname
 	}
 
-	_, err := c.Operations.ForumCreate(operations.NewForumCreateParams().
+	result, err := c.Operations.ForumCreate(operations.NewForumCreateParams().
 		WithForum(forum).
 		WithContext(Expected(201, forum, nil)))
 	CheckNil(err)
+	if forum.Slug != result.Payload.Slug {
+		log.Errorf("Unexpected created forum slug: %s -> %s", forum.Slug, result.Payload.Slug)
+	}
 
-	return forum
+	return result.Payload
 }
 
 func CheckForum(c *client.Forum, forum *models.Forum) {

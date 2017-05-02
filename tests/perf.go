@@ -66,8 +66,6 @@ func GetRandomPerfTest() *PerfTest {
 }
 
 func (self *Perf) Run(threads int) {
-	log.Info("BEFORE")
-
 	var done int32 = 0
 	var counter int64 = 0
 	// spawn four worker goroutines
@@ -93,7 +91,7 @@ func (self *Perf) Run(threads int) {
 	for i := 0; i < 18; i++ {
 		time.Sleep(time.Second * step)
 		cur := atomic.LoadInt64(&counter)
-		log.Info(float32(cur-lst) / float32(step))
+		log.Infof("Requests per second: %5.02f", float32(cur-lst)/float32(step))
 		lst = cur
 	}
 	done = 1

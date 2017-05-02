@@ -2,7 +2,6 @@ package tests
 
 import (
 	"github.com/go-openapi/strfmt"
-	"sync/atomic"
 )
 
 //go:generate msgp
@@ -164,7 +163,7 @@ func (self *PerfData) AddUser(user *PUser) {
 	}
 	self.users = append(self.users, user)
 	self.userByNickname[user.Nickname] = user
-	atomic.AddInt32(&self.Status.User, 1)
+	self.Status.User++
 }
 
 func (self *PerfData) GetUser(index int) *PUser {
@@ -192,8 +191,8 @@ func (self *PerfData) AddThread(thread *PThread) {
 	self.postsByThread[thread.ID] = []*PPost{}
 	self.threadsByForum[thread.Forum.Slug] = append(self.threadsByForum[thread.Forum.Slug], thread)
 	self.usersByForum[thread.Forum.Slug][thread.Author] = true
-	atomic.AddInt32(&thread.Forum.Threads, 1)
-	atomic.AddInt32(&self.Status.Thread, 1)
+	thread.Forum.Threads++
+	self.Status.Thread++
 }
 
 func (self *PerfData) GetThread(index int) *PThread {
@@ -266,15 +265,16 @@ func (self *PerfData) AddPost(post *PPost) {
 	self.usersByForum[post.Thread.Forum.Slug][post.Author] = true
 	self.postsByThread[post.Thread.ID] = append(self.postsByThread[post.Thread.ID], post)
 
-	post.Index = atomic.AddInt32(&self.lastIndex, 1)
+	self.lastIndex++
+	post.Index = self.lastIndex
 	if post.Parent != nil {
 		post.Path = append(post.Parent.Path, post.Index)
 	} else {
 		post.Path = []int32{post.Index}
 	}
-	atomic.AddInt64(&post.Thread.Forum.Posts, 1)
-	atomic.AddInt32(&post.Thread.Posts, 1)
-	atomic.AddInt64(&self.Status.Post, 1)
+	post.Thread.Forum.Posts++
+	post.Thread.Posts++
+	self.Status.Post++
 }
 
 func (self *PerfData) GetPost(index int) *PPost {
