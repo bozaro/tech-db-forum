@@ -3,15 +3,18 @@ package main
 //go:generate go-bindata -nometadata -pkg assets -o generated/assets/assets.go -prefix assets/ assets/...
 //go:generate swagger generate client --target generated --spec ./swagger.yml
 import (
+	"compress/gzip"
 	"fmt"
 	"github.com/bozaro/tech-db-forum/tests"
 	"github.com/mkideal/cli"
 	"github.com/op/go-logging"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"reflect"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -97,7 +100,7 @@ var cmdFunc = &cli.Command{
 type CmdFillT struct {
 	CmdCommonT
 	Threads   int    `cli:"t,thread" usage:"number of threads for generating data" dft:"8"`
-	StateFile string `cli:"o,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat"`
+	StateFile string `cli:"o,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat.gz"`
 }
 
 var cmdFill = &cli.Command{
@@ -114,14 +117,25 @@ var cmdFill = &cli.Command{
 		}
 		file, err := os.Create(argv.StateFile)
 		defer file.Close()
+		var writer io.Writer = file
+
+		var zw *gzip.Writer
+		if strings.HasSuffix(argv.StateFile, ".gz") {
+			zw = gzip.NewWriter(writer)
+			writer = zw
+		}
 		if err != nil {
 			log.Error("Can't create file: " + argv.StateFile)
 			os.Exit(EXIT_FILL_FAILED)
 		}
-		err = perf.Save(file)
+		err = perf.Save(writer)
 		if err != nil {
 			log.Error("Can't save to file: " + argv.StateFile)
 			os.Exit(EXIT_FILL_FAILED)
+		}
+		if zw != nil {
+			zw.Flush()
+			zw.Close()
 		}
 		return nil
 	},
@@ -130,7 +144,7 @@ var cmdFill = &cli.Command{
 type CmdPerfT struct {
 	CmdCommonT
 	Threads   int    `cli:"t,thread" usage:"number of threads for performance testing" dft:"8"`
-	StateFile string `cli:"i,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat"`
+	StateFile string `cli:"i,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat.gz"`
 }
 
 var cmdPerf = &cli.Command{
@@ -147,11 +161,18 @@ var cmdPerf = &cli.Command{
 		} else {
 			file, err := os.Open(argv.StateFile)
 			defer file.Close()
+			var reader io.Reader = file
+			if strings.HasSuffix(argv.StateFile, ".gz") {
+				reader, err = gzip.NewReader(reader)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
 			if err != nil {
 				log.Error("Can't open file: " + argv.StateFile)
 				os.Exit(EXIT_FILL_FAILED)
 			}
-			err = perf.Load(file)
+			err = perf.Load(reader)
 			if err != nil {
 				log.Error("Can't load from file: " + argv.StateFile)
 				os.Exit(EXIT_FILL_FAILED)
