@@ -13,7 +13,7 @@ import (
 )
 
 type PVersion uint32
-type PHash [16]byte
+type PHash uint32
 
 //msgp:ignore PerfData
 type PerfData struct {

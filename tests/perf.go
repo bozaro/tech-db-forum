@@ -2,7 +2,7 @@ package tests
 
 import "github.com/bozaro/tech-db-forum/generated/client"
 import (
-	"crypto/md5"
+	"hash/crc32"
 	"io"
 	"math/rand"
 	"sync"
@@ -41,6 +41,7 @@ var (
 	registeredPerfsWeight int32 = 0
 	registeredPerfs       []PerfTest
 )
+var crc32q = crc32.MakeTable(0xD5828281)
 
 func PerfRegister(test PerfTest) {
 	registeredPerfs = append(registeredPerfs, test)
@@ -52,7 +53,7 @@ func (self *Perf) Validate(callback func(validator PerfValidator)) {
 }
 
 func Hash(data string) PHash {
-	return PHash(md5.Sum([]byte(data)))
+	return PHash(crc32.Checksum([]byte(data), crc32q))
 }
 
 func GetRandomPerfTest() *PerfTest {
