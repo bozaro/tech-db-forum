@@ -121,7 +121,7 @@ var cmdFill = &cli.Command{
 
 		var zw *gzip.Writer
 		if strings.HasSuffix(argv.StateFile, ".gz") {
-			zw, _ = gzip.NewWriterLevel(writer, gzip.BestCompression)
+			zw = gzip.NewWriter(writer)
 			writer = zw
 		}
 		if err != nil {
