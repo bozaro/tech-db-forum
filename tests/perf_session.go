@@ -1,6 +1,9 @@
 package tests
 
-import "github.com/go-openapi/strfmt"
+import (
+	"github.com/go-openapi/strfmt"
+	"time"
+)
 
 type PerfSession struct {
 }
@@ -36,8 +39,8 @@ func (self *PerfSession) CheckHash(expected PHash, actual string, message string
 	}
 }
 func (self *PerfSession) CheckDate(expected *strfmt.DateTime, actual *strfmt.DateTime, message string) {
-	if *expected != *actual {
-		panic(message)
+	if !time.Time(*expected).UTC().Equal(time.Time(*actual).UTC()) {
+		log.Panicf("Unexpected data (%s != %s): %s", expected.String(), actual.String(), message)
 	}
 }
 func (self *PerfSession) CheckVersion(before PVersion, after PVersion) bool {
