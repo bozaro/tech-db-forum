@@ -205,9 +205,9 @@ func (z *PPost) DecodeMsg(dc *msgp.Reader) (err error) {
 			}
 		case "created":
 			{
-				var zcua string
-				zcua, err = dc.ReadString()
-				z.Created = parseDateTime(zcua)
+				var zcua int64
+				zcua, err = dc.ReadInt64()
+				z.Created = int64ToDateTime(zcua)
 			}
 			if err != nil {
 				return
@@ -253,7 +253,7 @@ func (z *PPost) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return err
 	}
-	err = en.WriteString((strfmt.DateTime).String(z.Created))
+	err = en.WriteInt64(dateTimeToInt64(z.Created))
 	if err != nil {
 		return
 	}
@@ -287,7 +287,7 @@ func (z *PPost) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.AppendInt64(o, z.ID)
 	// string "created"
 	o = append(o, 0xa7, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64)
-	o = msgp.AppendString(o, (strfmt.DateTime).String(z.Created))
+	o = msgp.AppendInt64(o, dateTimeToInt64(z.Created))
 	// string "edited"
 	o = append(o, 0xa6, 0x65, 0x64, 0x69, 0x74, 0x65, 0x64)
 	o = msgp.AppendBool(o, z.IsEdited)
@@ -320,9 +320,9 @@ func (z *PPost) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			}
 		case "created":
 			{
-				var zdaf string
-				zdaf, bts, err = msgp.ReadStringBytes(bts)
-				z.Created = parseDateTime(zdaf)
+				var zdaf int64
+				zdaf, bts, err = msgp.ReadInt64Bytes(bts)
+				z.Created = int64ToDateTime(zdaf)
 			}
 			if err != nil {
 				return
@@ -354,7 +354,7 @@ func (z *PPost) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *PPost) Msgsize() (s int) {
-	s = 1 + 3 + msgp.Int64Size + 8 + msgp.StringPrefixSize + len((strfmt.DateTime).String(z.Created)) + 7 + msgp.BoolSize + 8 + msgp.Uint32Size
+	s = 1 + 3 + msgp.Int64Size + 8 + msgp.Int64Size + 7 + msgp.BoolSize + 8 + msgp.Uint32Size
 	return
 }
 
@@ -404,9 +404,9 @@ func (z *PThread) DecodeMsg(dc *msgp.Reader) (err error) {
 			}
 		case "created":
 			{
-				var zrsw string
-				zrsw, err = dc.ReadString()
-				z.Created = parseDateTime(zrsw)
+				var zrsw int64
+				zrsw, err = dc.ReadInt64()
+				z.Created = int64ToDateTime(zrsw)
 			}
 			if err != nil {
 				return
@@ -465,7 +465,7 @@ func (z *PThread) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return err
 	}
-	err = en.WriteString((strfmt.DateTime).String(z.Created))
+	err = en.WriteInt64(dateTimeToInt64(z.Created))
 	if err != nil {
 		return
 	}
@@ -490,7 +490,7 @@ func (z *PThread) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.AppendUint32(o, uint32(z.TitleHash))
 	// string "created"
 	o = append(o, 0xa7, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64)
-	o = msgp.AppendString(o, (strfmt.DateTime).String(z.Created))
+	o = msgp.AppendInt64(o, dateTimeToInt64(z.Created))
 	return
 }
 
@@ -540,9 +540,9 @@ func (z *PThread) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			}
 		case "created":
 			{
-				var zsnv string
-				zsnv, bts, err = msgp.ReadStringBytes(bts)
-				z.Created = parseDateTime(zsnv)
+				var zsnv int64
+				zsnv, bts, err = msgp.ReadInt64Bytes(bts)
+				z.Created = int64ToDateTime(zsnv)
 			}
 			if err != nil {
 				return
@@ -560,7 +560,7 @@ func (z *PThread) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *PThread) Msgsize() (s int) {
-	s = 1 + 3 + msgp.Int32Size + 5 + msgp.StringPrefixSize + len(z.Slug) + 8 + msgp.Uint32Size + 6 + msgp.Uint32Size + 8 + msgp.StringPrefixSize + len((strfmt.DateTime).String(z.Created))
+	s = 1 + 3 + msgp.Int32Size + 5 + msgp.StringPrefixSize + len(z.Slug) + 8 + msgp.Uint32Size + 6 + msgp.Uint32Size + 8 + msgp.Int64Size
 	return
 }
 

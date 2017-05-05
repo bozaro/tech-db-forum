@@ -30,7 +30,7 @@ func (self *PerfSession) CheckInt64(expected int64, actual int64, message string
 }
 func (self *PerfSession) CheckStr(expected string, actual string, message string) {
 	if expected != actual {
-		panic(message)
+		log.Panicf("Unexpected string value (%s != %s: %s", expected, actual, message)
 	}
 }
 func (self *PerfSession) CheckHash(expected PHash, actual string, message string) {

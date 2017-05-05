@@ -134,7 +134,7 @@ func (self *PPost) Validate(v PerfValidator, post *models.Post, version PVersion
 	v.CheckHash(self.MessageHash, post.Message, "Post.Message")
 	v.CheckInt64(self.GetParentId(), post.Parent, "Post.Parent")
 	v.CheckBool(self.IsEdited, post.IsEdited, "Post.IsEditer")
-	v.CheckDate(&self.Created, post.Created, "Created")
+	v.CheckDate(&self.Created, post.Created, "Post.Created")
 	v.Finish(version, self.Version)
 }
 

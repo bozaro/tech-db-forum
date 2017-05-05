@@ -5,11 +5,12 @@ import (
 )
 
 //go:generate msgp
-//msgp:shim strfmt.DateTime as:string using:(strfmt.DateTime).String/parseDateTime
+//msgp:shim strfmt.DateTime as:int64 using:dateTimeToInt64/int64ToDateTime
 //msgp:shim strfmt.Email as:string using:(strfmt.Email).String/strfmt.Email
 import (
 	"math/rand"
 	"sync"
+	"time"
 )
 
 type PVersion uint32
@@ -311,7 +312,10 @@ func GetRandomDesc() *bool {
 	}
 }
 
-func parseDateTime(value string) strfmt.DateTime {
-	date, _ := strfmt.ParseDateTime(value)
-	return date
+func dateTimeToInt64(value strfmt.DateTime) int64 {
+	return time.Time(value).UnixNano()
+}
+
+func int64ToDateTime(value int64) strfmt.DateTime {
+	return strfmt.DateTime(time.Unix(0, value))
 }
