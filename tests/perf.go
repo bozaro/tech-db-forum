@@ -11,8 +11,9 @@ import (
 )
 
 type Perf struct {
-	c    *client.Forum
-	data *PerfData
+	c        *client.Forum
+	data     *PerfData
+	validate float32
 }
 
 type PerfTest struct {
@@ -49,7 +50,9 @@ func PerfRegister(test PerfTest) {
 }
 
 func (self *Perf) Validate(callback func(validator PerfValidator)) {
-	callback(&PerfSession{})
+	if rand.Float32() < self.validate {
+		callback(&PerfSession{})
+	}
 }
 
 func Hash(data string) PHash {

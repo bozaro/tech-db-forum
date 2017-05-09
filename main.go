@@ -61,9 +61,9 @@ func (parser *parserRegexp) Parse(s string) error {
 
 type CmdCommonT struct {
 	cli.Helper
-	Url             *url.URL `cli:"u,url" usage:"base url for testing API" parser:"url" dft:"http://localhost:5000/api"`
-	WaitAlive       int      `cli:"wait" usage:"wait before remote API make alive (while connection refused or 5XX error on base url)" dft:"30"`
-	DontCheckUpdate bool     `cli:"no-check" usage:"do not check version update"`
+	Url             *url.URL `cli:"u,url" usage:"Base url for testing API" parser:"url" dft:"http://localhost:5000/api"`
+	WaitAlive       int      `cli:"wait" usage:"Wait before remote API make alive (while connection refused or 5XX error on base url)" dft:"30"`
+	DontCheckUpdate bool     `cli:"no-check" usage:"Do not check version update"`
 }
 
 var root = &cli.Command{
@@ -99,7 +99,7 @@ var cmdFunc = &cli.Command{
 
 type CmdFillT struct {
 	CmdCommonT
-	Threads   int    `cli:"t,thread" usage:"number of threads for generating data" dft:"8"`
+	Threads   int    `cli:"t,thread" usage:"Number of threads for generating data" dft:"8"`
 	StateFile string `cli:"o,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat.gz"`
 }
 
@@ -143,8 +143,9 @@ var cmdFill = &cli.Command{
 
 type CmdPerfT struct {
 	CmdCommonT
-	Threads   int    `cli:"t,thread" usage:"number of threads for performance testing" dft:"8"`
-	StateFile string `cli:"i,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat.gz"`
+	Threads   int     `cli:"t,thread" usage:"Number of threads for performance testing" dft:"8"`
+	StateFile string  `cli:"i,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat.gz"`
+	Validate  float32 `cli:"v,validate" usage:"The probability of verifying the answer" dft:"0.05"`
 }
 
 var cmdPerf = &cli.Command{
@@ -155,9 +156,13 @@ var cmdPerf = &cli.Command{
 		argv := ctx.Argv().(*CmdPerfT)
 		commonPrepare(argv.CmdCommonT)
 
-		perf := tests.NewPerf(argv.Url, tests.NewPerfConfig())
+		config := tests.NewPerfConfig()
+		if argv.Validate >= 0 {
+			config.Validate = argv.Validate
+		}
+		perf := tests.NewPerf(argv.Url, config)
 		if argv.StateFile == "" {
-			perf.Fill(argv.Threads, tests.NewPerfConfig())
+			perf.Fill(argv.Threads, config)
 		} else {
 			file, err := os.Open(argv.StateFile)
 			defer file.Close()

@@ -15,6 +15,8 @@ type PerfConfig struct {
 	ThreadCount int
 	PostCount   int
 	PostBatch   int
+
+	Validate float32
 }
 
 func NewPerfConfig() *PerfConfig {
@@ -24,6 +26,7 @@ func NewPerfConfig() *PerfConfig {
 		ThreadCount: 1000,
 		PostCount:   1000000,
 		PostBatch:   100,
+		Validate:    1.0,
 	}
 }
 
@@ -144,7 +147,8 @@ func NewPerf(url *url.URL, config *PerfConfig) *Perf {
 
 	data := NewPerfData(config)
 	return &Perf{c: c,
-		data: data,
+		data:     data,
+		validate: config.Validate,
 	}
 }
 
