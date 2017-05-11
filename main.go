@@ -146,6 +146,7 @@ type CmdPerfT struct {
 	Threads   int     `cli:"t,thread" usage:"Number of threads for performance testing" dft:"8"`
 	StateFile string  `cli:"i,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat.gz"`
 	Validate  float32 `cli:"v,validate" usage:"The probability of verifying the answer" dft:"0.05"`
+	Duration  int     `cli:"d,duration" usage:"Test duration" dft:"-1"`
 }
 
 var cmdPerf = &cli.Command{
@@ -184,7 +185,7 @@ var cmdPerf = &cli.Command{
 			}
 		}
 
-		perf.Run(argv.Threads)
+		perf.Run(argv.Threads, argv.Duration)
 		return nil
 	},
 }
