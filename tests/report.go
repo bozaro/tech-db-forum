@@ -68,6 +68,8 @@ func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *ht
 		log.Errorf("Error:\n%s", DeltaToText(*delta))
 		//debug.PrintStack()
 		self.Result = Failed
+	} else if self.OnlyError {
+		return
 	}
 	// Добавляем сообщение в отчет
 	if len(self.Pass) == 0 {
@@ -79,6 +81,7 @@ func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *ht
 
 type Report struct {
 	Checker   Checker
+	OnlyError bool
 	Pass      []ReportPass
 	SkippedBy []string
 	Result    ResultType

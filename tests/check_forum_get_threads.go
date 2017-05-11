@@ -183,7 +183,7 @@ func PerfForumGetThreadsSuccess(p *Perf, f *Factory) {
 		WithLimit(&limit).
 		WithSince(since).
 		WithDesc(desc).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(Expected(200, nil, nil)))
 
 	CheckNil(err)
 

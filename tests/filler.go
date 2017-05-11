@@ -143,7 +143,11 @@ func FillPosts(perf *Perf, parallel int, count int, batchSize int) {
 
 func NewPerf(url *url.URL, config *PerfConfig) *Perf {
 	transport := CreateTransport(url)
-	c := client.New(transport, nil)
+	report := Report{
+		OnlyError: true,
+		Result:    Success,
+	}
+	c := client.New(&CheckerTransport{transport, &report}, nil)
 
 	data := NewPerfData(config)
 	return &Perf{c: c,

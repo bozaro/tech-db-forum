@@ -95,13 +95,11 @@ func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 					Payload: fmt.Sprintf("Status: %d %s", res.StatusCode, http.StatusText(res.StatusCode)),
 				},
 			})
-			self.report.Result = Failed
 			return false
 		}
 		delta := GetDelta(body, self.body, self.filter)
 		if (res.StatusCode != self.code) || (delta != nil) {
 			self.report.RoundTrip(req, res, self.Example(req), delta)
-			self.report.Result = Failed
 			return false
 		} else {
 			self.report.RoundTrip(req, res, nil, nil)
