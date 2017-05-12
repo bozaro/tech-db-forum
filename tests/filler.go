@@ -114,10 +114,19 @@ func FillPosts(perf *Perf, parallel int, count int, batchSize int) {
 				thread := data.GetThread(-1)
 				thread.mutex.Lock() // todo: Потом исправить
 
+				parents := data.GetThreadPostsFlat(thread)
+
 				for j := 0; j < batchSize; j++ {
+					var parent *PPost
+					if (len(parents) > 0) && (rand.Intn(4) == 0) {
+						parent = parents[rand.Intn(len(parents))]
+					}
 					post := f.RandomPost()
 					post.Author = data.GetUser(-1).Nickname
 					post.Thread = thread.ID
+					if parent != nil {
+						post.Parent = parent.ID
+					}
 					batch = append(batch, post)
 				}
 				for _, post := range f.CreatePosts(c, batch, nil) {
