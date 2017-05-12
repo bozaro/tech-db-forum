@@ -15,27 +15,27 @@ func (self *PerfSession) CheckBool(expected bool, actual bool, message string) {
 }
 func (self *PerfSession) CheckInt(expected int, actual int, message string) {
 	if expected != actual {
-		panic(message)
+		log.Panicf("Unexpected data (%d != %d): %s", expected, actual, message)
 	}
 }
 func (self *PerfSession) CheckInt32(expected int32, actual int32, message string) {
 	if expected != actual {
-		panic(message)
+		log.Panicf("Unexpected data (%d != %d): %s", expected, actual, message)
 	}
 }
 func (self *PerfSession) CheckInt64(expected int64, actual int64, message string) {
 	if expected != actual {
-		panic(message)
+		log.Panicf("Unexpected data (%d != %d): %s", expected, actual, message)
 	}
 }
 func (self *PerfSession) CheckStr(expected string, actual string, message string) {
 	if expected != actual {
-		panic(message)
+		log.Panicf("Unexpected data (%s != %s): %s", expected, actual, message)
 	}
 }
 func (self *PerfSession) CheckHash(expected PHash, actual string, message string) {
 	if expected != Hash(actual) {
-		panic(message)
+		log.Panicf("Unexpected string (%s): %s", actual, message)
 	}
 }
 func (self *PerfSession) CheckDate(expected *strfmt.DateTime, actual *strfmt.DateTime, message string) {
