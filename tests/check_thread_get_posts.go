@@ -48,11 +48,7 @@ func (a PPostSortTree) Less(i, j int) bool {
 func (a PPostSortTree) ComparePath(p1 *[]int32, p2 *[]int32) int {
 	l1 := len(*p1)
 	l2 := len(*p2)
-	lm := l2
-	if l1 < l2 {
-		lm = l1
-	}
-	for i := 0; i < lm; i++ {
+	for i := 0; (i < l1) && (i < l2); i++ {
 		v1 := (*p1)[i]
 		v2 := (*p2)[i]
 		if v1 < v2 {
@@ -443,7 +439,7 @@ func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 			validate := func(posts []*PPost, actual []*models.Post) {
 				v.CheckInt(len(posts), len(actual), "len()")
 				for i, item := range posts {
-					item.Validate(v, actual[i], item.Version)
+					item.Validate(v, actual[i], item.Version, fmt.Sprintf("Post[%d]", i))
 				}
 			}
 			validate(expected1, part1.Payload.Posts)

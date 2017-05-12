@@ -126,15 +126,15 @@ func CheckPostGetOneNotFound(c *client.Forum, f *Factory, m *Modify) {
 	CheckIsType(err, operations.NewPostGetOneNotFound())
 }
 
-func (self *PPost) Validate(v PerfValidator, post *models.Post, version PVersion) {
-	v.CheckInt64(self.ID, post.ID, "Post.ID")
-	v.CheckStr(self.Thread.Forum.Slug, post.Forum, "Post.Forum")
-	v.CheckInt(int(self.Thread.ID), int(post.Thread), "Post.Thread")
-	v.CheckStr(self.Author.Nickname, post.Author, "Post.Author")
-	v.CheckHash(self.MessageHash, post.Message, "Post.Message")
-	v.CheckInt64(self.GetParentId(), post.Parent, "Post.Parent")
-	v.CheckBool(self.IsEdited, post.IsEdited, "Post.IsEditer")
-	v.CheckDate(&self.Created, post.Created, "Created")
+func (self *PPost) Validate(v PerfValidator, post *models.Post, version PVersion, prefix string) {
+	v.CheckInt64(self.ID, post.ID, prefix+".ID")
+	v.CheckStr(self.Thread.Forum.Slug, post.Forum, prefix+".Forum")
+	v.CheckInt(int(self.Thread.ID), int(post.Thread), prefix+".Thread")
+	v.CheckStr(self.Author.Nickname, post.Author, prefix+".Author")
+	v.CheckHash(self.MessageHash, post.Message, prefix+".Message")
+	v.CheckInt64(self.GetParentId(), post.Parent, prefix+".Parent")
+	v.CheckBool(self.IsEdited, post.IsEdited, prefix+".IsEditer")
+	v.CheckDate(&self.Created, post.Created, prefix+".Created")
 	v.Finish(version, self.Version)
 }
 
@@ -156,7 +156,7 @@ func PerfPostGetOneSuccess(p *Perf, f *Factory) {
 	relatedStr := strings.Join(related, ",")
 	p.Validate(func(v PerfValidator) {
 		payload := result.Payload
-		post.Validate(v, payload.Post, postVersion)
+		post.Validate(v, payload.Post, postVersion, "Post")
 
 		if strings.Contains(relatedStr, RELATED_USER) {
 			CheckIsType(payload.Author, &models.User{})

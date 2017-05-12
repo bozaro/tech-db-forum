@@ -249,10 +249,12 @@ func (self *PerfData) GetThreadPosts(thread *PThread) []*PPost {
 	self.mutex.RLock()
 	defer self.mutex.RUnlock()
 
-	result := self.postsByThread[thread.ID]
-	if result == nil {
+	posts := self.postsByThread[thread.ID]
+	if posts == nil {
 		return []*PPost{}
 	}
+	result := make([]*PPost, 0, len(posts))
+	result = append(result, posts...)
 	return result
 }
 
@@ -268,7 +270,11 @@ func (self *PerfData) AddPost(post *PPost) {
 	self.lastIndex++
 	post.Index = self.lastIndex
 	if post.Parent != nil {
-		post.Path = append(post.Parent.Path, post.Index)
+		// Явное копирование массива, т.к. append не всегда ведёт себя адекватно в многопоточном окружении
+		path := make([]int32, 0, len(post.Parent.Path)+1)
+		path = append(path, post.Parent.Path...)
+		path = append(path, post.Index)
+		post.Path = path
 	} else {
 		post.Path = []int32{post.Index}
 	}
