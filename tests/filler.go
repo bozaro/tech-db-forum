@@ -111,7 +111,7 @@ func FillPosts(perf *Perf, parallel int, count int, batchSize int) {
 				thread := data.GetThread(-1)
 				thread.mutex.Lock() // todo: Потом исправить
 
-				parents := data.GetThreadPosts(thread)
+				parents := data.GetThreadPostsFlat(thread)
 
 				for j := 0; j < batchSize; j++ {
 					var parent *PPost

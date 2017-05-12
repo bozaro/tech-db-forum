@@ -394,43 +394,53 @@ func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 
 	p.Validate(func(v PerfValidator) {
 		if v.CheckVersion(version, thread.Version) {
-			expected := p.data.GetThreadPosts(thread)
 			// Sort
 			limitType := func(post *PPost) int32 {
 				return post.Index
 			}
-			var sorter sort.Interface
+			var expected []*PPost
 			switch order {
 			case SORT_FLAT:
-				sorter = PPostSortFlat(expected)
+				expected = p.data.GetThreadPostsFlat(thread)
 			case SORT_TREE:
-				sorter = PPostSortTree(expected)
+				expected = p.data.GetThreadPostsTree(thread)
 			case SORT_PARENT:
-				sorter = PPostSortTree(expected)
+				expected = p.data.GetThreadPostsTree(thread)
 				limitType = func(post *PPost) int32 {
 					return post.Path[0]
 				}
 			default:
 				panic("Unexpected sort type: " + order)
 			}
-			if (desc != nil) && (*desc == true) {
-				sorter = sort.Reverse(sorter)
-			}
-			sort.Sort(sorter)
+			reverse := (desc != nil) && (*desc == true)
 			// Check
 			postSplit := func(full []*PPost) ([]*PPost, []*PPost) {
 				count := int32(0)
 				last := int32(0)
-				for i, item := range full {
-					if last != limitType(item) {
-						if count == limit {
-							return full[0:i], full[i:]
+				if reverse {
+					for i := len(full) - 1; i >= 0; i-- {
+						item := full[i]
+						if last != limitType(item) {
+							if count == limit {
+								return full[i+1:], full[:i+1]
+							}
+							count++
+							last = limitType(item)
 						}
-						count++
-						last = limitType(item)
 					}
+					return full, []*PPost{}
+				} else {
+					for i, item := range full {
+						if last != limitType(item) {
+							if count == limit {
+								return full[:i], full[i:]
+							}
+							count++
+							last = limitType(item)
+						}
+					}
+					return full, []*PPost{}
 				}
-				return full, []*PPost{}
 			}
 
 			expected1, expected := postSplit(expected)
@@ -438,7 +448,11 @@ func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 
 			validate := func(posts []*PPost, actual []*models.Post) {
 				v.CheckInt(len(posts), len(actual), "len()")
-				for i, item := range posts {
+				for i := range posts {
+					item := posts[i]
+					if reverse {
+						item = posts[len(posts)-i-1]
+					}
 					item.Validate(v, actual[i], item.Version, fmt.Sprintf("Post[%d]", i))
 				}
 			}

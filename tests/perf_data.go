@@ -9,6 +9,7 @@ import (
 //msgp:shim strfmt.Email as:string using:(strfmt.Email).String/strfmt.Email
 import (
 	"math/rand"
+	"sort"
 	"sync"
 )
 
@@ -27,14 +28,15 @@ type PerfData struct {
 
 	lastIndex int32
 
-	threadsByForum map[string][]*PThread
-	usersByForum   map[string]map[*PUser]bool
-	postsByThread  map[int32][]*PPost
-	userByNickname map[string]*PUser
-	forumBySlug    map[string]*PForum
-	postById       map[int64]*PPost
-	threadById     map[int32]*PThread
-	threadBySlug   map[string]*PThread
+	threadsByForum    map[string][]*PThread
+	usersByForum      map[string]map[*PUser]bool
+	postsByThreadFlat map[int32][]*PPost
+	postsByThreadTree map[int32][]*PPost
+	userByNickname    map[string]*PUser
+	forumBySlug       map[string]*PForum
+	postById          map[int64]*PPost
+	threadById        map[int32]*PThread
+	threadBySlug      map[string]*PThread
 }
 
 //msgp:ignore PStatus
@@ -93,19 +95,20 @@ type PPost struct {
 
 func NewPerfData(config *PerfConfig) *PerfData {
 	return &PerfData{
-		Status:         &PStatus{},
-		forums:         make([]*PForum, 0, config.ForumCount),
-		users:          make([]*PUser, 0, config.UserCount),
-		threads:        make([]*PThread, 0, config.ThreadCount),
-		posts:          make([]*PPost, 0, config.PostCount),
-		threadsByForum: map[string][]*PThread{},
-		usersByForum:   map[string]map[*PUser]bool{},
-		postsByThread:  map[int32][]*PPost{},
-		userByNickname: map[string]*PUser{},
-		forumBySlug:    map[string]*PForum{},
-		threadBySlug:   map[string]*PThread{},
-		threadById:     map[int32]*PThread{},
-		postById:       map[int64]*PPost{},
+		Status:            &PStatus{},
+		forums:            make([]*PForum, 0, config.ForumCount),
+		users:             make([]*PUser, 0, config.UserCount),
+		threads:           make([]*PThread, 0, config.ThreadCount),
+		posts:             make([]*PPost, 0, config.PostCount),
+		threadsByForum:    map[string][]*PThread{},
+		usersByForum:      map[string]map[*PUser]bool{},
+		postsByThreadTree: map[int32][]*PPost{},
+		postsByThreadFlat: map[int32][]*PPost{},
+		userByNickname:    map[string]*PUser{},
+		forumBySlug:       map[string]*PForum{},
+		threadBySlug:      map[string]*PThread{},
+		threadById:        map[int32]*PThread{},
+		postById:          map[int64]*PPost{},
 	}
 }
 
@@ -188,7 +191,8 @@ func (self *PerfData) AddThread(thread *PThread) {
 	}
 	self.threads = append(self.threads, thread)
 	self.threadById[thread.ID] = thread
-	self.postsByThread[thread.ID] = []*PPost{}
+	self.postsByThreadTree[thread.ID] = []*PPost{}
+	self.postsByThreadFlat[thread.ID] = []*PPost{}
 	self.threadsByForum[thread.Forum.Slug] = append(self.threadsByForum[thread.Forum.Slug], thread)
 	self.usersByForum[thread.Forum.Slug][thread.Author] = true
 	thread.Forum.Threads++
@@ -245,17 +249,18 @@ func (self *PerfData) GetForumUsers(forum *PForum) []*PUser {
 	return result
 }
 
-func (self *PerfData) GetThreadPosts(thread *PThread) []*PPost {
+func (self *PerfData) GetThreadPostsFlat(thread *PThread) []*PPost {
 	self.mutex.RLock()
 	defer self.mutex.RUnlock()
 
-	posts := self.postsByThread[thread.ID]
-	if posts == nil {
-		return []*PPost{}
-	}
-	result := make([]*PPost, 0, len(posts))
-	result = append(result, posts...)
-	return result
+	return self.postsByThreadFlat[thread.ID]
+}
+
+func (self *PerfData) GetThreadPostsTree(thread *PThread) []*PPost {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
+	return self.postsByThreadTree[thread.ID]
 }
 
 func (self *PerfData) AddPost(post *PPost) {
@@ -265,7 +270,6 @@ func (self *PerfData) AddPost(post *PPost) {
 	self.posts = append(self.posts, post)
 	self.postById[post.ID] = post
 	self.usersByForum[post.Thread.Forum.Slug][post.Author] = true
-	self.postsByThread[post.Thread.ID] = append(self.postsByThread[post.Thread.ID], post)
 
 	self.lastIndex++
 	post.Index = self.lastIndex
@@ -278,6 +282,12 @@ func (self *PerfData) AddPost(post *PPost) {
 	} else {
 		post.Path = []int32{post.Index}
 	}
+
+	tree := append(self.postsByThreadTree[post.Thread.ID], post)
+	self.postsByThreadFlat[post.Thread.ID] = append(self.postsByThreadFlat[post.Thread.ID], post)
+	sort.Sort(PPostSortTree(tree))
+	self.postsByThreadTree[post.Thread.ID] = tree
+
 	post.Thread.Forum.Posts++
 	post.Thread.Posts++
 	self.Status.Post++
