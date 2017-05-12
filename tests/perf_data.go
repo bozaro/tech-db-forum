@@ -286,7 +286,9 @@ func (self *PerfData) AddPost(post *PPost) {
 
 	tree := append(self.postsByThreadTree[post.Thread.ID], post)
 	self.postsByThreadFlat[post.Thread.ID] = append(self.postsByThreadFlat[post.Thread.ID], post)
-	sort.Sort(PPostSortTree(tree))
+	if post.Parent != nil {
+		sort.Sort(PPostSortTree(tree))
+	}
 	self.postsByThreadTree[post.Thread.ID] = tree
 
 	post.Thread.Forum.Posts++
