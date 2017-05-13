@@ -60,7 +60,7 @@ func FillUsers(perf *Perf, parallel int, timeout time.Time, count int) {
 	}
 
 	// wait for the workers to finish
-	waitWaitGroup(wg, timeout)
+	waitWaitGroup(&wg, timeout)
 }
 
 func FillThreads(perf *Perf, parallel int, timeout time.Time, count int) {
@@ -100,7 +100,7 @@ func FillThreads(perf *Perf, parallel int, timeout time.Time, count int) {
 	}
 
 	// wait for the workers to finish
-	waitWaitGroup(wg, timeout)
+	waitWaitGroup(&wg, timeout)
 }
 
 func FillPosts(perf *Perf, parallel int, timeout time.Time, count int, batchSize int) {
@@ -153,7 +153,7 @@ func FillPosts(perf *Perf, parallel int, timeout time.Time, count int, batchSize
 	}
 
 	// wait for the workers to finish
-	waitWaitGroup(wg, timeout)
+	waitWaitGroup(&wg, timeout)
 }
 
 func VoteThreads(perf *Perf, parallel int, timeout time.Time, count int) {
@@ -202,10 +202,10 @@ func VoteThreads(perf *Perf, parallel int, timeout time.Time, count int) {
 	}
 
 	// wait for the workers to finish
-	waitWaitGroup(wg, timeout)
+	waitWaitGroup(&wg, timeout)
 }
 
-func waitWaitGroup(wg sync.WaitGroup, timeout time.Time) bool {
+func waitWaitGroup(wg *sync.WaitGroup, timeout time.Time) bool {
 	done := make(chan struct{})
 	go func() {
 		wg.Wait()
