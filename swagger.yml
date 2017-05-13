@@ -649,13 +649,13 @@ definitions:
       user:
         type: string
         format: identity
-        description: Nickname пользователя, который отвечает за форум (уникальное поле).
+        description: Nickname пользователя, который отвечает за форум.
         example: j.sparrow
         x-isnullable: false
       slug:
         type: string
         format: identity
-        description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
+        description: Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL), уникальное поле.
         pattern: ^(\d|\w|-|_)*(\w|-|_)(\d|\w|-|_)*$
         example: pirate-stories
         x-isnullable: false
