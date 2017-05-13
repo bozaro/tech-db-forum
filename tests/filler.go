@@ -1,7 +1,9 @@
 package tests
 
 import (
+	"fmt"
 	"github.com/bozaro/tech-db-forum/generated/client"
+	"github.com/bozaro/tech-db-forum/generated/client/operations"
 	"github.com/bozaro/tech-db-forum/generated/models"
 	"math/rand"
 	"net/url"
@@ -15,6 +17,7 @@ type PerfConfig struct {
 	ThreadCount int
 	PostCount   int
 	PostBatch   int
+	VoteCount   int
 
 	Validate float32
 }
@@ -26,6 +29,7 @@ func NewPerfConfig() *PerfConfig {
 		ThreadCount: 1000,
 		PostCount:   1000000,
 		PostBatch:   100,
+		VoteCount:   25000,
 		Validate:    1.0,
 	}
 }
@@ -84,6 +88,7 @@ func FillThreads(perf *Perf, parallel int, count int) {
 					Slug:        thread.Slug,
 					Author:      author,
 					Forum:       forum,
+					Voices:      map[*PUser]int32{},
 					MessageHash: Hash(thread.Message),
 					TitleHash:   Hash(thread.Title),
 					Created:     *thread.Created,
@@ -150,6 +155,55 @@ func FillPosts(perf *Perf, parallel int, count int, batchSize int) {
 	wg.Wait()
 }
 
+func VoteThreads(perf *Perf, parallel int, count int) {
+	var need int32 = int32(count)
+	c := perf.c
+	data := perf.data
+
+	// spawn four worker goroutines
+	var wg sync.WaitGroup
+	for i := 0; i < parallel; i++ {
+		wg.Add(1)
+		go func() {
+			for atomic.AddInt32(&need, -1) >= 0 {
+				user := data.GetUser(-1)
+
+				thread := data.GetThread(-1)
+				thread.mutex.Lock() // todo: Потом исправить
+
+				old_voice := thread.Voices[user]
+				var new_voice int32
+				if old_voice != 0 {
+					new_voice = -old_voice
+				} else if rand.Intn(8) < 5 {
+					new_voice = 1
+				} else {
+					new_voice = -1
+				}
+				thread.Voices[user] = new_voice
+				thread.Votes += new_voice - old_voice
+
+				result, err := c.Operations.ThreadVote(operations.NewThreadVoteParams().
+					WithSlugOrID(fmt.Sprintf("%d", thread.ID)).
+					WithVote(&models.Vote{
+						Nickname: user.Nickname,
+						Voice:    new_voice,
+					}).
+					WithContext(Expected(200, nil, nil)))
+				CheckNil(err)
+				if result.Payload.Votes != thread.Votes {
+					panic(fmt.Sprintf("Unexpected votes count: %d != %d", result.Payload.Votes, thread.Votes))
+				}
+				thread.mutex.Unlock()
+			}
+			wg.Done()
+		}()
+	}
+
+	// wait for the workers to finish
+	wg.Wait()
+}
+
 func NewPerf(url *url.URL, config *PerfConfig) *Perf {
 	transport := CreateTransport(url)
 	report := Report{
@@ -190,6 +244,9 @@ func (self *Perf) Fill(threads int, config *PerfConfig) {
 
 	log.Infof("Creating threads (%d threads)", threads)
 	FillThreads(self, threads, config.ThreadCount)
+
+	log.Infof("Vote threads (%d threads)", threads)
+	VoteThreads(self, threads, config.VoteCount)
 
 	log.Infof("Creating posts (%d threads)", threads)
 	FillPosts(self, threads, config.PostCount, config.PostBatch)

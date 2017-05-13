@@ -60,16 +60,17 @@ type PUser struct {
 type PThread struct {
 	mutex sync.RWMutex
 
-	Version     PVersion        `msg:"-"`
-	ID          int32           `msg:"id"`
-	Slug        string          `msg:"slug"`
-	Author      *PUser          `msg:"-"`
-	Forum       *PForum         `msg:"-"`
-	MessageHash PHash           `msg:"message"`
-	TitleHash   PHash           `msg:"title"`
-	Created     strfmt.DateTime `msg:"created"`
-	Votes       int32           `msg:"-"`
-	Posts       int32           `msg:"-"`
+	Version     PVersion         `msg:"-"`
+	ID          int32            `msg:"id"`
+	Slug        string           `msg:"slug"`
+	Author      *PUser           `msg:"-"`
+	Forum       *PForum          `msg:"-"`
+	MessageHash PHash            `msg:"message"`
+	TitleHash   PHash            `msg:"title"`
+	Created     strfmt.DateTime  `msg:"created"`
+	Voices      map[*PUser]int32 `msg:"-"`
+	Votes       int32            `msg:"-"`
+	Posts       int32            `msg:"-"`
 }
 
 type PForum struct {

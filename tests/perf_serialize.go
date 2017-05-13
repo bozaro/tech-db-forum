@@ -46,7 +46,9 @@ func LoadPerfData(reader io.Reader) (*PerfData, error) {
 	}
 	// Read thread list
 	for i := 0; i < c.ThreadCount; i++ {
-		thread := PThread{}
+		thread := PThread{
+			Voices: map[*PUser]int32{},
+		}
 		if err = thread.DecodeMsg(r); err != nil {
 			return nil, err
 		}
@@ -60,6 +62,26 @@ func LoadPerfData(reader io.Reader) (*PerfData, error) {
 		} else {
 			return nil, err
 		}
+		// Read votes
+		if voice_count, err := r.ReadInt(); err == nil {
+			for j := 0; j < voice_count; j++ {
+				var user *PUser
+				if nickname, err := r.ReadString(); err == nil {
+					user = d.GetUserByNickname(nickname)
+				} else {
+					return nil, err
+				}
+				if voice, err := r.ReadInt32(); err == nil {
+					thread.Voices[user] = voice
+					thread.Votes += voice
+				} else {
+					return nil, err
+				}
+			}
+		} else {
+			return nil, err
+		}
+
 		d.AddThread(&thread)
 	}
 	// Read posts list
@@ -111,6 +133,12 @@ func (self *PerfData) Save(writer io.Writer) error {
 		thread.EncodeMsg(w)
 		w.WriteString(thread.Forum.Slug)
 		w.WriteString(thread.Author.Nickname)
+		// Write votes
+		w.WriteInt(len(thread.Voices))
+		for user, voice := range thread.Voices {
+			w.WriteString(user.Nickname)
+			w.WriteInt32(voice)
+		}
 	}
 	// Write posts list
 	for _, post := range self.posts {
