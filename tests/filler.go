@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type PerfConfig struct {
@@ -34,7 +35,7 @@ func NewPerfConfig() *PerfConfig {
 	}
 }
 
-func FillUsers(perf *Perf, parallel int, count int) {
+func FillUsers(perf *Perf, parallel int, timeout time.Time, count int) {
 	var need int32 = int32(count)
 	c := perf.c
 	data := perf.data
@@ -59,10 +60,10 @@ func FillUsers(perf *Perf, parallel int, count int) {
 	}
 
 	// wait for the workers to finish
-	wg.Wait()
+	waitWaitGroup(wg, timeout)
 }
 
-func FillThreads(perf *Perf, parallel int, count int) {
+func FillThreads(perf *Perf, parallel int, timeout time.Time, count int) {
 	var need int32 = int32(count)
 	c := perf.c
 	data := perf.data
@@ -99,10 +100,10 @@ func FillThreads(perf *Perf, parallel int, count int) {
 	}
 
 	// wait for the workers to finish
-	wg.Wait()
+	waitWaitGroup(wg, timeout)
 }
 
-func FillPosts(perf *Perf, parallel int, count int, batchSize int) {
+func FillPosts(perf *Perf, parallel int, timeout time.Time, count int, batchSize int) {
 	var need int32 = int32(count)
 	c := perf.c
 	data := perf.data
@@ -152,10 +153,10 @@ func FillPosts(perf *Perf, parallel int, count int, batchSize int) {
 	}
 
 	// wait for the workers to finish
-	wg.Wait()
+	waitWaitGroup(wg, timeout)
 }
 
-func VoteThreads(perf *Perf, parallel int, count int) {
+func VoteThreads(perf *Perf, parallel int, timeout time.Time, count int) {
 	var need int32 = int32(count)
 	c := perf.c
 	data := perf.data
@@ -201,7 +202,27 @@ func VoteThreads(perf *Perf, parallel int, count int) {
 	}
 
 	// wait for the workers to finish
-	wg.Wait()
+	waitWaitGroup(wg, timeout)
+}
+
+func waitWaitGroup(wg sync.WaitGroup, timeout time.Time) bool {
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	delta := timeout.Sub(time.Now())
+	if delta <= time.Second*1 {
+		delta = time.Second * 1
+	}
+	select {
+	case <-done:
+		return true
+	case <-time.After(delta):
+		log.Panic("Timeout")
+		return false
+	}
 }
 
 func NewPerf(url *url.URL, config *PerfConfig) *Perf {
@@ -219,15 +240,17 @@ func NewPerf(url *url.URL, config *PerfConfig) *Perf {
 	}
 }
 
-func (self *Perf) Fill(threads int, config *PerfConfig) {
+func (self *Perf) Fill(threads int, timeout_sec int, config *PerfConfig) {
 	f := NewFactory()
+
+	timeout := time.Now().Add(time.Second * time.Duration(timeout_sec))
 
 	log.Infof("Clear data")
 	_, err := self.c.Operations.Clear(nil)
 	CheckNil(err)
 
 	log.Infof("Creating users (%d threads)", threads)
-	FillUsers(self, threads, config.UserCount)
+	FillUsers(self, threads, timeout, config.UserCount)
 
 	log.Info("Creating forums")
 	for i := 0; i < config.ForumCount; i++ {
@@ -243,13 +266,13 @@ func (self *Perf) Fill(threads int, config *PerfConfig) {
 	}
 
 	log.Infof("Creating threads (%d threads)", threads)
-	FillThreads(self, threads, config.ThreadCount)
+	FillThreads(self, threads, timeout, config.ThreadCount)
 
 	log.Infof("Vote threads (%d threads)", threads)
-	VoteThreads(self, threads, config.VoteCount)
+	VoteThreads(self, threads, timeout, config.VoteCount)
 
 	log.Infof("Creating posts (%d threads)", threads)
-	FillPosts(self, threads, config.PostCount, config.PostBatch)
+	FillPosts(self, threads, timeout, config.PostCount, config.PostBatch)
 
 	log.Info("Done")
 }

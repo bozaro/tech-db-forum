@@ -100,6 +100,7 @@ var cmdFunc = &cli.Command{
 type CmdFillT struct {
 	CmdCommonT
 	Threads   int    `cli:"t,thread" usage:"Number of threads for generating data" dft:"8"`
+	Timeout   int    `cli:"timeout" usage:"Fill timeout (sec)" dft:"1800"`
 	StateFile string `cli:"o,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat.gz"`
 }
 
@@ -111,7 +112,7 @@ var cmdFill = &cli.Command{
 		argv := ctx.Argv().(*CmdFillT)
 		commonPrepare(argv.CmdCommonT)
 		perf := tests.NewPerf(argv.Url, tests.NewPerfConfig())
-		perf.Fill(argv.Threads, tests.NewPerfConfig())
+		perf.Fill(argv.Threads, argv.Timeout, tests.NewPerfConfig())
 		if perf == nil {
 			os.Exit(EXIT_FILL_FAILED)
 		}
@@ -144,6 +145,7 @@ var cmdFill = &cli.Command{
 type CmdPerfT struct {
 	CmdCommonT
 	Threads   int     `cli:"t,thread" usage:"Number of threads for performance testing" dft:"8"`
+	Timeout   int     `cli:"timeout" usage:"Fill timeout (sec)" dft:"1800"`
 	StateFile string  `cli:"i,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat.gz"`
 	Validate  float32 `cli:"v,validate" usage:"The probability of verifying the answer" dft:"0.05"`
 	Duration  int     `cli:"d,duration" usage:"Test duration (sec)" dft:"-1"`
@@ -164,7 +166,7 @@ var cmdPerf = &cli.Command{
 		}
 		perf := tests.NewPerf(argv.Url, config)
 		if argv.StateFile == "" {
-			perf.Fill(argv.Threads, config)
+			perf.Fill(argv.Threads, argv.Timeout, config)
 		} else {
 			file, err := os.Open(argv.StateFile)
 			defer file.Close()
