@@ -70,7 +70,7 @@ func GetRandomPerfTest() *PerfTest {
 	panic("Invalid state")
 }
 
-func (self *Perf) Run(threads int, duration int) {
+func (self *Perf) Run(threads int, duration int, step int) {
 	var done int32 = 0
 	var counter int64 = 0
 	// spawn four worker goroutines
@@ -92,11 +92,10 @@ func (self *Perf) Run(threads int, duration int) {
 	}
 
 	lst := atomic.LoadInt64(&counter)
-	step := time.Duration(10)
 	best := -1.0
-	cnt := duration / 10
+	cnt := duration / step
 	for {
-		time.Sleep(time.Second * step)
+		time.Sleep(time.Second * time.Duration(step))
 		cur := atomic.LoadInt64(&counter)
 		rps := float64(cur-lst) / float64(step)
 		if best < rps {
