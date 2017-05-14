@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aryann/difflib"
+	"github.com/go-openapi/swag"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
@@ -112,7 +113,7 @@ func (self *Validator) Example(req *http.Request) *http.Response {
 	if self.body == "" {
 		return nil
 	}
-	json_body := []byte(ToJson(self.body))
+	json_body := []byte(ToJsonPretty(self.body))
 	return &http.Response{
 		Proto:      req.Proto,
 		StatusCode: self.code,
@@ -145,7 +146,7 @@ func (self *Validator) RoundTrip(req *http.Request) (*http.Response, error) {
 	return nil, errors.New("Unexpected error")
 }
 
-func ToJson(obj interface{}) string {
+func ToJsonPretty(obj interface{}) string {
 	data, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		panic(err)
@@ -175,15 +176,17 @@ func GetDelta(data []byte, expected interface{}, prepare Filter) *[]difflib.Diff
 	if expected == nil {
 		return nil
 	}
-	expected_json := ToJson(prepare(expected))
+	expected_json := prepare(expected)
+	expected_data, _ := swag.WriteJSON(expected_json)
 	var actual interface{} = reflect.New(reflect.TypeOf(expected).Elem()).Interface()
-	if err := json.Unmarshal(data, actual); err != nil {
-		return GetDiff(string(data), expected_json)
+	if err := swag.ReadJSON(data, actual); err != nil {
+		return GetDiff(string(data), ToJsonPretty(expected_json))
 	}
 
-	actual_json := ToJson(prepare(actual))
-	if expected_json == actual_json {
+	actual_json := prepare(actual)
+	actual_data, _ := swag.WriteJSON(actual_json)
+	if bytes.Equal(expected_data, actual_data) {
 		return nil
 	}
-	return GetDiff(actual_json, expected_json)
+	return GetDiff(ToJsonPretty(actual_json), ToJsonPretty(expected_json))
 }
