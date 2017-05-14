@@ -169,6 +169,7 @@ var cmdPerf = &cli.Command{
 		if argv.StateFile == "" {
 			perf.Fill(argv.Threads, argv.Timeout, config)
 		} else {
+			log.Infof("Loading state file: %s", argv.StateFile)
 			file, err := os.Open(argv.StateFile)
 			defer file.Close()
 			var reader io.Reader = file
@@ -189,6 +190,7 @@ var cmdPerf = &cli.Command{
 			}
 		}
 
+		log.Info("Begin performance test")
 		perf.Run(argv.Threads, argv.Duration, argv.Step)
 		return nil
 	},
