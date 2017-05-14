@@ -70,7 +70,7 @@ func GetRandomPerfTest() *PerfTest {
 	panic("Invalid state")
 }
 
-func (self *Perf) Run(threads int, duration int, step int) {
+func (self *Perf) Run(threads int, duration int, step int) float64 {
 	var done int32 = 0
 	var counter int64 = 0
 	// spawn four worker goroutines
@@ -113,6 +113,7 @@ func (self *Perf) Run(threads int, duration int, step int) {
 
 	// wait for the workers to finish
 	wg.Wait()
+	return best
 }
 
 func (self *Perf) Load(reader io.Reader) error {

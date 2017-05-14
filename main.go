@@ -148,6 +148,7 @@ type CmdPerfT struct {
 	Threads   int     `cli:"t,thread" usage:"Number of threads for performance testing" dft:"8"`
 	Timeout   int     `cli:"timeout" usage:"Fill timeout (sec)" dft:"1800"`
 	StateFile string  `cli:"i,state" usage:"State file with information about database objects" dft:"tech-db-forum.dat.gz"`
+	BestFile  string  `cli:"o,best" usage:"File for best result" dft:"tech-db-forum.best.txt"`
 	Validate  float32 `cli:"v,validate" usage:"The probability of verifying the answer" dft:"0.05"`
 	Duration  int     `cli:"d,duration" usage:"Test duration (sec)" dft:"-1"`
 	Step      int     `cli:"s,step" usage:"Sampling step (sec)" dft:"10"`
@@ -191,7 +192,13 @@ var cmdPerf = &cli.Command{
 		}
 
 		log.Info("Begin performance test")
-		perf.Run(argv.Threads, argv.Duration, argv.Step)
+		best := perf.Run(argv.Threads, argv.Duration, argv.Step)
+		if argv.BestFile != "" {
+			if file, err := os.Create(argv.BestFile); err == nil {
+				file.WriteString(fmt.Sprintf("%d", int(best+0.5)))
+				file.Close()
+			}
+		}
 		return nil
 	},
 }
