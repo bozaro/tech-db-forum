@@ -2,6 +2,7 @@ package main
 
 //go:generate go-bindata -nometadata -pkg assets -o generated/assets/assets.go -prefix assets/ assets/...
 //go:generate swagger generate client --target generated --spec ./swagger.yml
+//go:generate easyjson -all generated/models/
 import (
 	"compress/gzip"
 	"fmt"
