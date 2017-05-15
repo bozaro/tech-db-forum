@@ -53,7 +53,7 @@ func NewForumGetThreadsOK() *ForumGetThreadsOK {
 
 */
 type ForumGetThreadsOK struct {
-	Payload []*models.Thread
+	Payload models.Threads
 }
 
 func (o *ForumGetThreadsOK) Error() string {

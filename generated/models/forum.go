@@ -7,6 +7,7 @@ import (
 	strfmt "github.com/go-openapi/strfmt"
 
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/swag"
 	"github.com/go-openapi/validate"
 )
 
@@ -20,7 +21,7 @@ type Forum struct {
 	// Read Only: true
 	Posts int64 `json:"posts,omitempty"`
 
-	// Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL).
+	// Человекопонятный URL (https://ru.wikipedia.org/wiki/%D0%A1%D0%B5%D0%BC%D0%B0%D0%BD%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_URL), уникальное поле.
 	// Required: true
 	// Pattern: ^(\d|\w|-|_)*(\w|-|_)(\d|\w|-|_)*$
 	Slug string `json:"slug"`
@@ -34,7 +35,7 @@ type Forum struct {
 	// Required: true
 	Title string `json:"title"`
 
-	// Nickname пользователя, который отвечает за форум (уникальное поле).
+	// Nickname пользователя, который отвечает за форум.
 	// Required: true
 	User string `json:"user"`
 }
@@ -92,5 +93,23 @@ func (m *Forum) validateUser(formats strfmt.Registry) error {
 		return err
 	}
 
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (m *Forum) MarshalBinary() ([]byte, error) {
+	if m == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(m)
+}
+
+// UnmarshalBinary interface implementation
+func (m *Forum) UnmarshalBinary(b []byte) error {
+	var res Forum
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*m = res
 	return nil
 }

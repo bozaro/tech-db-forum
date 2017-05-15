@@ -66,7 +66,7 @@ type PostsCreateParams struct {
 	  Список создаваемых постов.
 
 	*/
-	Posts []*models.Post
+	Posts models.Posts
 	/*SlugOrID
 	  Идентификатор ветки обсуждения.
 
@@ -112,13 +112,13 @@ func (o *PostsCreateParams) SetHTTPClient(client *http.Client) {
 }
 
 // WithPosts adds the posts to the posts create params
-func (o *PostsCreateParams) WithPosts(posts []*models.Post) *PostsCreateParams {
+func (o *PostsCreateParams) WithPosts(posts models.Posts) *PostsCreateParams {
 	o.SetPosts(posts)
 	return o
 }
 
 // SetPosts adds the posts to the posts create params
-func (o *PostsCreateParams) SetPosts(posts []*models.Post) {
+func (o *PostsCreateParams) SetPosts(posts models.Posts) {
 	o.Posts = posts
 }
 
@@ -136,7 +136,9 @@ func (o *PostsCreateParams) SetSlugOrID(slugOrID string) {
 // WriteToRequest writes these params to a swagger request
 func (o *PostsCreateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
-	r.SetTimeout(o.timeout)
+	if err := r.SetTimeout(o.timeout); err != nil {
+		return err
+	}
 	var res []error
 
 	if err := r.SetBodyParam(o.Posts); err != nil {

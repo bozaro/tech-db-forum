@@ -64,7 +64,7 @@ func CheckUserUpdateSimple(c *client.Forum, f *Factory) {
 	c.Operations.UserUpdate(operations.NewUserUpdateParams().
 		WithNickname(user.Nickname).
 		WithProfile(&update).
-		WithContext(Expected(200, &expected, nil)))
+		WithContext(Expected(200, expected, nil)))
 
 	CheckUser(c, expected)
 }
@@ -105,7 +105,7 @@ func CheckUserUpdatePart(c *client.Forum, f *Factory, m *Modify) {
 	c.Operations.UserUpdate(operations.NewUserUpdateParams().
 		WithNickname(expected.Nickname).
 		WithProfile(update).
-		WithContext(Expected(200, &expected, nil)))
+		WithContext(Expected(200, expected, nil)))
 
 	CheckUser(c, expected)
 }

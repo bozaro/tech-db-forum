@@ -53,7 +53,7 @@ func NewForumGetUsersOK() *ForumGetUsersOK {
 
 */
 type ForumGetUsersOK struct {
-	Payload []*models.User
+	Payload models.Users
 }
 
 func (o *ForumGetUsersOK) Error() string {

@@ -183,7 +183,9 @@ func GetDelta(data []byte, expected interface{}, prepare Filter) *[]difflib.Diff
 	}
 
 	actual_obj := prepare(actual)
-	if reflect.DeepEqual(expected_obj, actual_obj) {
+	actual_json, _ := swag.WriteJSON(actual_obj)
+	expected_json, _ := swag.WriteJSON(expected_obj)
+	if bytes.Equal(expected_json, actual_json) {
 		return nil
 	}
 	return GetDiff(ToJsonPretty(actual_obj), ToJsonPretty(expected_obj))

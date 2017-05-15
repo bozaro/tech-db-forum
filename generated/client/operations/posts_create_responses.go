@@ -61,7 +61,7 @@ func NewPostsCreateCreated() *PostsCreateCreated {
 
 */
 type PostsCreateCreated struct {
-	Payload []*models.Post
+	Payload models.Posts
 }
 
 func (o *PostsCreateCreated) Error() string {

@@ -107,9 +107,9 @@ func CheckForumGetUsersSimple(c *client.Forum, f *Factory, m *Modify) {
 	}
 
 	// Список пользователей
-	all_expected := []models.User{}
+	all_expected := models.Users{}
 	for _, user := range forum_users {
-		all_expected = append(all_expected, *user)
+		all_expected = append(all_expected, user)
 	}
 	sort.Sort(UserByNickname(all_expected))
 
@@ -155,7 +155,7 @@ func CheckForumGetUsersSimple(c *client.Forum, f *Factory, m *Modify) {
 		WithLimit(&limit).
 		WithDesc(desc).
 		WithSince(&all_expected[len(all_expected)-1].Nickname).
-		WithContext(Expected(200, &[]models.Thread{}, nil)))
+		WithContext(Expected(200, &models.Threads{}, nil)))
 }
 
 func CheckForumGetUsersCollation(c *client.Forum, f *Factory, m *Modify) {
@@ -204,9 +204,9 @@ func CheckForumGetUsersCollation(c *client.Forum, f *Factory, m *Modify) {
 	}
 
 	// Список пользователей
-	all_expected := []models.User{}
+	all_expected := models.Users{}
 	for _, user := range forum_users {
-		all_expected = append(all_expected, *user)
+		all_expected = append(all_expected, user)
 	}
 	sort.Sort(UserByNickname(all_expected))
 
@@ -250,7 +250,7 @@ func CheckForumGetUsersCollation(c *client.Forum, f *Factory, m *Modify) {
 		WithLimit(&limit).
 		WithDesc(desc).
 		WithSince(&all_expected[len(all_expected)-1].Nickname).
-		WithContext(Expected(200, &[]models.Thread{}, nil)))
+		WithContext(Expected(200, &models.Threads{}, nil)))
 }
 
 func CheckForumGetUsersEmpty(c *client.Forum, f *Factory, m *Modify) {
@@ -285,7 +285,7 @@ func CheckForumGetUsersEmpty(c *client.Forum, f *Factory, m *Modify) {
 		WithLimit(limit).
 		WithSince(since).
 		WithDesc(desc).
-		WithContext(Expected(200, &[]models.User{}, nil)))
+		WithContext(Expected(200, &models.Users{}, nil)))
 }
 
 func CheckForumGetUsersVote(c *client.Forum, f *Factory, m *Modify) {
@@ -319,7 +319,7 @@ func CheckForumGetUsersVote(c *client.Forum, f *Factory, m *Modify) {
 		WithLimit(limit).
 		WithSince(since).
 		WithDesc(desc).
-		WithContext(Expected(200, &[]models.User{*author}, nil)))
+		WithContext(Expected(200, &models.Users{author}, nil)))
 }
 
 func CheckForumGetUsersNotFound(c *client.Forum, f *Factory, m *Modify) {

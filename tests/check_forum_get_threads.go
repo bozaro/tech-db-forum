@@ -61,21 +61,21 @@ func filterThread(data interface{}) interface{} {
 }
 
 func filterThreads(data interface{}) interface{} {
-	threads := data.(*[]models.Thread)
+	threads := data.(*models.Threads)
 	for i := range *threads {
-		filterThread(&(*threads)[i])
+		filterThread((*threads)[i])
 	}
 	return threads
 }
 
 func CheckForumGetThreadsSimple(c *client.Forum, f *Factory, m *Modify) {
 	forum := f.CreateForum(c, nil, nil)
-	threads := []models.Thread{}
+	threads := models.Threads{}
 	created := time.Now()
 	created.Round(time.Millisecond)
 	for i := 0; i < 10; i++ {
 		thread := f.CreateThread(c, nil, forum, nil)
-		threads = append(threads, *thread)
+		threads = append(threads, thread)
 	}
 	sort.Sort(ThreadByCreated(threads))
 
@@ -128,7 +128,7 @@ func CheckForumGetThreadsSimple(c *client.Forum, f *Factory, m *Modify) {
 		WithLimit(&limit).
 		WithDesc(desc).
 		WithSince(&after_last).
-		WithContext(Expected(200, &[]models.Thread{}, nil)))
+		WithContext(Expected(200, &models.Threads{}, nil)))
 }
 
 func CheckForumGetThreadsNotFound(c *client.Forum, f *Factory, m *Modify) {
