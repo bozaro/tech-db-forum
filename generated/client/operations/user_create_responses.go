@@ -85,7 +85,7 @@ func NewUserCreateConflict() *UserCreateConflict {
 
 */
 type UserCreateConflict struct {
-	Payload []*models.User
+	Payload models.Users
 }
 
 func (o *UserCreateConflict) Error() string {

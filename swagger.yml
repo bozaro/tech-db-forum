@@ -143,9 +143,7 @@ paths:
           description: |
             Информация о пользователях форума.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/User'
+            $ref: '#/definitions/Users'
         404:
           description: |
             Форум отсутсвует в системе.
@@ -190,9 +188,7 @@ paths:
           description: |
             Информация о ветках обсуждения на форуме.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/Thread'
+            $ref: '#/definitions/Threads'
         404:
           description: |
             Форум отсутсвует в системе.
@@ -307,18 +303,14 @@ paths:
         description: Список создаваемых постов.
         required: true
         schema:
-          type: array
-          items:
-            $ref: '#/definitions/Post'
+          $ref: '#/definitions/Posts'
       responses:
         201:
           description: |
             Посты успешно созданы.
             Возвращает данные созданных постов в том же порядке, в котором их передали на вход метода.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/Post'
+            $ref: '#/definitions/Posts'
         404:
           description: |
             Ветка обсуждения отсутствует в базе данных.
@@ -497,9 +489,7 @@ paths:
             Пользователь уже присутсвует в базе данных.
             Возвращает данные ранее созданных пользователей с тем же nickname-ом иои email-ом.
           schema:
-            type: array
-            items:
-              $ref: '#/definitions/User'
+            $ref: '#/definitions/Users'
   /user/{nickname}/profile:
     get:
       summary: Получение информации о пользователе
@@ -617,6 +607,10 @@ definitions:
     required:
     - fullname
     - email
+  Users:
+    type: array
+    items:
+      $ref: '#/definitions/User'
   UserUpdate:
     description: |
       Информация о пользователе.
@@ -735,6 +729,10 @@ definitions:
     - title
     - author
     - message
+  Threads:
+    type: array
+    items:
+      $ref: '#/definitions/Thread'
   ThreadUpdate:
     description: |
       Сообщение для обновления ветки обсуждения на форуме.
@@ -801,6 +799,10 @@ definitions:
     required:
     - author
     - message
+  Posts:
+    type: array
+    items:
+      $ref: '#/definitions/Post'
   PostUpdate:
     description: |
       Сообщение для обновления сообщения внутри ветки на форуме.
