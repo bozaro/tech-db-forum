@@ -84,9 +84,9 @@ func init() {
 	})
 }
 
-func (f *Factory) CreatePosts(c *client.Forum, posts []*models.Post, thread *models.Thread) []*models.Post {
+func (f *Factory) CreatePosts(c *client.Forum, posts models.Posts, thread *models.Thread) models.Posts {
 	if len(posts) == 0 {
-		return []*models.Post{}
+		return models.Posts{}
 	}
 	var postsThread int32 = 0
 	for _, post := range posts {
@@ -120,7 +120,7 @@ func (f *Factory) CreatePosts(c *client.Forum, posts []*models.Post, thread *mod
 		postsForum = f.RandomForum().Slug
 	}
 
-	var expected []*models.Post
+	var expected models.Posts
 	if thread != nil {
 		author = thread.Author
 	}
@@ -147,7 +147,7 @@ func (f *Factory) CreatePosts(c *client.Forum, posts []*models.Post, thread *mod
 		WithSlugOrID(slug).
 		WithPosts(posts).
 		WithContext(Expected(201, &expected, func(data interface{}) interface{} {
-			posts := data.(*[]*models.Post)
+			posts := data.(*models.Posts)
 
 			var first_time *strfmt.DateTime
 			same_time := true
@@ -184,7 +184,7 @@ func (f *Factory) CreatePost(c *client.Forum, post *models.Post, thread *models.
 	if post == nil {
 		post = f.RandomPost()
 	}
-	return f.CreatePosts(c, []*models.Post{post}, thread)[0]
+	return f.CreatePosts(c, models.Posts{post}, thread)[0]
 }
 
 func CheckPost(c *client.Forum, post *models.Post) {

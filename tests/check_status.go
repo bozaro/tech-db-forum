@@ -32,28 +32,28 @@ func CheckStatus(c *client.Forum, f *Factory) {
 	user := f.CreateUser(c, nil)
 	status.User++
 	_, err = c.Operations.Status(operations.NewStatusParams().
-		WithContext(Expected(200, &status, nil)))
+		WithContext(Expected(200, status, nil)))
 	CheckNil(err)
 
 	// Add forum
 	forum := f.CreateForum(c, nil, user)
 	status.Forum++
 	_, err = c.Operations.Status(operations.NewStatusParams().
-		WithContext(Expected(200, &status, nil)))
+		WithContext(Expected(200, status, nil)))
 	CheckNil(err)
 
 	// Add thread
 	thread := f.CreateThread(c, nil, forum, user)
 	status.Thread++
 	_, err = c.Operations.Status(operations.NewStatusParams().
-		WithContext(Expected(200, &status, nil)))
+		WithContext(Expected(200, status, nil)))
 	CheckNil(err)
 
 	// Add post
 	f.CreatePost(c, nil, thread)
 	status.Post++
 	_, err = c.Operations.Status(operations.NewStatusParams().
-		WithContext(Expected(200, &status, nil)))
+		WithContext(Expected(200, status, nil)))
 	CheckNil(err)
 }
 

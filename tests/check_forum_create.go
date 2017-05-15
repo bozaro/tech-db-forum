@@ -129,6 +129,6 @@ func CheckForumCreateConflict(c *client.Forum, f *Factory, m *Modify) {
 	// Check
 	_, err := c.Operations.ForumCreate(operations.NewForumCreateParams().
 		WithForum(conflict_forum).
-		WithContext(Expected(409, &forum, nil)))
+		WithContext(Expected(409, forum, nil)))
 	CheckIsType(operations.NewForumCreateConflict(), err)
 }

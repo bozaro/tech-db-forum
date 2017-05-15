@@ -77,37 +77,37 @@ func CheckUserCreateConflict(c *client.Forum, f *Factory, m *Modify) {
 	user1 := f.CreateUser(c, nil)
 	user2 := f.CreateUser(c, nil)
 
-	expected := []models.User{}
+	expected := models.Users{}
 	conflict_user := f.RandomUser()
 
 	// Email
 	switch m.Int(4) {
 	case 1:
 		conflict_user.Email = user1.Email
-		expected = append(expected, *user1)
+		expected = append(expected, user1)
 	case 2:
 		conflict_user.Email = strfmt.Email(strings.ToLower(user1.Email.String()))
-		expected = append(expected, *user1)
+		expected = append(expected, user1)
 	case 3:
 		conflict_user.Email = strfmt.Email(strings.ToUpper(user1.Email.String()))
-		expected = append(expected, *user1)
+		expected = append(expected, user1)
 	}
 
 	// Nickname
 	switch m.Int(5) {
 	case 1:
 		conflict_user.Nickname = user2.Nickname
-		expected = append(expected, *user2)
+		expected = append(expected, user2)
 	case 2:
 		conflict_user.Nickname = strings.ToLower(user2.Nickname)
-		expected = append(expected, *user2)
+		expected = append(expected, user2)
 	case 3:
 		conflict_user.Nickname = strings.ToUpper(user2.Nickname)
-		expected = append(expected, *user2)
+		expected = append(expected, user2)
 	case 4:
 		conflict_user.Nickname = user1.Nickname
 		if len(expected) == 0 {
-			expected = append(expected, *user1)
+			expected = append(expected, user1)
 		}
 	}
 
@@ -119,7 +119,7 @@ func CheckUserCreateConflict(c *client.Forum, f *Factory, m *Modify) {
 			WithNickname(nickname).
 			WithProfile(conflict_user).
 			WithContext(Expected(409, &expected, func(users interface{}) interface{} {
-				result := UserByNickname(reflect.ValueOf(users).Elem().Interface().([]models.User))
+				result := UserByNickname(reflect.ValueOf(users).Elem().Interface().(models.Users))
 				sort.Sort(result)
 				return result
 			})))

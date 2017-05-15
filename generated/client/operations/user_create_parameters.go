@@ -136,7 +136,9 @@ func (o *UserCreateParams) SetProfile(profile *models.User) {
 // WriteToRequest writes these params to a swagger request
 func (o *UserCreateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
-	r.SetTimeout(o.timeout)
+	if err := r.SetTimeout(o.timeout); err != nil {
+		return err
+	}
 	var res []error
 
 	// path param nickname
