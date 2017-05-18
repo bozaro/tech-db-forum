@@ -60,7 +60,7 @@ func FillUsers(perf *Perf, parallel int, timeout time.Time, count int) {
 	}
 
 	// wait for the workers to finish
-	waitWaitGroup(&wg, timeout)
+	waitWaitGroup(&wg, timeout, count, &need)
 }
 
 func FillThreads(perf *Perf, parallel int, timeout time.Time, count int) {
@@ -100,7 +100,7 @@ func FillThreads(perf *Perf, parallel int, timeout time.Time, count int) {
 	}
 
 	// wait for the workers to finish
-	waitWaitGroup(&wg, timeout)
+	waitWaitGroup(&wg, timeout, count, &need)
 }
 
 func FillPosts(perf *Perf, parallel int, timeout time.Time, count int, batchSize int) {
@@ -153,7 +153,7 @@ func FillPosts(perf *Perf, parallel int, timeout time.Time, count int, batchSize
 	}
 
 	// wait for the workers to finish
-	waitWaitGroup(&wg, timeout)
+	waitWaitGroup(&wg, timeout, count, &need)
 }
 
 func VoteThreads(perf *Perf, parallel int, timeout time.Time, count int) {
@@ -202,26 +202,36 @@ func VoteThreads(perf *Perf, parallel int, timeout time.Time, count int) {
 	}
 
 	// wait for the workers to finish
-	waitWaitGroup(&wg, timeout)
+	waitWaitGroup(&wg, timeout, count, &need)
 }
 
-func waitWaitGroup(wg *sync.WaitGroup, timeout time.Time) bool {
+func waitWaitGroup(wg *sync.WaitGroup, timeout time.Time, total int, need *int32) bool {
 	done := make(chan struct{})
 	go func() {
 		wg.Wait()
 		close(done)
 	}()
 
-	delta := timeout.Sub(time.Now())
-	if delta <= time.Second*1 {
-		delta = time.Second * 1
+	logProgress := func() {
+		completed := total - int(atomic.LoadInt32(need))
+		if completed > total {
+			completed = total
+		}
+		log.Infof("  %d of %d (%.2f%%)", completed, total, 100*float32(completed)/float32(total))
 	}
-	select {
-	case <-done:
-		return true
-	case <-time.After(delta):
-		log.Panic("Timeout")
-		return false
+
+	for {
+		select {
+		case <-done:
+			logProgress()
+			return true
+		case <-time.After(time.Second * 10):
+			logProgress()
+		}
+		if time.Now().After(timeout) {
+			log.Panic("Timeout")
+			return false
+		}
 	}
 }
 
