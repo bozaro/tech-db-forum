@@ -6,6 +6,5 @@ install:
 - go get -v github.com/mailru/easyjson/...
 - go get -v github.com/tinylib/msgp
 - go generate -x .
-- go generate -x ./tests
 script:
 - go build .

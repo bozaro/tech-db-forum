@@ -4,9 +4,6 @@ import (
 	"github.com/go-openapi/strfmt"
 )
 
-//go:generate msgp
-//msgp:shim strfmt.DateTime as:int64 using:dateTimeToInt64/int64ToDateTime
-//msgp:shim strfmt.Email as:string using:(strfmt.Email).String/strfmt.Email
 import (
 	"math/rand"
 	"sort"
@@ -17,7 +14,6 @@ import (
 type PVersion uint32
 type PHash uint32
 
-//msgp:ignore PerfData
 type PerfData struct {
 	mutex sync.RWMutex
 
@@ -40,7 +36,6 @@ type PerfData struct {
 	threadBySlug      map[string]*PThread
 }
 
-//msgp:ignore PStatus
 type PStatus struct {
 	Version PVersion
 	Forum   int32
@@ -50,49 +45,49 @@ type PStatus struct {
 }
 
 type PUser struct {
-	Version      PVersion     `msg:"-"`
-	AboutHash    PHash        `msg:"about"`
-	Email        strfmt.Email `msg:"email"`
-	FullnameHash PHash        `msg:"name"`
-	Nickname     string       `msg:"nick"`
+	Version      PVersion
+	AboutHash    PHash
+	Email        strfmt.Email
+	FullnameHash PHash
+	Nickname     string
 }
 
 type PThread struct {
 	mutex sync.RWMutex
 
-	Version     PVersion         `msg:"-"`
-	ID          int32            `msg:"id"`
-	Slug        string           `msg:"slug"`
-	Author      *PUser           `msg:"-"`
-	Forum       *PForum          `msg:"-"`
-	MessageHash PHash            `msg:"message"`
-	TitleHash   PHash            `msg:"title"`
-	Created     strfmt.DateTime  `msg:"created"`
-	Voices      map[*PUser]int32 `msg:"-"`
-	Votes       int32            `msg:"-"`
-	Posts       int32            `msg:"-"`
+	Version     PVersion
+	ID          int32
+	Slug        string
+	Author      *PUser
+	Forum       *PForum
+	MessageHash PHash
+	TitleHash   PHash
+	Created     strfmt.DateTime
+	Voices      map[*PUser]int32
+	Votes       int32
+	Posts       int32
 }
 
 type PForum struct {
-	Version   PVersion `msg:"-"`
-	Posts     int64    `msg:"-"`
-	Slug      string   `msg:"slug"`
-	Threads   int32    `msg:"-"`
-	TitleHash PHash    `msg:"title"`
-	User      *PUser   `msg:"-"`
+	Version   PVersion
+	Posts     int64
+	Slug      string
+	Threads   int32
+	TitleHash PHash
+	User      *PUser
 }
 
 type PPost struct {
-	Version     PVersion        `msg:"-"`
-	ID          int64           `msg:"id"`
-	Author      *PUser          `msg:"-"`
-	Thread      *PThread        `msg:"-"`
-	Parent      *PPost          `msg:"-"`
-	Created     strfmt.DateTime `msg:"created"`
-	IsEdited    bool            `msg:"edited"`
-	MessageHash PHash           `msg:"message"`
-	Index       int32           `msg:"-"`
-	Path        []int32         `msg:"-"`
+	Version     PVersion
+	ID          int64
+	Author      *PUser
+	Thread      *PThread
+	Parent      *PPost
+	Created     strfmt.DateTime
+	IsEdited    bool
+	MessageHash PHash
+	Index       int32
+	Path        []int32
 }
 
 func NewPerfData(config *PerfConfig) *PerfData {
