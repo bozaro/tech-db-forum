@@ -20,6 +20,8 @@ const (
 	KEY_STATUS = "expected-status"
 	KEY_BODY   = "expected-body"
 	KEY_FILTER = "expected-filter"
+
+	MaxIdleConnections int = 20
 )
 
 type Filter func(interface{}) interface{}
@@ -35,7 +37,8 @@ var HttpTransport *http.Transport
 
 func init() {
 	HttpTransport = &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		MaxIdleConnsPerHost: MaxIdleConnections,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 	}
 }
 
