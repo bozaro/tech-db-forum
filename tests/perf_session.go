@@ -39,8 +39,10 @@ func (self *PerfSession) CheckHash(expected PHash, actual string, message string
 	}
 }
 func (self *PerfSession) CheckDate(expected *strfmt.DateTime, actual *strfmt.DateTime, message string) {
-	if !time.Time(*expected).UTC().Equal(time.Time(*actual).UTC()) {
-		log.Panicf("Unexpected data (%s != %s): %s", expected.String(), actual.String(), message)
+	expectedUtc := time.Time(*expected).UTC()
+	actualUtc := time.Time(*actual).UTC()
+	if !expectedUtc.Equal(actualUtc) {
+		log.Panicf("Unexpected data (%v != %v): %s", expectedUtc.String(), actualUtc.String(), message)
 	}
 }
 func (self *PerfSession) CheckVersion(before PVersion, after PVersion) bool {
