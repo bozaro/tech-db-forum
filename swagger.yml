@@ -390,11 +390,13 @@ paths:
         minimum: 1
         maximum: 10000
         description: Максимальное кол-во возвращаемых записей.
-      - name: marker
+      - name: since
         in: query
-        type: string
+        type: number
+        format: int64
         description: |
-          Маркер для определения идентификатора текущей страницы сообщений (маркер может быть получен из какого-либо предыдущего запроса).
+          Идентификатор поста, после которого будут выводиться записи
+          (пост с данным идентификатором в результат не попадает).
       - name: sort
         in: query
         type: string
@@ -424,7 +426,7 @@ paths:
           description: |
             Информация о сообщениях форума.
           schema:
-            $ref: '#/definitions/PostPage'
+            $ref: '#/definitions/Posts'
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
@@ -827,20 +829,6 @@ definitions:
         $ref: '#/definitions/Thread'
       forum:
         $ref: '#/definitions/Forum'
-  PostPage:
-    type: object
-    description: |
-      Страница с результатом поиска постов.
-    properties:
-      posts:
-        type: array
-        items:
-          $ref: '#/definitions/Post'
-      marker:
-        type: string
-        description: |
-          Маркер для получения следующей старницы.
-          Для пустой страницы должен передаваться исходный маркер.
   Vote:
     type: object
     description: |
