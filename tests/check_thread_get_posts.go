@@ -171,7 +171,7 @@ func (f *Factory) CreateTree(c *client.Forum, thread *models.Thread, tree [][]in
 	return result
 }
 
-func SortPosts(posts []OrderedPost, desc bool, limitType func(OrderedPost) int, limit int) [][]*models.Post {
+func SortPosts(posts []OrderedPost, desc bool, limitType func(OrderedPost) int, limit int) []models.Posts {
 	if limit <= 0 {
 		limit = len(posts)
 	}
@@ -184,8 +184,8 @@ func SortPosts(posts []OrderedPost, desc bool, limitType func(OrderedPost) int, 
 		}
 	}
 	// Pagination
-	result := [][]*models.Post{}
-	page := []*models.Post{}
+	result := []models.Posts{}
+	page := models.Posts{}
 	last := -1
 	size := 0
 	for _, post := range sorted {
@@ -286,14 +286,6 @@ func CheckThreadGetPosts(c *client.Forum, f *Factory, m *Modify, tree [][]int, l
 	id := m.SlugOrId(thread)
 
 	// Check read all
-	fake_marker := "some marker"
-	marker_filter := func(data interface{}) interface{} {
-		page := data.(*models.PostPage)
-		if len(page.Marker) > 0 {
-			page.Marker = fake_marker
-		}
-		return filterPostPage(page)
-	}
 	all_posts := SortPosts(posts_tree, desc != nil && *desc, limitType, 0)[0]
 	full_size := int32(len(all_posts) + 10)
 	c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
@@ -301,28 +293,22 @@ func CheckThreadGetPosts(c *client.Forum, f *Factory, m *Modify, tree [][]int, l
 		WithSort(sortType).
 		WithDesc(desc).
 		WithLimit(&full_size).
-		WithContext(Expected(200, &models.PostPage{
-			fake_marker,
-			all_posts,
-		}, marker_filter)))
+		WithContext(Expected(200, &all_posts, filterPostPage)))
 
 	if limit > 0 {
 		// Check read records page by page
 		batches := SortPosts(posts_tree, desc != nil && *desc, limitType, int(limit))
-		var marker *string = nil
+		var lastId *int64 = nil
 		for _, batch := range batches {
-			page, err := c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
+			_, err := c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 				WithSlugOrID(id).
 				WithSort(sortType).
 				WithLimit(&limit).
 				WithDesc(desc).
-				WithMarker(marker).
-				WithContext(Expected(200, &models.PostPage{
-					fake_marker,
-					batch,
-				}, marker_filter)))
+				WithSince(lastId).
+				WithContext(Expected(200, &batch, filterPostPage)))
 			CheckNil(err)
-			marker = &page.Payload.Marker
+			lastId = &batch[len(batch)-1].ID
 		}
 
 		// Check read after all
@@ -331,17 +317,14 @@ func CheckThreadGetPosts(c *client.Forum, f *Factory, m *Modify, tree [][]int, l
 			WithSort(sortType).
 			WithLimit(&limit).
 			WithDesc(desc).
-			WithMarker(marker).
-			WithContext(Expected(200, &models.PostPage{
-				Marker: *marker,
-				Posts:  []*models.Post{},
-			}, filterPostPage)))
+			WithSince(lastId).
+			WithContext(Expected(200, &models.Posts{}, filterPostPage)))
 	}
 }
 
 func filterPostPage(data interface{}) interface{} {
-	page := data.(*models.PostPage)
-	for _, post := range page.Posts {
+	page := data.(*models.Posts)
+	for _, post := range *page {
 		if post.Created != nil {
 			created := strfmt.DateTime(time.Time(*post.Created).UTC())
 			post.Created = &created
@@ -376,17 +359,22 @@ func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 		WithSlugOrID(slugOrId).
 		WithLimit(&limit).
 		WithSort(&order).
-		WithMarker(nil).
+		WithSince(nil).
 		WithDesc(desc).
 		WithContext(Expected(200, nil, nil)))
 
 	CheckNil(err)
 
+	var last_id *int64 = nil
+	if len(part1.Payload) > 0 {
+		last_id = &part1.Payload[len(part1.Payload)-1].ID
+	}
+
 	part2, err := p.c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 		WithSlugOrID(slugOrId).
 		WithLimit(&limit).
 		WithSort(&order).
-		WithMarker(&part1.Payload.Marker).
+		WithSince(last_id).
 		WithDesc(desc).
 		WithContext(Expected(200, nil, nil)))
 
@@ -456,8 +444,8 @@ func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 					item.Validate(v, actual[i], item.Version, fmt.Sprintf("Post[%d]", i))
 				}
 			}
-			validate(expected1, part1.Payload.Posts)
-			validate(expected2, part2.Payload.Posts)
+			validate(expected1, part1.Payload)
+			validate(expected2, part2.Payload)
 
 			v.Finish(version, thread.Version)
 		}
