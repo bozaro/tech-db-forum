@@ -107,7 +107,7 @@ func CheckForumCreateUserNotFound(c *client.Forum, f *Factory) {
 
 	_, err := c.Operations.ForumCreate(operations.NewForumCreateParams().
 		WithForum(forum).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find user with nickname: %s", user.Nickname)))
 	CheckIsType(err, operations.NewForumCreateNotFound())
 }
 

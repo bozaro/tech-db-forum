@@ -272,10 +272,10 @@ func CheckForumGetUsersEmpty(c *client.Forum, f *Factory, m *Modify) {
 	// Desc
 	switch m.Int(3) {
 	case 1:
-		v := bool(true)
+		v := true
 		desc = &v
 	case 2:
-		v := bool(false)
+		v := false
 		desc = &v
 	}
 
@@ -341,10 +341,10 @@ func CheckForumGetUsersNotFound(c *client.Forum, f *Factory, m *Modify) {
 	// Desc
 	switch m.Int(3) {
 	case 1:
-		v := bool(true)
+		v := true
 		desc = &v
 	case 2:
-		v := bool(false)
+		v := false
 		desc = &v
 	}
 
@@ -354,7 +354,7 @@ func CheckForumGetUsersNotFound(c *client.Forum, f *Factory, m *Modify) {
 		WithLimit(limit).
 		WithSince(since).
 		WithDesc(desc).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find forum by slug: %s", forum.Slug)))
 	CheckIsType(operations.NewForumGetUsersNotFound(), err)
 }
 
@@ -430,6 +430,6 @@ func PerfForumGetUsersNotFound(p *Perf, f *Factory) {
 		WithLimit(&limit).
 		WithSince(since).
 		WithDesc(desc).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find forum by slug: %s", slug)))
 	CheckIsType(operations.NewForumGetUsersNotFound(), err)
 }

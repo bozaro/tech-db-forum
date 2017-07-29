@@ -85,12 +85,12 @@ func CheckForumGetThreadsSimple(c *client.Forum, f *Factory, m *Modify) {
 	small := time.Millisecond
 	switch m.Int(3) {
 	case 1:
-		v := bool(true)
+		v := true
 		small = -small
 		desc = &v
 		sort.Sort(sort.Reverse(ThreadByCreated(threads)))
 	case 2:
-		v := bool(false)
+		v := false
 		desc = &v
 	}
 
@@ -150,10 +150,10 @@ func CheckForumGetThreadsNotFound(c *client.Forum, f *Factory, m *Modify) {
 	// Desc
 	switch m.Int(3) {
 	case 1:
-		v := bool(true)
+		v := true
 		desc = &v
 	case 2:
-		v := bool(false)
+		v := false
 		desc = &v
 	}
 
@@ -163,7 +163,7 @@ func CheckForumGetThreadsNotFound(c *client.Forum, f *Factory, m *Modify) {
 		WithLimit(limit).
 		WithSince(since).
 		WithDesc(desc).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find forum by slug: %s", forum.Slug)))
 	CheckIsType(operations.NewForumGetThreadsNotFound(), err)
 }
 
@@ -237,6 +237,6 @@ func PerfForumGetThreadsNotFound(p *Perf, f *Factory) {
 		WithLimit(&limit).
 		WithSince(since).
 		WithDesc(desc).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find forum by slug: %s", slug)))
 	CheckIsType(operations.NewForumGetThreadsNotFound(), err)
 }

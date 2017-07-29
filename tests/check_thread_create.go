@@ -159,7 +159,7 @@ func CheckThreadCreateNoAuthor(c *client.Forum, f *Factory) {
 	_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
 		WithSlug(forum.Slug).
 		WithThread(thread).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find thread author by nickname: %s", thread.Author)))
 	CheckIsType(operations.NewThreadCreateNotFound(), err)
 }
 
@@ -171,7 +171,7 @@ func CheckThreadCreateNoForum(c *client.Forum, f *Factory) {
 	_, err := c.Operations.ThreadCreate(operations.NewThreadCreateParams().
 		WithSlug(forum.Slug).
 		WithThread(thread).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find thread forum by slug: %s", forum.Slug)))
 	CheckIsType(operations.NewThreadCreateNotFound(), err)
 }
 

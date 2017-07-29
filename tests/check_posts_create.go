@@ -234,13 +234,14 @@ func CheckPostCreateNoThread(c *client.Forum, f *Factory, m *Modify) {
 	_, err = c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(THREAD_FAKE_ID).
 		WithPosts(posts).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find post thread by id: %d", THREAD_FAKE_ID)))
 	CheckIsType(operations.NewPostsCreateNotFound(), err)
 
+	slug := f.RandomThread().Slug
 	_, err = c.Operations.PostsCreate(operations.NewPostsCreateParams().
-		WithSlugOrID(f.RandomThread().Slug).
+		WithSlugOrID(slug).
 		WithPosts(posts).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find post thread by slug: %s", slug)))
 	CheckIsType(operations.NewPostsCreateNotFound(), err)
 }
 
@@ -252,7 +253,7 @@ func CheckPostCreateNoAuthor(c *client.Forum, f *Factory, m *Modify) {
 	_, err := c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(m.SlugOrId(thread)).
 		WithPosts([]*models.Post{post}).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find post author by nickname: %s", post.Author)))
 	CheckIsType(operations.NewPostsCreateNotFound(), err)
 }
 
@@ -268,7 +269,7 @@ func CheckPostCreateInvalidParent(c *client.Forum, f *Factory, m *Modify) {
 	_, err := c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(m.SlugOrId(thread)).
 		WithPosts([]*models.Post{post}).
-		WithContext(Expected(409, nil, nil)))
+		WithContext(ExpectedError(409, "Parent post was created in another thread")))
 	CheckIsType(operations.NewPostsCreateConflict(), err)
 }
 

@@ -122,7 +122,7 @@ func CheckPostGetOneNotFound(c *client.Forum, f *Factory, m *Modify) {
 	_, err := c.Operations.PostGetOne(operations.NewPostGetOneParams().
 		WithID(POST_FAKE_ID).
 		WithRelated(related).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find post with id: %d", POST_FAKE_ID)))
 	CheckIsType(err, operations.NewPostGetOneNotFound())
 }
 
@@ -185,7 +185,7 @@ func PerfPostGetOneNotFound(p *Perf, f *Factory) {
 	_, err := p.c.Operations.PostGetOne(operations.NewPostGetOneParams().
 		WithID(id).
 		WithRelated(related).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find post with id: %d", id)))
 	CheckIsType(operations.NewPostGetOneNotFound(), err)
 }
 

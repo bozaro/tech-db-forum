@@ -56,12 +56,12 @@ func CheckThreadGetOneNotFound(c *client.Forum, f *Factory) {
 	thread := f.RandomThread()
 	_, err := c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
 		WithSlugOrID(thread.Slug).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find thread by slug: %s", thread.Slug)))
 	CheckIsType(operations.NewThreadGetOneNotFound(), err)
 
 	_, err = c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
 		WithSlugOrID(THREAD_FAKE_ID).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find thread by id: %d", THREAD_FAKE_ID)))
 	CheckIsType(operations.NewThreadGetOneNotFound(), err)
 }
 
@@ -103,6 +103,6 @@ func PerfThreadGetOneNotFound(p *Perf, f *Factory) {
 	slugOrId := GetSlugOrId(slug, int64(id))
 	_, err := p.c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
 		WithSlugOrID(slugOrId).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find thread by slug or id: %s", slugOrId)))
 	CheckIsType(operations.NewThreadGetOneNotFound(), err)
 }

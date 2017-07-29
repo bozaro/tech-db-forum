@@ -112,6 +112,6 @@ func CheckPostUpdateNotFound(c *client.Forum, f *Factory) {
 		WithPost(&models.PostUpdate{
 			Message: post.Message,
 		}).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find post with id: %d", post.ID)))
 	CheckIsType(operations.NewPostUpdateNotFound(), err)
 }

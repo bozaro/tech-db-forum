@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/aryann/difflib"
+	"github.com/bozaro/tech-db-forum/generated/models"
 	"github.com/go-openapi/swag"
 	"golang.org/x/net/context"
 	"io/ioutil"
@@ -42,6 +43,15 @@ func init() {
 	}
 }
 
+func ExpectedError(statusCode int, format string, a ...interface{}) context.Context {
+	message := fmt.Sprintf(format, a...)
+	return Expected(statusCode, &models.Error{Message: message}, func(data interface{}) interface{} {
+		e := data.(*models.Error)
+		e.Message = message
+		return data
+	})
+}
+
 func Expected(statusCode int, body interface{}, prepare Filter) context.Context {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, KEY_STATUS, statusCode)
@@ -52,7 +62,6 @@ func Expected(statusCode int, body interface{}, prepare Filter) context.Context 
 		ctx = context.WithValue(ctx, KEY_FILTER, prepare)
 	}
 	return ctx
-
 }
 
 func NewValidator(ctx context.Context, report *Report) *Validator {
