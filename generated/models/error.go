@@ -10,21 +10,19 @@ import (
 	"github.com/go-openapi/swag"
 )
 
-// ThreadUpdate Сообщение для обновления ветки обсуждения на форуме.
-// Пустые параметры остаются без изменений.
-//
-// swagger:model ThreadUpdate
-type ThreadUpdate struct {
+// Error error
+// swagger:model Error
+type Error struct {
 
-	// Описание ветки обсуждения.
+	// Текстовое описание ошибки.
+	// В процессе проверки API никаких проверок на содерижимое данного описание не делается.
+	//
+	// Read Only: true
 	Message string `json:"message,omitempty"`
-
-	// Заголовок ветки обсуждения.
-	Title string `json:"title,omitempty"`
 }
 
-// Validate validates this thread update
-func (m *ThreadUpdate) Validate(formats strfmt.Registry) error {
+// Validate validates this error
+func (m *Error) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if len(res) > 0 {
@@ -34,7 +32,7 @@ func (m *ThreadUpdate) Validate(formats strfmt.Registry) error {
 }
 
 // MarshalBinary interface implementation
-func (m *ThreadUpdate) MarshalBinary() ([]byte, error) {
+func (m *Error) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -42,8 +40,8 @@ func (m *ThreadUpdate) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *ThreadUpdate) UnmarshalBinary(b []byte) error {
-	var res ThreadUpdate
+func (m *Error) UnmarshalBinary(b []byte) error {
+	var res Error
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}
