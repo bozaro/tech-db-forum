@@ -234,7 +234,7 @@ func CheckPostCreateNoThread(c *client.Forum, f *Factory, m *Modify) {
 	_, err = c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(THREAD_FAKE_ID).
 		WithPosts(posts).
-		WithContext(ExpectedError(404, "Can't find post thread by id: %d", THREAD_FAKE_ID)))
+		WithContext(ExpectedError(404, "Can't find post thread by id: %s", THREAD_FAKE_ID)))
 	CheckIsType(operations.NewPostsCreateNotFound(), err)
 
 	slug := f.RandomThread().Slug
