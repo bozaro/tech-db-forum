@@ -44,7 +44,7 @@ func CheckThreadVoteThreadNotFound(c *client.Forum, f *Factory) {
 			Nickname: user.Nickname,
 			Voice:    1,
 		}).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find thread by slug: %s", thread.Slug)))
 	CheckIsType(operations.NewThreadVoteNotFound(), err)
 
 	_, err = c.Operations.ThreadVote(operations.NewThreadVoteParams().
@@ -53,7 +53,7 @@ func CheckThreadVoteThreadNotFound(c *client.Forum, f *Factory) {
 			Nickname: user.Nickname,
 			Voice:    1,
 		}).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find thread by id: %d", THREAD_FAKE_ID)))
 	CheckIsType(operations.NewThreadVoteNotFound(), err)
 }
 
@@ -66,7 +66,7 @@ func CheckThreadVoteUserNotFound(c *client.Forum, f *Factory) {
 			Nickname: user.Nickname,
 			Voice:    1,
 		}).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find user by nickname: %s", user.Nickname)))
 	CheckIsType(operations.NewThreadVoteNotFound(), err)
 }
 

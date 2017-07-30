@@ -37,6 +37,8 @@ paths:
         404:
           description: |
             Владелец форума не найден.
+          schema:
+            $ref: '#/definitions/Error'
         409:
           description: |
             Форум уже присутсвует в базе данных.
@@ -66,6 +68,8 @@ paths:
         404:
           description: |
             Форум отсутсвует в системе.
+          schema:
+            $ref: '#/definitions/Error'
   /forum/{slug}/create:
     post:
       summary: Создание ветки
@@ -95,6 +99,8 @@ paths:
         404:
           description: |
             Автор ветки или форум не найдены.
+          schema:
+            $ref: '#/definitions/Error'
         409:
           description: |
             Ветка обсуждения уже присутсвует в базе данных.
@@ -147,6 +153,8 @@ paths:
         404:
           description: |
             Форум отсутсвует в системе.
+          schema:
+            $ref: '#/definitions/Error'
   /forum/{slug}/threads:
     get:
       summary: Список ветвей обсужления форума
@@ -192,6 +200,8 @@ paths:
         404:
           description: |
             Форум отсутсвует в системе.
+          schema:
+            $ref: '#/definitions/Error'
   /post/{id}/details:
     get:
       summary: Получение информации о ветке обсуждения
@@ -229,6 +239,8 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
+          schema:
+            $ref: '#/definitions/Error'
     post:
       summary: Изменение сообщения
       description: |
@@ -258,6 +270,8 @@ paths:
         404:
           description: |
             Сообщение отсутсвует в форуме.
+          schema:
+            $ref: '#/definitions/Error'
   /service/clear:
     post:
       consumes:
@@ -314,9 +328,13 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутствует в базе данных.
+          schema:
+            $ref: '#/definitions/Error'
         409:
           description: |
             Хотя бы один родительский пост отсутсвует в текущей ветке обсуждения.
+          schema:
+            $ref: '#/definitions/Error'
   /thread/{slug_or_id}/details:
     get:
       summary: Получение информации о ветке обсуждения
@@ -339,6 +357,8 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
+          schema:
+            $ref: '#/definitions/Error'
     post:
       summary: Обновление ветки
       description: |
@@ -366,6 +386,8 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
+          schema:
+            $ref: '#/definitions/Error'
   /thread/{slug_or_id}/posts:
     get:
       summary: Сообщения данной ветви обсуждения
@@ -430,6 +452,8 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
+          schema:
+            $ref: '#/definitions/Error'
   /thread/{slug_or_id}/vote:
     post:
       summary: Проголосовать за ветвь обсуждения
@@ -461,6 +485,8 @@ paths:
         404:
           description: |
             Ветка обсуждения отсутсвует в форуме.
+          schema:
+            $ref: '#/definitions/Error'
   /user/{nickname}/create:
     post:
       summary: Создание нового пользователя
@@ -514,6 +540,8 @@ paths:
         404:
           description: |
             Пользователь отсутсвует в системе.
+          schema:
+            $ref: '#/definitions/Error'
     post:
       summary: Изменение данных о пользователе
       description: |
@@ -540,10 +568,25 @@ paths:
         404:
           description: |
             Пользователь отсутсвует в системе.
+          schema:
+            $ref: '#/definitions/Error'
         409:
           description: |
             Новые данные профиля пользователя конфликтуют с имеющимися пользователями.
+          schema:
+            $ref: '#/definitions/Error'
 definitions:
+  Error:
+    type: object
+    properties:
+      message:
+        type: string
+        readOnly: true
+        description: |
+          Текстовое описание ошибки.
+          В процессе проверки API никаких проверок на содерижимое данного описание не делается.
+        example: |
+          Can't find user with id #42
   Status:
     type: object
     properties:

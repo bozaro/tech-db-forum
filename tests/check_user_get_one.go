@@ -54,7 +54,7 @@ func CheckUserGetOneNotFound(c *client.Forum, f *Factory) {
 	user := f.RandomUser()
 	_, err := c.Operations.UserGetOne(operations.NewUserGetOneParams().
 		WithNickname(user.Nickname).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find user by nickname: %s", user.Nickname)))
 	CheckIsType(operations.NewUserGetOneNotFound(), err)
 }
 
@@ -92,6 +92,6 @@ func PerfUserGetOneNotFound(p *Perf, f *Factory) {
 	nickname := f.RandomNickname()
 	_, err := p.c.Operations.UserGetOne(operations.NewUserGetOneParams().
 		WithNickname(nickname).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find user by nickname: %s", nickname)))
 	CheckIsType(operations.NewUserGetOneNotFound(), err)
 }

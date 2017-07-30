@@ -109,7 +109,7 @@ func CheckThreadUpdateNotFound(c *client.Forum, f *Factory) {
 			Title:   thread.Title,
 			Message: thread.Message,
 		}).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find thread by slug: %s", thread.Slug)))
 	CheckIsType(operations.NewThreadUpdateNotFound(), err)
 
 	_, err = c.Operations.ThreadUpdate(operations.NewThreadUpdateParams().
@@ -118,6 +118,6 @@ func CheckThreadUpdateNotFound(c *client.Forum, f *Factory) {
 			Title:   thread.Title,
 			Message: thread.Message,
 		}).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find forum by id: %s", THREAD_FAKE_ID)))
 	CheckIsType(operations.NewThreadUpdateNotFound(), err)
 }

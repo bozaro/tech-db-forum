@@ -337,12 +337,12 @@ func CheckThreadGetPostsNotFound(c *client.Forum, f *Factory) {
 	thread := f.RandomThread()
 	_, err := c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 		WithSlugOrID(thread.Slug).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find thread by slug: %s", thread.Slug)))
 	CheckIsType(operations.NewThreadGetPostsNotFound(), err)
 
 	_, err = c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 		WithSlugOrID(THREAD_FAKE_ID).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find forum by id: %d", THREAD_FAKE_ID)))
 	CheckIsType(operations.NewThreadGetPostsNotFound(), err)
 }
 
@@ -471,7 +471,7 @@ func PerfThreadGetPostsNotFound(p *Perf, f *Factory) {
 		WithLimit(&limit).
 		WithSort(&order).
 		WithDesc(desc).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find thread by slug or id: %s", slugOrId)))
 	CheckIsType(operations.NewThreadGetPostsNotFound(), err)
 }
 

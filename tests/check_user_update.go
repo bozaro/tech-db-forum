@@ -114,7 +114,7 @@ func CheckUserUpdateNotFound(c *client.Forum, f *Factory) {
 	user := f.RandomUser()
 	_, err := c.Operations.UserUpdate(operations.NewUserUpdateParams().
 		WithNickname(user.Nickname).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find user by nickname: %s", user.Nickname)))
 	CheckIsType(operations.NewUserUpdateNotFound(), err)
 }
 
@@ -129,7 +129,7 @@ func CheckUserUpdateConflict(c *client.Forum, f *Factory, m *Modify) {
 	c.Operations.UserUpdate(operations.NewUserUpdateParams().
 		WithNickname(m.Case(user2.Nickname)).
 		WithProfile(update).
-		WithContext(Expected(409, nil, nil)))
+		WithContext(ExpectedError(409, "This email is already registered by user: %s", user1.Nickname)))
 
 	CheckUser(c, user1)
 	CheckUser(c, user2)

@@ -62,7 +62,7 @@ func CheckForumGetOneNotFound(c *client.Forum, f *Factory) {
 	forum := f.RandomForum()
 	_, err := c.Operations.ForumGetOne(operations.NewForumGetOneParams().
 		WithSlug(forum.Slug).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find forum with slug: %s", forum.Slug)))
 	CheckIsType(operations.NewForumGetOneNotFound(), err)
 }
 
@@ -119,6 +119,6 @@ func PerfForumGetOneNotFound(p *Perf, f *Factory) {
 	slug := f.RandomSlug()
 	_, err := p.c.Operations.ForumGetOne(operations.NewForumGetOneParams().
 		WithSlug(slug).
-		WithContext(Expected(404, nil, nil)))
+		WithContext(ExpectedError(404, "Can't find forum with slug: %s", slug)))
 	CheckIsType(operations.NewForumGetOneNotFound(), err)
 }
