@@ -107,6 +107,7 @@ func CheckPostUpdateCase(c *client.Forum, f *Factory) {
 
 func CheckPostUpdateNotFound(c *client.Forum, f *Factory) {
 	post := f.RandomPost()
+	post.ID = POST_FAKE_ID
 	_, err := c.Operations.PostUpdate(operations.NewPostUpdateParams().
 		WithID(post.ID).
 		WithPost(&models.PostUpdate{
