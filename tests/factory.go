@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const ABC_NICK = "0123456789abcdefghijklmnopqrstuvwxyz_."
+const ABC_NICK = "0123456789abcdefghijklmnopqrstuvwxyz"
 const ABC_SLUG = "0123456789abcdefghijklmnopqrstuvwxyz_-"
 const POST_FAKE_ID int64 = 2139800938
 const THREAD_FAKE_ID = "2139800939"
