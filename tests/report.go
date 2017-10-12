@@ -46,30 +46,35 @@ func (self *Report) Checkpoint(message string) bool {
 	return true
 }
 
-func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, delta *[]difflib.DiffRecord) {
+func (self *Report) RoundTrip(req *http.Request, res *http.Response, example *http.Response, delta *[]difflib.DiffRecord, err error) {
 	if self.Result == Failed {
 		return
 	}
-	if delta == nil && self.OnlyError {
+	if delta == nil && err == nil && self.OnlyError {
 		return
 	}
 	reportMessage := ReportMessage{
+		Failed:   delta != nil || err != nil,
 		Url:      req.URL.String(),
 		Request:  RequestInfo(req),
 		Response: ResponseInfo(res),
 		Example:  ResponseInfo(example),
 	}
-	if delta != nil {
-		reportMessage.Delta = template.HTML(DeltaToHtml(*delta))
-
+	if reportMessage.Failed {
 		log.Warningf("Request:\n%s", reportMessage.Request.String())
 		log.Warningf("Actual response:\n%s", reportMessage.Response.String())
 		if example != nil {
 			log.Warningf("Expected response like:\n%s", reportMessage.Example.String())
 		}
-		log.Errorf("Error:\n%s", DeltaToText(*delta))
-		//debug.PrintStack()
 		self.Result = Failed
+		if delta != nil {
+			reportMessage.Delta = template.HTML(DeltaToHtml(*delta))
+			log.Errorf("Delta:\n%s", DeltaToText(*delta))
+		}
+		if err != nil {
+			log.Errorf("Error:\n%s", err)
+			reportMessage.Error = err.Error()
+		}
 	}
 	// Добавляем сообщение в отчет
 	if len(self.Pass) == 0 {
@@ -101,11 +106,13 @@ type ReportHttp struct {
 }
 
 type ReportMessage struct {
+	Failed   bool
 	Url      string
 	Delta    template.HTML
 	Request  *ReportHttp
 	Response *ReportHttp
 	Example  *ReportHttp
+	Error    string
 }
 
 func DeltaToText(delta []difflib.DiffRecord) string {

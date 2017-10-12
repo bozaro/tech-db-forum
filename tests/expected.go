@@ -107,16 +107,15 @@ func (self *Validator) validate(req *http.Request, res *http.Response) bool {
 					Delta:   difflib.RightOnly,
 					Payload: fmt.Sprintf("Status: %d %s", res.StatusCode, http.StatusText(res.StatusCode)),
 				},
-			})
+			}, nil)
 			return false
 		}
-		delta := GetDelta(body, self.body, self.filter)
-		if (res.StatusCode != self.code) || (delta != nil) {
-			self.report.RoundTrip(req, res, self.Example(req), delta)
+		delta, err := GetDelta(body, self.body, self.filter)
+		if (res.StatusCode != self.code) || (delta != nil) || (err != nil) {
+			self.report.RoundTrip(req, res, self.Example(req), delta, err)
 			return false
-		} else {
-			self.report.RoundTrip(req, res, nil, nil)
 		}
+		self.report.RoundTrip(req, res, nil, nil, nil)
 	}
 	return true
 }
@@ -184,21 +183,21 @@ func Colorize(color int, message string) string {
 	return fmt.Sprintf("\x1b[%dm%s\x1b[0m", color, message)
 }
 
-func GetDelta(data []byte, expected interface{}, prepare Filter) *[]difflib.DiffRecord {
+func GetDelta(data []byte, expected interface{}, prepare Filter) (*[]difflib.DiffRecord, error) {
 	if expected == nil {
-		return nil
+		return nil, nil
 	}
 	expected_obj := prepare(expected)
 	var actual interface{} = reflect.New(reflect.TypeOf(expected).Elem()).Interface()
 	if err := swag.ReadJSON(data, actual); err != nil {
-		return GetDiff(string(data), ToJsonPretty(expected_obj))
+		return nil, err
 	}
 
 	actual_obj := prepare(actual)
 	actual_json, _ := swag.WriteJSON(actual_obj)
 	expected_json, _ := swag.WriteJSON(expected_obj)
 	if bytes.Equal(expected_json, actual_json) {
-		return nil
+		return nil, nil
 	}
-	return GetDiff(ToJsonPretty(actual_obj), ToJsonPretty(expected_obj))
+	return GetDiff(ToJsonPretty(actual_obj), ToJsonPretty(expected_obj)), nil
 }

@@ -112,8 +112,8 @@
         <ol>
             {{range .Messages}}
             {{$rid := uid}}
-            <li id="{{$rid}}" class="{{ if not .Delta }} hidden {{ end }}">
-                <div class="roundtrip_title {{ if .Delta}} failed {{ else }} success {{ end }}"
+            <li id="{{$rid}}" class="{{ if not .Failed }} hidden {{ end }}">
+                <div class="roundtrip_title {{ if .Failed }} failed {{ else }} success {{ end }}"
                      onclick="Toggle('{{ $rid }}')">
                     {{ .Url }}
                 </div>
@@ -137,6 +137,16 @@
 
                     {{if and .Example ( ne .Delta "" ) }}
                     {{template "message" dict "Payload" .Example "Title" "Ожидался ответ вида" }}
+                    {{end}}
+
+                    {{if ne .Error "" }}
+                    <div class="tabs">
+                        <div class="tab_title">Ошибка</div>
+                        <div style="clear:both"></div>
+                        <div class="tab_content">
+                            <pre><code class="nohighlight">{{.Error}}</code></pre>
+                        </div>
+                    </div>
                     {{end}}
                 </div>
             </li>
