@@ -217,10 +217,14 @@ func CheckPostCreateSameTime(c *client.Forum, f *Factory, m *Modify) {
 
 func CheckPostCreateEmpty(c *client.Forum, f *Factory, m *Modify) {
 	thread := f.CreateThread(c, nil, nil, nil)
-	if m.Bool() {
-		thread.Slug = ""
-	}
 	f.CreatePosts(c, []*models.Post{}, thread)
+
+	_, err := c.Operations.PostsCreate(operations.NewPostsCreateParams().
+		WithSlugOrID(m.SlugOrId(thread)).
+		WithPosts([]*models.Post{}).
+		WithContext(Expected(201, &models.Posts{}, nil)))
+
+	CheckNil(err)
 }
 
 func CheckPostCreateNoThread(c *client.Forum, f *Factory, m *Modify) {
