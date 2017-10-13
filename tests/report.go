@@ -13,7 +13,7 @@ import (
 type ResultType int
 
 const (
-	Failed ResultType = iota
+	Failed  ResultType = iota
 	Skipped
 	Success
 )
@@ -28,7 +28,7 @@ func (self *Report) AddError(err interface{}) {
 		pass := &self.Pass[len(self.Pass)-1]
 		pass.Failure = fmt.Sprintf("%s", err)
 		self.Result = Failed
-		log.Error(err)
+		log.Errorf("%v", err)
 	}
 }
 
