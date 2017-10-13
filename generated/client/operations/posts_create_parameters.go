@@ -143,6 +143,10 @@ func (o *PostsCreateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.R
 	}
 	var res []error
 
+	if err := r.SetBodyParam(o.Posts); err != nil {
+		return err
+	}
+
 	// path param slug_or_id
 	if err := r.SetPathParam("slug_or_id", o.SlugOrID); err != nil {
 		return err

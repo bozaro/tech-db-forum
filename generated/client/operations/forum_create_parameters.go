@@ -127,10 +127,12 @@ func (o *ForumCreateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.R
 	}
 	var res []error
 
-	if o.Forum != nil {
-		if err := r.SetBodyParam(o.Forum); err != nil {
-			return err
-		}
+	if o.Forum == nil {
+		o.Forum = new(models.Forum)
+	}
+
+	if err := r.SetBodyParam(o.Forum); err != nil {
+		return err
 	}
 
 	if len(res) > 0 {

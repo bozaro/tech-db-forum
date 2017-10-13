@@ -148,10 +148,12 @@ func (o *ThreadVoteParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Re
 		return err
 	}
 
-	if o.Vote != nil {
-		if err := r.SetBodyParam(o.Vote); err != nil {
-			return err
-		}
+	if o.Vote == nil {
+		o.Vote = new(models.Vote)
+	}
+
+	if err := r.SetBodyParam(o.Vote); err != nil {
+		return err
 	}
 
 	if len(res) > 0 {

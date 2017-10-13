@@ -221,7 +221,7 @@ func CheckPostCreateEmpty(c *client.Forum, f *Factory, m *Modify) {
 
 	_, err := c.Operations.PostsCreate(operations.NewPostsCreateParams().
 		WithSlugOrID(m.SlugOrId(thread)).
-		WithPosts([]*models.Post{}).
+		WithPosts(models.Posts{}).
 		WithContext(Expected(201, &models.Posts{}, nil)))
 
 	CheckNil(err)
