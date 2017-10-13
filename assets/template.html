@@ -135,7 +135,7 @@
                     {{template "message" dict "Payload" .Request "Title" "Запрос" }}
                     {{template "message" dict "Payload" .Response "Title" "Ответ" }}
 
-                    {{if and .Example ( ne .Delta "" ) }}
+                    {{if and .Example .Failed }}
                     {{template "message" dict "Payload" .Example "Title" "Ожидался ответ вида" }}
                     {{end}}
 
