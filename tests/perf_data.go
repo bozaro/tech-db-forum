@@ -229,6 +229,40 @@ func (self *PerfData) GetForumThreads(forum *PForum) []*PThread {
 	return self.threadsByForum[forum.Slug]
 }
 
+func (self *PerfData) GetForumThreadsByCreated(forum *PForum, since *strfmt.DateTime, desc bool, limit int) []*PThread {
+	threads := self.GetForumThreads(forum)
+	idx := 0
+	if since != nil {
+		idx = sort.Search(len(threads), func(i int) bool { return !time.Time(threads[i].Created).Before(time.Time(*since)) })
+		if idx >= len(threads) {
+			idx = len(threads) - 1
+		}
+	}
+	result := make([]*PThread, 0, limit)
+	if desc {
+		if since == nil {
+			idx = len(threads) - 1
+		}
+		for i := idx; i >= 0; i-- {
+			if len(result) == limit {
+				break
+			}
+			if since == nil || !time.Time(*since).Before(time.Time(threads[i].Created)) {
+				result = append(result, threads[i])
+			}
+		}
+	} else {
+		for i := idx; i < len(threads); i++ {
+			if len(result) == limit {
+				break
+			}
+			if since == nil || !time.Time(threads[i].Created).Before(time.Time(*since)) {
+				result = append(result, threads[i])
+			}
+		}
+	}
+	return result
+}
 func (self *PerfData) GetForumUsers(forum *PForum) []*PUser {
 	/*self.mutex.RLock()
 	defer self.mutex.RUnlock()
@@ -321,6 +355,9 @@ func (self *PerfData) AddPost(post *PPost) {
 }
 
 func (self *PerfData) Normalize() {
+	for _, threads := range self.threadsByForum {
+		sort.Sort(PThreadByCreated(threads))
+	}
 	for key, users := range self.usersByForum {
 		sort.Sort(PUserByNickname(users))
 		size := 0

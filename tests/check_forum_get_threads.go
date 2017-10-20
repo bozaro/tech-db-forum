@@ -190,26 +190,7 @@ func PerfForumGetThreadsSuccess(p *Perf, f *Factory) {
 
 	s.Validate(func(v PerfValidator) {
 		if v.CheckVersion(version, forum.Version) {
-			expected := p.data.GetForumThreads(forum)
-			asc := (desc == nil) || (*desc == false)
-			// Filter
-			if since != nil {
-				threads := expected
-				expected = []*PThread{}
-				t1 := time.Time(*since)
-				for _, thread := range threads {
-					t2 := time.Time(thread.Created)
-					if (asc == t2.After(t1)) || t1.Equal(t2) {
-						expected = append(expected, thread)
-					}
-				}
-			}
-			// Sort
-			var sorter sort.Interface = PThreadByCreated(expected)
-			if !asc {
-				sorter = sort.Reverse(sorter)
-			}
-			sort.Sort(sorter)
+			expected := p.data.GetForumThreadsByCreated(forum, since, (desc != nil) && *desc, int(limit))
 			// Check
 			if len(expected) > int(limit) {
 				expected = expected[0:limit]
