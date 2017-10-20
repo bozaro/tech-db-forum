@@ -66,6 +66,9 @@ func (sid *Shortid) Generate() string {
 
 // Generate generates a new short Id.
 func (sid *Shortid) GenerateRandom() []rune {
+	sid.mx.Lock()
+	defer sid.mx.Unlock()
+
 	ms, count := sid.getMsAndCounter(sid.epoch)
 	idrunes := sid.abc.Encode(sid.rnd, ms, 40)
 	if count > 0 {
@@ -75,8 +78,6 @@ func (sid *Shortid) GenerateRandom() []rune {
 }
 
 func (sid *Shortid) getMsAndCounter(epoch time.Time) (uint, uint) {
-	sid.mx.Lock()
-	defer sid.mx.Unlock()
 	ms := uint(time.Now().Sub(epoch).Nanoseconds() / 1000000)
 	if ms <= sid.ms {
 		sid.count++
