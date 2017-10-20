@@ -7,6 +7,7 @@ import (
 import (
 	"math/rand"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -26,7 +27,7 @@ type PerfData struct {
 	lastIndex int32
 
 	threadsByForum    map[string][]*PThread
-	usersByForum      map[string]map[*PUser]bool
+	usersByForum      map[string][]*PUser
 	postsByThreadFlat map[int32][]*PPost
 	postsByThreadTree map[int32][]*PPost
 	userByNickname    map[string]*PUser
@@ -98,7 +99,7 @@ func NewPerfData(config *PerfConfig) *PerfData {
 		threads:           make([]*PThread, 0, config.ThreadCount),
 		posts:             make([]*PPost, 0, config.PostCount),
 		threadsByForum:    map[string][]*PThread{},
-		usersByForum:      map[string]map[*PUser]bool{},
+		usersByForum:      map[string][]*PUser{},
 		postsByThreadTree: map[int32][]*PPost{},
 		postsByThreadFlat: map[int32][]*PPost{},
 		userByNickname:    map[string]*PUser{},
@@ -139,7 +140,7 @@ func (self *PerfData) AddForum(forum *PForum) {
 	}
 	self.forums = append(self.forums, forum)
 	self.forumBySlug[forum.Slug] = forum
-	self.usersByForum[forum.Slug] = map[*PUser]bool{}
+	self.usersByForum[forum.Slug] = []*PUser{}
 	self.threadsByForum[forum.Slug] = []*PThread{}
 	self.Status.Forum++
 }
@@ -191,7 +192,7 @@ func (self *PerfData) AddThread(thread *PThread) {
 	self.postsByThreadTree[thread.ID] = []*PPost{}
 	self.postsByThreadFlat[thread.ID] = []*PPost{}
 	self.threadsByForum[thread.Forum.Slug] = append(self.threadsByForum[thread.Forum.Slug], thread)
-	self.usersByForum[thread.Forum.Slug][thread.Author] = true
+	self.usersByForum[thread.Forum.Slug] = append(self.usersByForum[thread.Forum.Slug], thread.Author)
 	thread.Forum.Threads++
 	self.Status.Thread++
 }
@@ -221,27 +222,54 @@ func (self *PerfData) GetPostById(id int64) *PPost {
 }
 
 func (self *PerfData) GetForumThreads(forum *PForum) []*PThread {
-	self.mutex.RLock()
+	/*self.mutex.RLock()
 	defer self.mutex.RUnlock()
 
-	result := []*PThread{}
-	if result != nil {
-		result = append(result, self.threadsByForum[forum.Slug]...)
-	}
-	return result
+	return append([]*PThread{}, self.threadsByForum[forum.Slug]...)*/
+	return self.threadsByForum[forum.Slug]
 }
 
 func (self *PerfData) GetForumUsers(forum *PForum) []*PUser {
-	self.mutex.RLock()
+	/*self.mutex.RLock()
 	defer self.mutex.RUnlock()
 
-	users := self.usersByForum[forum.Slug]
-	if users == nil {
-		return []*PUser{}
+	return append([]*PUser{}, self.usersByForum[forum.Slug]...)*/
+	return self.usersByForum[forum.Slug]
+}
+
+func (self *PerfData) GetForumUsersByNickname(forum *PForum, since *string, desc bool, limit int) []*PUser {
+	users := self.GetForumUsers(forum)
+	idx := 0
+	lower := ""
+	if since != nil {
+		lower = strings.ToLower(*since)
+		idx = sort.Search(len(users), func(i int) bool { return strings.ToLower(users[i].Nickname) >= lower })
+		if idx >= len(users) {
+			idx = len(users) - 1
+		}
 	}
-	result := make([]*PUser, 0, len(users))
-	for k := range users {
-		result = append(result, k)
+	result := make([]*PUser, 0, limit)
+	if desc {
+		if since == nil {
+			idx = len(users) - 1
+		}
+		for i := idx; i >= 0; i-- {
+			if len(result) == limit {
+				break
+			}
+			if since == nil || strings.ToLower(users[i].Nickname) < lower {
+				result = append(result, users[i])
+			}
+		}
+	} else {
+		for i := idx; i < len(users); i++ {
+			if len(result) == limit {
+				break
+			}
+			if since == nil || strings.ToLower(users[i].Nickname) > lower {
+				result = append(result, users[i])
+			}
+		}
 	}
 	return result
 }
@@ -266,7 +294,7 @@ func (self *PerfData) AddPost(post *PPost) {
 
 	self.posts = append(self.posts, post)
 	self.postById[post.ID] = post
-	self.usersByForum[post.Thread.Forum.Slug][post.Author] = true
+	self.usersByForum[post.Thread.Forum.Slug] = append(self.usersByForum[post.Thread.Forum.Slug], post.Author)
 
 	self.lastIndex++
 	post.Index = self.lastIndex
@@ -290,6 +318,28 @@ func (self *PerfData) AddPost(post *PPost) {
 	post.Thread.Forum.Posts++
 	post.Thread.Posts++
 	self.Status.Post++
+}
+
+func (self *PerfData) Normalize() {
+	for key, users := range self.usersByForum {
+		sort.Sort(PUserByNickname(users))
+		size := 0
+		var last *PUser
+		for _, user := range users {
+			if last != user {
+				size++
+				last = user
+			}
+		}
+		uniq := make([]*PUser, 0, size)
+		for _, user := range users {
+			if last != user {
+				uniq = append(uniq, user)
+				last = user
+			}
+		}
+		self.usersByForum[key] = uniq
+	}
 }
 
 func (self *PerfData) GetPost(index int) *PPost {

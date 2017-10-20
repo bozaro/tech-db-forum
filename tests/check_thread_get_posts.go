@@ -370,17 +370,18 @@ func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 		last_id = &part1.Payload[len(part1.Payload)-1].ID
 	}
 
+	s := p.Session()
 	part2, err := p.c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 		WithSlugOrID(slugOrId).
 		WithLimit(&limit).
 		WithSort(&order).
 		WithSince(last_id).
 		WithDesc(desc).
-		WithContext(Expected(200, nil, nil)))
+		WithContext(s.Expected(200)))
 
 	CheckNil(err)
 
-	p.Validate(func(v PerfValidator) {
+	s.Validate(func(v PerfValidator) {
 		if v.CheckVersion(version, thread.Version) {
 			// Sort
 			limitType := func(post *PPost) int32 {

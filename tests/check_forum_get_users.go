@@ -370,37 +370,19 @@ func PerfForumGetUsersSuccess(p *Perf, f *Factory) {
 		since = &nick
 	}
 	desc := GetRandomDesc()
+	s := p.Session()
 	result, err := p.c.Operations.ForumGetUsers(operations.NewForumGetUsersParams().
 		WithSlug(GetRandomCase(slug)).
 		WithLimit(&limit).
 		WithSince(since).
 		WithDesc(desc).
-		WithContext(Expected(200, nil, nil)))
+		WithContext(s.Expected(200)))
 
 	CheckNil(err)
 
-	p.Validate(func(v PerfValidator) {
+	s.Validate(func(v PerfValidator) {
 		if v.CheckVersion(version, forum.Version) {
-			expected := p.data.GetForumUsers(forum)
-			asc := (desc == nil) || (*desc == false)
-			// Filter
-			if since != nil {
-				users := expected
-				expected = []*PUser{}
-				n1 := strings.ToLower(*since)
-				for _, user := range users {
-					n2 := strings.ToLower(user.Nickname)
-					if (asc == (n2 > n1)) && (n2 != n1) {
-						expected = append(expected, user)
-					}
-				}
-			}
-			// Sort
-			var sorter sort.Interface = PUserByNickname(expected)
-			if !asc {
-				sorter = sort.Reverse(sorter)
-			}
-			sort.Sort(sorter)
+			expected := p.data.GetForumUsersByNickname(forum, since, (desc != nil) && *desc, int(limit))
 			// Check
 			if len(expected) > int(limit) {
 				expected = expected[0:limit]

@@ -60,11 +60,12 @@ func CheckStatus(c *client.Forum, f *Factory) {
 func PerfStatus(p *Perf, f *Factory) {
 	status := p.data.Status
 	version := status.Version
+	s := p.Session()
 	result, err := p.c.Operations.Status(operations.NewStatusParams().
-		WithContext(Expected(200, nil, nil)))
+		WithContext(s.Expected(200)))
 	CheckNil(err)
 
-	p.Validate(func(v PerfValidator) {
+	s.Validate(func(v PerfValidator) {
 		payload := result.Payload
 		v.CheckInt32(status.Forum, payload.Forum, "Incorrect Forum count")
 		v.CheckInt64(status.Post, payload.Post, "Incorrect Post count")

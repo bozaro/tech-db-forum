@@ -178,16 +178,17 @@ func PerfForumGetThreadsSuccess(p *Perf, f *Factory) {
 		since = &p.data.GetThread(-1).Created
 	}
 	desc := GetRandomDesc()
+	s := p.Session()
 	result, err := p.c.Operations.ForumGetThreads(operations.NewForumGetThreadsParams().
 		WithSlug(GetRandomCase(slug)).
 		WithLimit(&limit).
 		WithSince(since).
 		WithDesc(desc).
-		WithContext(Expected(200, nil, nil)))
+		WithContext(s.Expected(200)))
 
 	CheckNil(err)
 
-	p.Validate(func(v PerfValidator) {
+	s.Validate(func(v PerfValidator) {
 		if v.CheckVersion(version, forum.Version) {
 			expected := p.data.GetForumThreads(forum)
 			asc := (desc == nil) || (*desc == false)

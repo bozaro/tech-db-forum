@@ -49,10 +49,8 @@ func PerfRegister(test PerfTest) {
 	registeredPerfsWeight += int32(test.Weight)
 }
 
-func (self *Perf) Validate(callback func(validator PerfValidator)) {
-	if rand.Float32() < self.validate {
-		callback(&PerfSession{})
-	}
+func (self *Perf) Session() *PerfSession {
+	return &PerfSession{validate: rand.Float32() < self.validate}
 }
 
 func Hash(data string) PHash {
