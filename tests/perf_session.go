@@ -1,11 +1,28 @@
 package tests
 
 import (
+	"context"
 	"github.com/go-openapi/strfmt"
 	"time"
 )
 
 type PerfSession struct {
+	validate bool
+}
+
+func (self *PerfSession) Validate(callback func(validator PerfValidator)) {
+	if self.validate {
+		callback(self)
+	}
+}
+
+func (self *PerfSession) Expected(statusCode int) context.Context {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, KEY_STATUS, statusCode)
+	if !self.validate {
+		ctx = context.WithValue(ctx, KEY_SKIP, true)
+	}
+	return ctx
 }
 
 func (self *PerfSession) CheckBool(expected bool, actual bool, message string) {

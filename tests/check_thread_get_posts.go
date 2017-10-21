@@ -352,100 +352,104 @@ func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 
 	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
 	limit := GetRandomLimit()
-	desc := GetRandomDesc()
+	ff := true
+	desc := &ff // GetRandomDesc()
 	order := GetRandomSort()
 
-	part1, err := p.c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
-		WithSlugOrID(slugOrId).
-		WithLimit(&limit).
-		WithSort(&order).
-		WithSince(nil).
-		WithDesc(desc).
-		WithContext(Expected(200, nil, nil)))
-
-	CheckNil(err)
-
+	// Sort
+	limitType := func(post *PPost) int32 {
+		return post.Index
+	}
+	var expected []*PPost
+	switch order {
+	case SORT_FLAT:
+		expected = p.data.GetThreadPostsFlat(thread)
+	case SORT_TREE:
+		expected = p.data.GetThreadPostsTree(thread)
+	case SORT_PARENT:
+		expected = p.data.GetThreadPostsTree(thread)
+		limitType = func(post *PPost) int32 {
+			return post.Path[0]
+		}
+	default:
+		panic("Unexpected sort type: " + order)
+	}
+	reverse := (desc != nil) && (*desc == true)
 	var last_id *int64 = nil
-	if len(part1.Payload) > 0 {
-		last_id = &part1.Payload[len(part1.Payload)-1].ID
+	index := -1
+	if reverse {
+		index = len(expected)
+	}
+	if rand.Int()&1 == 0 {
+		rnd := rand.Intn(len(expected))
+		a := limitType(expected[rnd])
+		if reverse {
+			for index = rnd + 1; index < len(expected); index++ {
+				item := expected[index]
+				if a != limitType(item) {
+					last_id = &expected[index].ID
+					break
+				}
+			}
+		} else {
+			for index = rnd - 1; index >= 0; index-- {
+				item := expected[index]
+				if a != limitType(item) {
+					last_id = &expected[index].ID
+					break
+				}
+			}
+		}
 	}
 
-	part2, err := p.c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
+	s := p.Session()
+	posts, err := p.c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 		WithSlugOrID(slugOrId).
 		WithLimit(&limit).
 		WithSort(&order).
 		WithSince(last_id).
 		WithDesc(desc).
-		WithContext(Expected(200, nil, nil)))
+		WithContext(s.Expected(200)))
 
 	CheckNil(err)
 
-	p.Validate(func(v PerfValidator) {
+	s.Validate(func(v PerfValidator) {
 		if v.CheckVersion(version, thread.Version) {
-			// Sort
-			limitType := func(post *PPost) int32 {
-				return post.Index
-			}
-			var expected []*PPost
-			switch order {
-			case SORT_FLAT:
-				expected = p.data.GetThreadPostsFlat(thread)
-			case SORT_TREE:
-				expected = p.data.GetThreadPostsTree(thread)
-			case SORT_PARENT:
-				expected = p.data.GetThreadPostsTree(thread)
-				limitType = func(post *PPost) int32 {
-					return post.Path[0]
-				}
-			default:
-				panic("Unexpected sort type: " + order)
-			}
-			reverse := (desc != nil) && (*desc == true)
+
 			// Check
-			postSplit := func(full []*PPost) ([]*PPost, []*PPost) {
-				count := int32(0)
-				last := int32(0)
-				if reverse {
-					for i := len(full) - 1; i >= 0; i-- {
-						item := full[i]
-						if last != limitType(item) {
-							if count == limit {
-								return full[i+1:], full[:i+1]
-							}
-							count++
-							last = limitType(item)
+			result := make([]*PPost, 0, int(limit))
+			count := int32(0)
+			last := int32(0)
+			if reverse {
+				for i := index - 1; i >= 0; i-- {
+					item := expected[i]
+					if last != limitType(item) {
+						if count == limit {
+							break
 						}
+						count++
+						last = limitType(item)
 					}
-					return full, []*PPost{}
-				} else {
-					for i, item := range full {
-						if last != limitType(item) {
-							if count == limit {
-								return full[:i], full[i:]
-							}
-							count++
-							last = limitType(item)
+					result = append(result, item)
+				}
+			} else {
+				for i := index + 1; i < len(expected); i++ {
+					item := expected[i]
+					if last != limitType(item) {
+						if count == limit {
+							break
 						}
+						count++
+						last = limitType(item)
 					}
-					return full, []*PPost{}
+					result = append(result, item)
 				}
 			}
 
-			expected1, expected := postSplit(expected)
-			expected2, expected := postSplit(expected)
-
-			validate := func(posts []*PPost, actual []*models.Post) {
-				v.CheckInt(len(posts), len(actual), "len()")
-				for i := range posts {
-					item := posts[i]
-					if reverse {
-						item = posts[len(posts)-i-1]
-					}
-					item.Validate(v, actual[i], item.Version, fmt.Sprintf("Post[%d]", i))
-				}
+			v.CheckInt(len(result), len(posts.Payload), "len()")
+			for i, item := range result {
+				item.Validate(v, posts.Payload[i], item.Version, fmt.Sprintf("Post[%d]", i))
 			}
-			validate(expected1, part1.Payload)
-			validate(expected2, part2.Payload)
 
 			v.Finish(version, thread.Version)
 		}

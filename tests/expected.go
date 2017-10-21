@@ -21,6 +21,7 @@ const (
 	KEY_STATUS = "expected-status"
 	KEY_BODY   = "expected-body"
 	KEY_FILTER = "expected-filter"
+	KEY_SKIP   = "dont-check"
 
 	MaxIdleConnections int = 20
 )

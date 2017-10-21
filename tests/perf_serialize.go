@@ -174,6 +174,7 @@ func LoadPerfData(reader io.Reader) (*PerfData, error) {
 		}
 		d.AddPost(&post)
 	}
+	d.Normalize()
 	return d, nil
 }
 

@@ -81,12 +81,13 @@ func PerfThreadGetOneSuccess(p *Perf, f *Factory) {
 	thread := p.data.GetThread(-1)
 	version := thread.Version
 	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
+	s := p.Session()
 	result, err := p.c.Operations.ThreadGetOne(operations.NewThreadGetOneParams().
 		WithSlugOrID(slugOrId).
-		WithContext(Expected(200, nil, nil)))
+		WithContext(s.Expected(200)))
 	CheckNil(err)
 
-	p.Validate(func(v PerfValidator) {
+	s.Validate(func(v PerfValidator) {
 		thread.Validate(v, result.Payload, version)
 	})
 }

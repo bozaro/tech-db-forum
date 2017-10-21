@@ -147,14 +147,15 @@ func PerfPostGetOneSuccess(p *Perf, f *Factory) {
 	forumVersion := post.Thread.Forum.Version
 
 	related := GetRandomRelated()
+	s := p.Session()
 	result, err := p.c.Operations.PostGetOne(operations.NewPostGetOneParams().
 		WithID(post.ID).
 		WithRelated(related).
-		WithContext(Expected(200, nil, nil)))
+		WithContext(s.Expected(200)))
 	CheckNil(err)
 
 	relatedStr := strings.Join(related, ",")
-	p.Validate(func(v PerfValidator) {
+	s.Validate(func(v PerfValidator) {
 		payload := result.Payload
 		post.Validate(v, payload.Post, postVersion, "Post")
 

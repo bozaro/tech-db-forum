@@ -13,7 +13,7 @@ import (
 type ResultType int
 
 const (
-	Failed  ResultType = iota
+	Failed ResultType = iota
 	Skipped
 	Success
 )

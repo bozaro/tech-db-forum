@@ -1,14 +1,19 @@
 package tests
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/bozaro/tech-db-forum/generated/assets"
 	"github.com/bozaro/tech-db-forum/generated/client"
 	"github.com/go-openapi/runtime"
 	http_transport "github.com/go-openapi/runtime/client"
+	"github.com/mailru/easyjson"
+	"github.com/mailru/easyjson/jlexer"
 	"github.com/op/go-logging"
 	"html/template"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -44,9 +49,51 @@ type CheckerTransport struct {
 	report *Report
 }
 
+type CheckerClientResponseReader struct {
+	reader runtime.ClientResponseReader
+}
+
+func EasyJSONConsumer() runtime.Consumer {
+	return runtime.ConsumerFunc(func(reader io.Reader, data interface{}) error {
+		if v, ok := data.(easyjson.Unmarshaler); ok {
+			data, err := ioutil.ReadAll(reader)
+			if err != nil {
+				return err
+			}
+			l := jlexer.Lexer{Data: data}
+			v.UnmarshalEasyJSON(&l)
+			return l.Error()
+		}
+		dec := json.NewDecoder(reader)
+		dec.UseNumber() // preserve number formats
+		return dec.Decode(data)
+	})
+}
+
+func (self CheckerClientResponseReader) Consume(r io.Reader, t interface{}) error {
+	b := make([]byte, 1024)
+	for {
+		size, err := r.Read(b)
+		if err!=nil{
+			return err
+		}
+		if size <= 0 {
+			break
+		}
+	}
+	return nil
+}
+
+func (self CheckerClientResponseReader) ReadResponse(response runtime.ClientResponse, _ runtime.Consumer) (interface{}, error) {
+	return self.reader.ReadResponse(response, self)
+}
+
 func (self *CheckerTransport) Submit(operation *runtime.ClientOperation) (interface{}, error) {
 	tracker := NewValidator(operation.Context, self.report)
 	operation.Client = &http.Client{Transport: tracker}
+	if operation.Context != nil && operation.Context.Value(KEY_SKIP) != nil {
+		operation.Reader = CheckerClientResponseReader{operation.Reader}
+	}
 	return self.t.Submit(operation)
 }
 
@@ -76,7 +123,9 @@ func CreateTransport(url *url.URL) *http_transport.Runtime {
 	if url != nil {
 		cfg.WithHost(url.Host).WithSchemes([]string{url.Scheme}).WithBasePath(url.Path)
 	}
-	return http_transport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
+	transport := http_transport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
+	transport.Consumers[runtime.JSONMime] = EasyJSONConsumer()
+	return transport
 }
 
 func SortedChecks() []Checker {

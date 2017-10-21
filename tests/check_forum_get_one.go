@@ -105,12 +105,13 @@ func (self *PForum) Validate(v PerfValidator, forum *models.Forum, version PVers
 func PerfForumGetOneSuccess(p *Perf, f *Factory) {
 	forum := p.data.GetForum(-1)
 	version := forum.Version
+	s := p.Session()
 	result, err := p.c.Operations.ForumGetOne(operations.NewForumGetOneParams().
 		WithSlug(forum.Slug).
-		WithContext(Expected(200, nil, nil)))
+		WithContext(s.Expected(200)))
 	CheckNil(err)
 
-	p.Validate(func(v PerfValidator) {
+	s.Validate(func(v PerfValidator) {
 		forum.Validate(v, result.Payload, version)
 	})
 }

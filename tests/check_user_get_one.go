@@ -78,12 +78,13 @@ func (self *PUser) Validate(v PerfValidator, user *models.User, version PVersion
 func PerfUserGetOneSuccess(p *Perf, f *Factory) {
 	user := p.data.GetUser(-1)
 	version := user.Version
+	s := p.Session()
 	result, err := p.c.Operations.UserGetOne(operations.NewUserGetOneParams().
 		WithNickname(GetRandomCase(user.Nickname)).
-		WithContext(Expected(200, nil, nil)))
+		WithContext(s.Expected(200)))
 	CheckNil(err)
 
-	p.Validate(func(v PerfValidator) {
+	s.Validate(func(v PerfValidator) {
 		user.Validate(v, result.Payload, version)
 	})
 }
