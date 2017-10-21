@@ -71,8 +71,17 @@ func EasyJSONConsumer() runtime.Consumer {
 }
 
 func (self CheckerClientResponseReader) Consume(r io.Reader, t interface{}) error {
-	_, err := ioutil.ReadAll(r)
-	return err
+	b := make([]byte, 1024)
+	for {
+		size, err := r.Read(b)
+		if err!=nil{
+			return err
+		}
+		if size <= 0 {
+			break
+		}
+	}
+	return nil
 }
 
 func (self CheckerClientResponseReader) ReadResponse(response runtime.ClientResponse, _ runtime.Consumer) (interface{}, error) {

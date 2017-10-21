@@ -344,9 +344,6 @@ func (self *PerfData) AddPost(post *PPost) {
 
 	tree := append(self.postsByThreadTree[post.Thread.ID], post)
 	self.postsByThreadFlat[post.Thread.ID] = append(self.postsByThreadFlat[post.Thread.ID], post)
-	if post.Parent != nil {
-		sort.Sort(PPostSortTree(tree))
-	}
 	self.postsByThreadTree[post.Thread.ID] = tree
 
 	post.Thread.Forum.Posts++
@@ -355,6 +352,9 @@ func (self *PerfData) AddPost(post *PPost) {
 }
 
 func (self *PerfData) Normalize() {
+	for _, posts := range self.postsByThreadTree {
+		sort.Sort(PPostSortTree(posts))
+	}
 	for _, threads := range self.threadsByForum {
 		sort.Sort(PThreadByCreated(threads))
 	}
