@@ -381,22 +381,24 @@ func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 		index = len(expected)
 	}
 	if rand.Int()&1 == 0 {
-		rnd := rand.Intn(len(expected))
-		a := limitType(expected[rnd])
-		if reverse {
-			for index = rnd + 1; index < len(expected); index++ {
-				item := expected[index]
-				if a != limitType(item) {
-					last_id = &expected[index].ID
-					break
+		if len(expected) > 0 {
+			rnd := rand.Intn(len(expected))
+			a := limitType(expected[rnd])
+			if reverse {
+				for index = rnd + 1; index < len(expected); index++ {
+					item := expected[index]
+					if a != limitType(item) {
+						last_id = &expected[index].ID
+						break
+					}
 				}
-			}
-		} else {
-			for index = rnd - 1; index >= 0; index-- {
-				item := expected[index]
-				if a != limitType(item) {
-					last_id = &expected[index].ID
-					break
+			} else {
+				for index = rnd - 1; index >= 0; index-- {
+					item := expected[index]
+					if a != limitType(item) {
+						last_id = &expected[index].ID
+						break
+					}
 				}
 			}
 		}
