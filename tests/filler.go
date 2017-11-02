@@ -117,7 +117,7 @@ func FillPosts(perf *Perf, parallel int, timeout time.Time, count int, batchSize
 			for atomic.AddInt32(&need, -int32(batchSize)) >= 0 {
 
 				batch := make([]*models.Post, 0, batchSize)
-				thread := data.GetThread(-1)
+				thread := data.GetThread(-1, 1)
 				thread.mutex.Lock() // todo: Потом исправить
 
 				parents := data.GetThreadPostsFlat(thread)
@@ -169,7 +169,7 @@ func VoteThreads(perf *Perf, parallel int, timeout time.Time, count int) {
 			for atomic.AddInt32(&need, -1) >= 0 {
 				user := data.GetUser(-1)
 
-				thread := data.GetThread(-1)
+				thread := data.GetThread(-1, 1)
 				thread.mutex.Lock() // todo: Потом исправить
 
 				old_voice := thread.Voices[user]

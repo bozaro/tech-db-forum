@@ -12,6 +12,8 @@ const (
 	RELATED_FORUM  = "forum"
 	RELATED_USER   = "user"
 	RELATED_THREAD = "thread"
+
+	POST_PASSES = 10
 )
 
 func init() {
@@ -139,7 +141,7 @@ func (self *PPost) Validate(v PerfValidator, post *models.Post, version PVersion
 }
 
 func PerfPostGetOneSuccess(p *Perf, f *Factory) {
-	post := p.data.GetPost(-1)
+	post := p.data.GetPost(-1, POST_PASSES)
 	postVersion := post.Version
 
 	userVersion := post.Author.Version

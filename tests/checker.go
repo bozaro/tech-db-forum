@@ -74,7 +74,7 @@ func (self CheckerClientResponseReader) Consume(r io.Reader, t interface{}) erro
 	b := make([]byte, 1024)
 	for {
 		size, err := r.Read(b)
-		if err!=nil{
+		if err != nil {
 			return err
 		}
 		if size <= 0 {

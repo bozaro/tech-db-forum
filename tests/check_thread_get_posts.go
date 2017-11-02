@@ -347,7 +347,7 @@ func CheckThreadGetPostsNotFound(c *client.Forum, f *Factory) {
 }
 
 func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
-	thread := p.data.GetThread(-1)
+	thread := p.data.GetThread(-1, POST_PASSES)
 	version := thread.Version
 
 	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))

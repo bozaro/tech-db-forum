@@ -175,7 +175,7 @@ func PerfForumGetThreadsSuccess(p *Perf, f *Factory) {
 	limit := GetRandomLimit()
 	var since *strfmt.DateTime
 	if rand.Int()&1 == 0 {
-		since = &p.data.GetThread(-1).Created
+		since = &p.data.GetThread(-1, 1).Created
 	}
 	desc := GetRandomDesc()
 	s := p.Session()
@@ -211,7 +211,7 @@ func PerfForumGetThreadsNotFound(p *Perf, f *Factory) {
 	limit := GetRandomLimit()
 	var since *strfmt.DateTime
 	if rand.Int()&1 == 0 {
-		since = &p.data.GetThread(-1).Created
+		since = &p.data.GetThread(-1, 1).Created
 	}
 	desc := GetRandomDesc()
 	_, err := p.c.Operations.ForumGetThreads(operations.NewForumGetThreadsParams().
