@@ -13,7 +13,7 @@ const (
 	RELATED_USER   = "user"
 	RELATED_THREAD = "thread"
 
-	POST_PASSES = 10
+	POST_PASSES = 16
 )
 
 func init() {

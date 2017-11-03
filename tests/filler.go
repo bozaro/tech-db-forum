@@ -27,10 +27,10 @@ func NewPerfConfig() *PerfConfig {
 	return &PerfConfig{
 		UserCount:   1000,
 		ForumCount:  20,
-		ThreadCount: 1000,
-		PostCount:   1000000,
+		ThreadCount: 10000,
+		PostCount:   2000000,
 		PostBatch:   100,
-		VoteCount:   25000,
+		VoteCount:   100000,
 		Validate:    1.0,
 	}
 }
@@ -115,9 +115,9 @@ func FillPosts(perf *Perf, parallel int, timeout time.Time, count int, batchSize
 		go func() {
 			f := NewFactory()
 			for atomic.AddInt32(&need, -int32(batchSize)) >= 0 {
-
+				offset := float64(int32(count)-atomic.LoadInt32(&need)) / float64(count)
 				batch := make([]*models.Post, 0, batchSize)
-				thread := data.GetThread(-1, 1)
+				thread := data.GetThread(-1, POST_PASSES, offset)
 				thread.mutex.Lock() // todo: Потом исправить
 
 				parents := data.GetThreadPostsFlat(thread)
@@ -169,7 +169,7 @@ func VoteThreads(perf *Perf, parallel int, timeout time.Time, count int) {
 			for atomic.AddInt32(&need, -1) >= 0 {
 				user := data.GetUser(-1)
 
-				thread := data.GetThread(-1, 1)
+				thread := data.GetThread(-1, 1, 0.5)
 				thread.mutex.Lock() // todo: Потом исправить
 
 				old_voice := thread.Voices[user]

@@ -201,12 +201,18 @@ func (self *PerfData) AddThread(thread *PThread) {
 	self.Status.Thread++
 }
 
-func (self *PerfData) GetThread(index int, passes int) *PThread {
+func (self *PerfData) GetThread(index int, passes int, offset float64) *PThread {
 	self.mutex.RLock()
 	defer self.mutex.RUnlock()
-
 	if index < 0 {
-		index = getRandomIndex(len(self.threads), passes)
+		length := len(self.threads)
+		delta := int((offset+0.5)*float64(length)) % length
+		if delta < 0 {
+			delta = length - delta
+		}
+
+		index = getRandomIndex(length, passes)
+		index = (index + delta) % length
 	}
 	return self.threads[index]
 }
