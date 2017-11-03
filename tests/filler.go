@@ -117,7 +117,7 @@ func FillPosts(perf *Perf, parallel int, timeout time.Time, count int, batchSize
 			for atomic.AddInt32(&need, -int32(batchSize)) >= 0 {
 				offset := float64(int32(count)-atomic.LoadInt32(&need)) / float64(count)
 				batch := make([]*models.Post, 0, batchSize)
-				thread := data.GetThread(-1, POST_PASSES, offset)
+				thread := data.GetThread(-1, POST_POWER, offset)
 				thread.mutex.Lock() // todo: Потом исправить
 
 				parents := data.GetThreadPostsFlat(thread)

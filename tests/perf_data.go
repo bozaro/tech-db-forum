@@ -5,12 +5,15 @@ import (
 )
 
 import (
+	"math"
 	"math/rand"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 )
+
+const POST_POWER = 16
 
 type PVersion uint32
 type PHash uint32
@@ -124,15 +127,17 @@ func (self *PerfData) GetUserByNickname(nickname string) *PUser {
 	return self.userByNickname[nickname]
 }
 
-func getRandomIndex(count int, passes int) int {
+func getRandomIndex(count int, p float64) int {
 	if count == 0 {
 		return -1
 	}
-	n := 0
-	for i := 0; i < passes; i++ {
-		n += rand.Intn(count)
+	q := rand.Float64()
+	if p > 0 && p != 1 {
+		q = (q - 0.5) * 2
+		q = math.Pow(q, p)
+		q = q/2 + 0.5
 	}
-	return n / passes
+	return int(q * float64(count))
 }
 
 func (self *PerfData) AddForum(forum *PForum) {
@@ -201,7 +206,7 @@ func (self *PerfData) AddThread(thread *PThread) {
 	self.Status.Thread++
 }
 
-func (self *PerfData) GetThread(index int, passes int, offset float64) *PThread {
+func (self *PerfData) GetThread(index int, p float64, offset float64) *PThread {
 	self.mutex.RLock()
 	defer self.mutex.RUnlock()
 	if index < 0 {
@@ -211,7 +216,7 @@ func (self *PerfData) GetThread(index int, passes int, offset float64) *PThread 
 			delta = length - delta
 		}
 
-		index = getRandomIndex(length, passes)
+		index = getRandomIndex(length, p)
 		index = (index + delta) % length
 	}
 	return self.threads[index]
@@ -389,12 +394,12 @@ func (self *PerfData) Normalize() {
 	}
 }
 
-func (self *PerfData) GetPost(index int, passes int) *PPost {
+func (self *PerfData) GetPost(index int, p float64) *PPost {
 	self.mutex.RLock()
 	defer self.mutex.RUnlock()
 
 	if index < 0 {
-		index = getRandomIndex(len(self.posts), passes)
+		index = getRandomIndex(len(self.posts), p)
 	}
 	return self.posts[index]
 }
