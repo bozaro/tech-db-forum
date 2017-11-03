@@ -133,9 +133,15 @@ func getRandomIndex(count int, p float64) int {
 	}
 	q := rand.Float64()
 	if p > 0 && p != 1 {
-		q = (q - 0.5) * 2
-		q = math.Pow(q, p)
-		q = q/2 + 0.5
+		if q >= 0.5 {
+			q = (q - 0.5) * 2
+			q = math.Pow(q, p)
+			q = q/2 + 0.5
+		} else {
+			q = (0.5 - q) * 2
+			q = math.Pow(q, p)
+			q = 0.5 - q/2
+		}
 	}
 	return int(q * float64(count))
 }
