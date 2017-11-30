@@ -5,6 +5,7 @@ import (
 	"hash/crc32"
 	"io"
 	"math/rand"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -73,10 +74,11 @@ func (self *Perf) Run(threads int, duration int, step int) float64 {
 	var counter int64 = 0
 	// spawn four worker goroutines
 	var wg sync.WaitGroup
+	wg.Add(threads)
 	for i := 0; i < threads; i++ {
-		wg.Add(1)
 		go func() {
 			f := NewFactory()
+			runtime.LockOSThread()
 			for {
 				if atomic.LoadInt32(&done) != 0 {
 					break
@@ -85,6 +87,7 @@ func (self *Perf) Run(threads int, duration int, step int) float64 {
 				p.FnPerf(self, f)
 				atomic.AddInt64(&counter, 1)
 			}
+			runtime.UnlockOSThread()
 			wg.Done()
 		}()
 	}
