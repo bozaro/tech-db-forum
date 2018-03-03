@@ -24,11 +24,29 @@ type OrderedPost struct {
 	post *models.Post
 }
 
-type PostSortTree []OrderedPost
+type PostSortFlat struct {
+	posts []OrderedPost
+	desc  bool
+}
 
-func (a PostSortTree) Len() int           { return len(a) }
-func (a PostSortTree) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a PostSortTree) Less(i, j int) bool { return a[i].path < a[j].path }
+func (a PostSortFlat) Len() int           { return len(a.posts) }
+func (a PostSortFlat) Swap(i, j int)      { a.posts[i], a.posts[j] = a.posts[j], a.posts[i] }
+func (a PostSortFlat) Less(i, j int) bool { return a.posts[i].idx < a.posts[j].idx != a.desc }
+
+type PostSortTree struct {
+	posts    []OrderedPost
+	top_desc bool
+	all_desc bool
+}
+
+func (a PostSortTree) Len() int      { return len(a.posts) }
+func (a PostSortTree) Swap(i, j int) { a.posts[i], a.posts[j] = a.posts[j], a.posts[i] }
+func (a PostSortTree) Less(i, j int) bool {
+	if a.posts[i].top != a.posts[j].top {
+		return a.posts[i].top < a.posts[j].top != (a.top_desc || a.all_desc)
+	}
+	return a.posts[i].path < a.posts[j].path != a.all_desc
+}
 
 type PPostSortFlat []*PPost
 
@@ -171,18 +189,11 @@ func (f *Factory) CreateTree(c *client.Forum, thread *models.Thread, tree [][]in
 	return result
 }
 
-func SortPosts(posts []OrderedPost, desc bool, limitType func(OrderedPost) int, limit int) []models.Posts {
+func PagePosts(posts []OrderedPost, limitType func(OrderedPost) int, limit int) []models.Posts {
 	if limit <= 0 {
 		limit = len(posts)
 	}
 	sorted := posts
-	// Descending order
-	if desc {
-		sorted = make([]OrderedPost, len(posts))
-		for i, v := range posts {
-			sorted[len(posts)-i-1] = v
-		}
-	}
 	// Pagination
 	result := []models.Posts{}
 	page := models.Posts{}
@@ -260,6 +271,9 @@ func CheckThreadGetPosts(c *client.Forum, f *Factory, m *Modify, tree [][]int, l
 	limitType := func(post OrderedPost) int {
 		return post.idx
 	}
+	sortFunc := func(posts []OrderedPost, desc bool) {
+		sort.Sort(PostSortFlat{posts, desc})
+	}
 	switch m.Int(4) {
 	case 0:
 		sortType = nil
@@ -269,11 +283,15 @@ func CheckThreadGetPosts(c *client.Forum, f *Factory, m *Modify, tree [][]int, l
 	case 2:
 		v := SORT_TREE
 		sortType = &v
-		sort.Sort(PostSortTree(posts_tree))
+		sortFunc = func(posts []OrderedPost, desc bool) {
+			sort.Sort(PostSortTree{posts, false, desc})
+		}
 	case 3:
 		v := SORT_PARENT
 		sortType = &v
-		sort.Sort(PostSortTree(posts_tree))
+		sortFunc = func(posts []OrderedPost, desc bool) {
+			sort.Sort(PostSortTree{posts, desc, false})
+		}
 		limitType = func(post OrderedPost) int {
 			return post.top
 		}
@@ -285,8 +303,10 @@ func CheckThreadGetPosts(c *client.Forum, f *Factory, m *Modify, tree [][]int, l
 	// Slug or ID
 	id := m.SlugOrId(thread)
 
+	sortFunc(posts_tree, desc != nil && *desc)
+
 	// Check read all
-	all_posts := SortPosts(posts_tree, desc != nil && *desc, limitType, 0)[0]
+	all_posts := PagePosts(posts_tree, limitType, 0)[0]
 	full_size := int32(len(all_posts) + 10)
 	c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
 		WithSlugOrID(id).
@@ -297,7 +317,7 @@ func CheckThreadGetPosts(c *client.Forum, f *Factory, m *Modify, tree [][]int, l
 
 	if limit > 0 {
 		// Check read records page by page
-		batches := SortPosts(posts_tree, desc != nil && *desc, limitType, int(limit))
+		batches := PagePosts(posts_tree, limitType, int(limit))
 		var lastId *int64 = nil
 		for _, batch := range batches {
 			_, err := c.Operations.ThreadGetPosts(operations.NewThreadGetPostsParams().
