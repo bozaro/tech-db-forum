@@ -61,9 +61,22 @@ type PPostSortTree []*PPost
 func (a PPostSortTree) Len() int      { return len(a) }
 func (a PPostSortTree) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a PPostSortTree) Less(i, j int) bool {
-	return a.ComparePath(&a[i].Path, &a[j].Path) < 0
+	return comparePath(&a[i].Path, &a[j].Path) < 0
 }
-func (a PPostSortTree) ComparePath(p1 *[]int32, p2 *[]int32) int {
+
+type PPostSortParentDesc []*PPost
+
+func (a PPostSortParentDesc) Len() int      { return len(a) }
+func (a PPostSortParentDesc) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a PPostSortParentDesc) Less(i, j int) bool {
+	iTop := a[i].Path[0]
+	jTop := a[j].Path[0]
+	if iTop != jTop {
+		return iTop > jTop
+	}
+	return comparePath(&a[i].Path, &a[j].Path) < 0
+}
+func comparePath(p1 *[]int32, p2 *[]int32) int {
 	l1 := len(*p1)
 	l2 := len(*p2)
 	for i := 0; (i < l1) && (i < l2); i++ {
@@ -372,8 +385,7 @@ func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 
 	slugOrId := GetSlugOrId(thread.Slug, int64(thread.ID))
 	limit := GetRandomLimit()
-	ff := true
-	desc := &ff // GetRandomDesc()
+	desc :=  GetRandomDesc()
 	order := GetRandomSort()
 
 	// Sort
@@ -381,6 +393,7 @@ func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 		return post.Index
 	}
 	var expected []*PPost
+	reverse := (desc != nil) && (*desc == true)
 	switch order {
 	case SORT_FLAT:
 		expected = p.data.GetThreadPostsFlat(thread)
@@ -388,13 +401,16 @@ func PerfThreadGetPostsSuccess(p *Perf, f *Factory) {
 		expected = p.data.GetThreadPostsTree(thread)
 	case SORT_PARENT:
 		expected = p.data.GetThreadPostsTree(thread)
+		if reverse {
+			expected = p.data.GetThreadPostsParentDesc(thread)
+			reverse = false
+		}
 		limitType = func(post *PPost) int32 {
 			return post.Path[0]
 		}
 	default:
 		panic("Unexpected sort type: " + order)
 	}
-	reverse := (desc != nil) && (*desc == true)
 	var last_id *int64 = nil
 	index := -1
 	if reverse {

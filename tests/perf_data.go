@@ -33,6 +33,7 @@ type PerfData struct {
 	usersByForum      map[string][]*PUser
 	postsByThreadFlat map[int32][]*PPost
 	postsByThreadTree map[int32][]*PPost
+	postsByThreadParentDesc map[int32][]*PPost
 	userByNickname    map[string]*PUser
 	forumBySlug       map[string]*PForum
 	postById          map[int64]*PPost
@@ -104,6 +105,7 @@ func NewPerfData(config *PerfConfig) *PerfData {
 		threadsByForum:    map[string][]*PThread{},
 		usersByForum:      map[string][]*PUser{},
 		postsByThreadTree: map[int32][]*PPost{},
+		postsByThreadParentDesc: map[int32][]*PPost{},
 		postsByThreadFlat: map[int32][]*PPost{},
 		userByNickname:    map[string]*PUser{},
 		forumBySlug:       map[string]*PForum{},
@@ -205,6 +207,7 @@ func (self *PerfData) AddThread(thread *PThread) {
 	self.threads = append(self.threads, thread)
 	self.threadById[thread.ID] = thread
 	self.postsByThreadTree[thread.ID] = []*PPost{}
+	self.postsByThreadParentDesc[thread.ID] = []*PPost{}
 	self.postsByThreadFlat[thread.ID] = []*PPost{}
 	self.threadsByForum[thread.Forum.Slug] = append(self.threadsByForum[thread.Forum.Slug], thread)
 	self.usersByForum[thread.Forum.Slug] = append(self.usersByForum[thread.Forum.Slug], thread.Author)
@@ -343,6 +346,13 @@ func (self *PerfData) GetThreadPostsTree(thread *PThread) []*PPost {
 	return self.postsByThreadTree[thread.ID]
 }
 
+func (self *PerfData) GetThreadPostsParentDesc(thread *PThread) []*PPost {
+	self.mutex.RLock()
+	defer self.mutex.RUnlock()
+
+	return self.postsByThreadParentDesc[thread.ID]
+}
+
 func (self *PerfData) AddPost(post *PPost) {
 	self.mutex.Lock()
 	defer self.mutex.Unlock()
@@ -363,9 +373,9 @@ func (self *PerfData) AddPost(post *PPost) {
 		post.Path = []int32{post.Index}
 	}
 
-	tree := append(self.postsByThreadTree[post.Thread.ID], post)
 	self.postsByThreadFlat[post.Thread.ID] = append(self.postsByThreadFlat[post.Thread.ID], post)
-	self.postsByThreadTree[post.Thread.ID] = tree
+	self.postsByThreadTree[post.Thread.ID] = append(self.postsByThreadTree[post.Thread.ID], post)
+	self.postsByThreadParentDesc[post.Thread.ID] = append(self.postsByThreadParentDesc[post.Thread.ID], post)
 
 	post.Thread.Forum.Posts++
 	post.Thread.Posts++
@@ -378,6 +388,9 @@ func (self *PerfData) Normalize() {
 	}
 	for _, threads := range self.threadsByForum {
 		sort.Sort(PThreadByCreated(threads))
+	}
+	for _, posts := range self.postsByThreadParentDesc {
+		sort.Sort(PPostSortParentDesc(posts))
 	}
 	for key, users := range self.usersByForum {
 		sort.Sort(PUserByNickname(users))

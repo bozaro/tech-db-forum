@@ -284,7 +284,7 @@ func (self *Perf) Fill(threads int, timeout_sec int, config *PerfConfig) {
 	log.Infof("Creating posts (%d threads)", threads)
 	FillPosts(self, threads, timeout, config.PostCount, config.PostBatch)
 
-	log.Info("Normalize data")
+	log.Info("Prepare for saving data")
 	self.data.Normalize()
 
 	log.Info("Done")
