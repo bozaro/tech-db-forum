@@ -15,7 +15,6 @@ import (
 // UserUpdate Информация о пользователе.
 //
 // swagger:model UserUpdate
-
 type UserUpdate struct {
 
 	// Описание пользователя.
@@ -27,12 +26,6 @@ type UserUpdate struct {
 	// Полное имя пользователя.
 	Fullname string `json:"fullname,omitempty"`
 }
-
-/* polymorph UserUpdate about false */
-
-/* polymorph UserUpdate email false */
-
-/* polymorph UserUpdate fullname false */
 
 // Validate validates this user update
 func (m *UserUpdate) Validate(formats strfmt.Registry) error {

@@ -16,7 +16,6 @@ import (
 // Forum Информация о форуме.
 //
 // swagger:model Forum
-
 type Forum struct {
 
 	// Общее кол-во сообщений в данном форуме.
@@ -42,16 +41,6 @@ type Forum struct {
 	// Required: true
 	User string `json:"user"`
 }
-
-/* polymorph Forum posts false */
-
-/* polymorph Forum slug false */
-
-/* polymorph Forum threads false */
-
-/* polymorph Forum title false */
-
-/* polymorph Forum user false */
 
 // Validate validates this forum
 func (m *Forum) Validate(formats strfmt.Registry) error {

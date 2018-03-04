@@ -16,7 +16,6 @@ import (
 // Пустые параметры остаются без изменений.
 //
 // swagger:model ThreadUpdate
-
 type ThreadUpdate struct {
 
 	// Описание ветки обсуждения.
@@ -25,10 +24,6 @@ type ThreadUpdate struct {
 	// Заголовок ветки обсуждения.
 	Title string `json:"title,omitempty"`
 }
-
-/* polymorph ThreadUpdate message false */
-
-/* polymorph ThreadUpdate title false */
 
 // Validate validates this thread update
 func (m *ThreadUpdate) Validate(formats strfmt.Registry) error {

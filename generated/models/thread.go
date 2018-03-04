@@ -16,7 +16,6 @@ import (
 // Thread Ветка обсуждения на форуме.
 //
 // swagger:model Thread
-
 type Thread struct {
 
 	// Пользователь, создавший данную тему.
@@ -53,22 +52,6 @@ type Thread struct {
 	// Read Only: true
 	Votes int32 `json:"votes,omitempty"`
 }
-
-/* polymorph Thread author false */
-
-/* polymorph Thread created false */
-
-/* polymorph Thread forum false */
-
-/* polymorph Thread id false */
-
-/* polymorph Thread message false */
-
-/* polymorph Thread slug false */
-
-/* polymorph Thread title false */
-
-/* polymorph Thread votes false */
 
 // Validate validates this thread
 func (m *Thread) Validate(formats strfmt.Registry) error {

@@ -149,12 +149,10 @@ func (o *PostUpdateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Re
 		return err
 	}
 
-	if o.Post == nil {
-		o.Post = new(models.PostUpdate)
-	}
-
-	if err := r.SetBodyParam(o.Post); err != nil {
-		return err
+	if o.Post != nil {
+		if err := r.SetBodyParam(o.Post); err != nil {
+			return err
+		}
 	}
 
 	if len(res) > 0 {

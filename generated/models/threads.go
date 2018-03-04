@@ -16,7 +16,6 @@ import (
 
 // Threads threads
 // swagger:model Threads
-
 type Threads []*Thread
 
 // Validate validates this threads

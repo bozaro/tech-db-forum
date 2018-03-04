@@ -16,7 +16,6 @@ import (
 // User Информация о пользователе.
 //
 // swagger:model User
-
 type User struct {
 
 	// Описание пользователя.
@@ -37,14 +36,6 @@ type User struct {
 	// Read Only: true
 	Nickname string `json:"nickname,omitempty"`
 }
-
-/* polymorph User about false */
-
-/* polymorph User email false */
-
-/* polymorph User fullname false */
-
-/* polymorph User nickname false */
 
 // Validate validates this user
 func (m *User) Validate(formats strfmt.Registry) error {

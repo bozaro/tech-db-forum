@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -485,21 +486,34 @@ func TestDepthFirstSort(t *testing.T) {
 	}
 }
 
+func TestBuildNameWithReservedKeyWord(t *testing.T) {
+	s := splitKey([]string{"definitions", "fullview", "properties", "properties"})
+	startIdx := 2
+	segments := []string{"fullview"}
+	newName := s.BuildName(segments, startIdx, nil)
+	assert.Equal(t, "fullview properties", newName)
+	s = splitKey([]string{"definitions", "fullview", "properties", "properties", "properties", "properties", "properties", "properties"})
+	newName = s.BuildName(segments, startIdx, nil)
+	assert.Equal(t, "fullview properties properties properties", newName)
+}
+
 func TestNameInlinedSchemas(t *testing.T) {
-	bp := filepath.Join(".", "fixtures", "nested_inline_schemas.yml")
+	cwd, _ := os.Getwd()
+	bp := filepath.Join(cwd, "fixtures", "nested_inline_schemas.yml")
 	sp, err := loadSpec(bp)
+	err = spec.ExpandSpec(sp, &spec.ExpandOptions{
+		RelativeBase: bp,
+		SkipSchemas:  true,
+	})
+	assert.NoError(t, err)
 	values := []struct {
 		Key      string
 		Location string
 		Ref      spec.Ref
 	}{
-		{"#/paths/~1some~1where~1{id}/parameters/1/schema/items", "#/definitions/postSomeWhereIdParamsBody/items", spec.MustCreateRef("#/definitions/postSomeWhereIdParamsBodyItems")},
-		{"#/paths/~1some~1where~1{id}/parameters/1/schema", "#/paths/~1some~1where~1{id}/parameters/1/schema", spec.MustCreateRef("#/definitions/postSomeWhereIdParamsBody")},
 		{"#/paths/~1some~1where~1{id}/get/parameters/2/schema/properties/record/items/2/properties/name", "#/definitions/getSomeWhereIdParamsBodyRecordItems2/properties/name", spec.MustCreateRef("#/definitions/getSomeWhereIdParamsBodyRecordItems2Name")},
 		{"#/paths/~1some~1where~1{id}/get/parameters/2/schema/properties/record/items/1", "#/definitions/getSomeWhereIdParamsBodyRecord/items/1", spec.MustCreateRef("#/definitions/getSomeWhereIdParamsBodyRecordItems1")},
 		{"#/paths/~1some~1where~1{id}/get/parameters/2/schema/properties/record/items/2", "#/definitions/getSomeWhereIdParamsBodyRecord/items/2", spec.MustCreateRef("#/definitions/getSomeWhereIdParamsBodyRecordItems2")},
-		{"#/paths/~1some~1where~1{id}/get/parameters/2/schema/properties/record", "#/definitions/getSomeWhereIdParamsBodyOAIGen/properties/record", spec.MustCreateRef("#/definitions/getSomeWhereIdParamsBodyRecord")},
-		{"#/paths/~1some~1where~1{id}/get/parameters/2/schema", "#/paths/~1some~1where~1{id}/get/parameters/2/schema", spec.MustCreateRef("#/definitions/getSomeWhereIdParamsBodyOAIGen")},
 		{"#/paths/~1some~1where~1{id}/get/responses/200/schema/properties/record/items/2/properties/name", "#/definitions/getSomeWhereIdOKBodyRecordItems2/properties/name", spec.MustCreateRef("#/definitions/getSomeWhereIdOKBodyRecordItems2Name")},
 		{"#/paths/~1some~1where~1{id}/get/responses/200/schema/properties/record/items/1", "#/definitions/getSomeWhereIdOKBodyRecord/items/1", spec.MustCreateRef("#/definitions/getSomeWhereIdOKBodyRecordItems1")},
 		{"#/paths/~1some~1where~1{id}/get/responses/200/schema/properties/record/items/2", "#/definitions/getSomeWhereIdOKBodyRecord/items/2", spec.MustCreateRef("#/definitions/getSomeWhereIdOKBodyRecordItems2")},
@@ -567,7 +581,7 @@ func TestNameInlinedSchemas(t *testing.T) {
 				if rr.Schema != nil && rr.Schema.Ref.String() == "" && !rr.TopLevel {
 					asch, err := Schema(SchemaOpts{Schema: rr.Schema, Root: sp, BasePath: bp})
 					if assert.NoError(t, err, "for key: %s", k) {
-						if !asch.IsSimpleSchema {
+						if !asch.IsSimpleSchema && !asch.IsArray {
 							assert.Fail(t, "not a top level schema", "for key: %s", k)
 						}
 					}
@@ -578,7 +592,8 @@ func TestNameInlinedSchemas(t *testing.T) {
 }
 
 func TestFlatten(t *testing.T) {
-	bp := filepath.Join(".", "fixtures", "flatten.yml")
+	cwd, _ := os.Getwd()
+	bp := filepath.Join(cwd, "fixtures", "flatten.yml")
 	sp, err := loadSpec(bp)
 	values := []struct {
 		Key      string
@@ -763,6 +778,8 @@ func TestFlatten(t *testing.T) {
 	}
 	if assert.NoError(t, err) {
 		err := Flatten(FlattenOpts{Spec: New(sp), BasePath: bp})
+		//b, _ := sp.MarshalJSON()
+		//panic(string(b))
 		if assert.NoError(t, err) {
 			for i, v := range values {
 				pk := v.Key[1:]

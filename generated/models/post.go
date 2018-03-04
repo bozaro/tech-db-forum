@@ -16,7 +16,6 @@ import (
 // Post Сообщение внутри ветки обсуждения на форуме.
 //
 // swagger:model Post
-
 type Post struct {
 
 	// Автор, написавший данное сообщение.
@@ -51,22 +50,6 @@ type Post struct {
 	// Read Only: true
 	Thread int32 `json:"thread,omitempty"`
 }
-
-/* polymorph Post author false */
-
-/* polymorph Post created false */
-
-/* polymorph Post forum false */
-
-/* polymorph Post id false */
-
-/* polymorph Post isEdited false */
-
-/* polymorph Post message false */
-
-/* polymorph Post parent false */
-
-/* polymorph Post thread false */
 
 // Validate validates this post
 func (m *Post) Validate(formats strfmt.Registry) error {

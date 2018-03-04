@@ -15,7 +15,6 @@ import (
 // PostFull Полная информация о сообщении, включая связанные объекты.
 //
 // swagger:model PostFull
-
 type PostFull struct {
 
 	// author
@@ -30,14 +29,6 @@ type PostFull struct {
 	// thread
 	Thread *Thread `json:"thread,omitempty"`
 }
-
-/* polymorph PostFull author false */
-
-/* polymorph PostFull forum false */
-
-/* polymorph PostFull post false */
-
-/* polymorph PostFull thread false */
 
 // Validate validates this post full
 func (m *PostFull) Validate(formats strfmt.Registry) error {

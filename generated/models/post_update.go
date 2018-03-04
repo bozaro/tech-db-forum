@@ -16,14 +16,11 @@ import (
 // Пустые параметры остаются без изменений.
 //
 // swagger:model PostUpdate
-
 type PostUpdate struct {
 
 	// Собственно сообщение форума.
 	Message string `json:"message,omitempty"`
 }
-
-/* polymorph PostUpdate message false */
 
 // Validate validates this post update
 func (m *PostUpdate) Validate(formats strfmt.Registry) error {

@@ -18,7 +18,6 @@ import (
 // Vote Информация о голосовании пользователя.
 //
 // swagger:model Vote
-
 type Vote struct {
 
 	// Идентификатор пользователя.
@@ -29,10 +28,6 @@ type Vote struct {
 	// Required: true
 	Voice int32 `json:"voice"`
 }
-
-/* polymorph Vote nickname false */
-
-/* polymorph Vote voice false */
 
 // Validate validates this vote
 func (m *Vote) Validate(formats strfmt.Registry) error {

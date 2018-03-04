@@ -26,8 +26,9 @@ node  ('linux') {
     sh """
 export GOPATH="\$PWD"
 export PATH="\$GOPATH/bin:\$PATH"
-go get github.com/bronze1man/yaml2json
-go get github.com/aktau/github-release
+cd src/$goProject
+go install ./vendor/github.com/bronze1man/yaml2json
+go install ./vendor/github.com/aktau/github-release
 """
   }
   stage ('Build') {

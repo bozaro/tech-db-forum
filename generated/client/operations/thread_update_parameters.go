@@ -148,12 +148,10 @@ func (o *ThreadUpdateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.
 		return err
 	}
 
-	if o.Thread == nil {
-		o.Thread = new(models.ThreadUpdate)
-	}
-
-	if err := r.SetBodyParam(o.Thread); err != nil {
-		return err
+	if o.Thread != nil {
+		if err := r.SetBodyParam(o.Thread); err != nil {
+			return err
+		}
 	}
 
 	if len(res) > 0 {

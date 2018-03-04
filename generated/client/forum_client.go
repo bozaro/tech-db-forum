@@ -47,7 +47,6 @@ func NewHTTPClientWithConfig(formats strfmt.Registry, cfg *TransportConfig) *For
 
 	// create transport and client
 	transport := httptransport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
-	//	transport.Consumers[runtime.JSONMime]=
 	return New(transport, formats)
 }
 

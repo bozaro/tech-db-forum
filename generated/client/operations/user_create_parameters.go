@@ -148,13 +148,10 @@ func (o *UserCreateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Re
 		return err
 	}
 
-	if o.Profile == nil {
-		o.Profile = new(models.User)
-		o.Profile = new(models.User)
-	}
-
-	if err := r.SetBodyParam(o.Profile); err != nil {
-		return err
+	if o.Profile != nil {
+		if err := r.SetBodyParam(o.Profile); err != nil {
+			return err
+		}
 	}
 
 	if len(res) > 0 {
