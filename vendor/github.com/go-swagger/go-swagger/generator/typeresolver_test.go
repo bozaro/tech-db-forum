@@ -61,7 +61,7 @@ var schTypeVals = []struct{ Type, Format, Expected string }{
 	{"string", "duration", "strfmt.Duration"},
 	{"string", "ObjectId", "strfmt.ObjectId"},
 	{"string", "password", "strfmt.Password"},
-	{"file", "", "runtime.File"},
+	{"file", "", "io.ReadCloser"},
 }
 
 var schRefVals = []struct{ Type, GoType, Expected string }{
@@ -149,7 +149,11 @@ func TestTypeResolver_BasicTypes(t *testing.T) {
 
 			rt, err := resolver.ResolveSchema(sch, true, false)
 			if assert.NoError(t, err) {
-				assert.True(t, rt.IsNullable, "expected %q (%q) to be nullable", val.Type, val.Format)
+				if val.Type == "file" {
+					assert.False(t, rt.IsNullable, "expected %q (%q) to not be nullable", val.Type, val.Format)
+				} else {
+					assert.True(t, rt.IsNullable, "expected %q (%q) to be nullable", val.Type, val.Format)
+				}
 				assertPrimitiveResolve(t, val.Type, val.Format, val.Expected, rt)
 			}
 
@@ -158,7 +162,11 @@ func TestTypeResolver_BasicTypes(t *testing.T) {
 			sch.Extensions[xNullable] = true
 			rt, err = resolver.ResolveSchema(sch, true, true)
 			if assert.NoError(t, err) {
-				assert.True(t, rt.IsNullable, "expected %q (%q) to be nullable", val.Type, val.Format)
+				if val.Type == "file" {
+					assert.False(t, rt.IsNullable, "expected %q (%q) to not be nullable", val.Type, val.Format)
+				} else {
+					assert.True(t, rt.IsNullable, "expected %q (%q) to be nullable", val.Type, val.Format)
+				}
 				assertPrimitiveResolve(t, val.Type, val.Format, val.Expected, rt)
 			}
 
@@ -167,7 +175,11 @@ func TestTypeResolver_BasicTypes(t *testing.T) {
 			sch.Extensions[xNullable] = true
 			rt, err = resolver.ResolveSchema(sch, true, true)
 			if assert.NoError(t, err) {
-				assert.True(t, rt.IsNullable, "expected %q (%q) to be nullable", val.Type, val.Format)
+				if val.Type == "file" {
+					assert.False(t, rt.IsNullable, "expected %q (%q) to not be nullable", val.Type, val.Format)
+				} else {
+					assert.True(t, rt.IsNullable, "expected %q (%q) to be nullable", val.Type, val.Format)
+				}
 				assertPrimitiveResolve(t, val.Type, val.Format, val.Expected, rt)
 			}
 		}
@@ -405,7 +417,7 @@ func basicTaskListResolver(t testing.TB) (*loads.Document, *typeResolver, error)
 	}
 	swsp := tlb.Spec()
 	uc := swsp.Definitions["UserCard"]
-	uc.AddExtension("x-go-name", "UserItem")
+	uc.AddExtension(xGoName, "UserItem")
 	swsp.Definitions["UserCard"] = uc
 	resolver := &typeResolver{
 		Doc:           tlb,
@@ -415,7 +427,7 @@ func basicTaskListResolver(t testing.TB) (*loads.Document, *typeResolver, error)
 	resolver.KnownDefs = make(map[string]struct{})
 	for k, sch := range swsp.Definitions {
 		resolver.KnownDefs[k] = struct{}{}
-		if nm, ok := sch.Extensions["x-go-name"]; ok {
+		if nm, ok := sch.Extensions[xGoName]; ok {
 			resolver.KnownDefs[nm.(string)] = struct{}{}
 		}
 	}

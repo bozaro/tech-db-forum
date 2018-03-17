@@ -18,7 +18,9 @@ import (
 	"fmt"
 	"go/ast"
 	goparser "go/parser"
+	"io/ioutil"
 	"log"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -841,7 +843,10 @@ func verifyBoolean(t *testing.T, matcher *regexp.Regexp, names, names2 []string)
 	if len(names2) > 0 {
 		nm2 = " " + names2[0]
 	}
-	fmt.Printf("tested %d %s%s combinations\n", cnt, names[0], nm2)
+	var Debug = os.Getenv("DEBUG") != "" || os.Getenv("SWAGGER_DEBUG") != ""
+	if Debug {
+		fmt.Printf("tested %d %s%s combinations\n", cnt, names[0], nm2)
+	}
 }
 
 func verifyIntegerMinMaxManyWords(t *testing.T, matcher *regexp.Regexp, name1 string, words []string) {
@@ -888,7 +893,11 @@ func verifyIntegerMinMaxManyWords(t *testing.T, matcher *regexp.Regexp, name1 st
 	if len(words) > 0 {
 		nm2 = " " + words[0]
 	}
-	fmt.Printf("tested %d %s%s combinations\n", cnt, name1, nm2)
+	var Debug = os.Getenv("DEBUG") != "" || os.Getenv("SWAGGER_DEBUG") != ""
+	if Debug {
+		fmt.Printf("tested %d %s%s combinations\n", cnt, name1, nm2)
+
+	}
 }
 
 func verifyNumeric2Words(t *testing.T, matcher *regexp.Regexp, name1, name2 string) {
@@ -937,7 +946,10 @@ func verifyNumeric2Words(t *testing.T, matcher *regexp.Regexp, name1, name2 stri
 			}
 		}
 	}
-	fmt.Printf("tested %d %s %s combinations\n", cnt, name1, name2)
+	var Debug = os.Getenv("DEBUG") != "" || os.Getenv("SWAGGER_DEBUG") != ""
+	if Debug {
+		fmt.Printf("tested %d %s %s combinations\n", cnt, name1, name2)
+	}
 }
 
 func verifyMinMax(t *testing.T, matcher *regexp.Regexp, name string, operators []string) {
@@ -975,7 +987,10 @@ func verifyMinMax(t *testing.T, matcher *regexp.Regexp, name string, operators [
 			}
 		}
 	}
-	fmt.Printf("tested %d %s combinations\n", cnt, name)
+	var Debug = os.Getenv("DEBUG") != "" || os.Getenv("SWAGGER_DEBUG") != ""
+	if Debug {
+		fmt.Printf("tested %d %s combinations\n", cnt, name)
+	}
 }
 
 func verifySwaggerOneArgSwaggerTag(t *testing.T, matcher *regexp.Regexp, prefixes, validParams, invalidParams []string) {
@@ -1040,7 +1055,11 @@ func TestEnhancement793(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, bytes)
 
-		doc, err := loads.Analyzed(bytes, "")
+		file, err := ioutil.TempFile(os.TempDir(), "scanner")
+		file.Write(bytes)
+		file.Close()
+
+		doc, err := loads.Spec(file.Name())
 		if assert.NoError(t, err) {
 			validator := validate.NewSpecValidator(doc.Schema(), strfmt.Default)
 			res, _ := validator.Validate(doc)

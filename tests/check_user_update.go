@@ -112,8 +112,12 @@ func CheckUserUpdatePart(c *client.Forum, f *Factory, m *Modify) {
 
 func CheckUserUpdateNotFound(c *client.Forum, f *Factory) {
 	user := f.RandomUser()
+	update := &models.UserUpdate{}
+	update.Fullname = user.Fullname
+
 	_, err := c.Operations.UserUpdate(operations.NewUserUpdateParams().
 		WithNickname(user.Nickname).
+		WithProfile(update).
 		WithContext(ExpectedError(404, "Can't find user by nickname: %s", user.Nickname)))
 	CheckIsType(operations.NewUserUpdateNotFound(), err)
 }

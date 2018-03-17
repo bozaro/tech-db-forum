@@ -21,9 +21,9 @@
 #  version = "2.4.0"
 
 required = [
-  "github.com/mailru/easyjson",
+  "github.com/mailru/easyjson/easyjson",
   "github.com/go-swagger/go-swagger/cmd/swagger",
-  "github.com/jteeuwen/go-bindata",
+  "github.com/jteeuwen/go-bindata/go-bindata",
   "github.com/bronze1man/yaml2json",
   "github.com/aktau/github-release"
 ]
@@ -34,6 +34,10 @@ required = [
 [[constraint]]
   branch = "master"
   name = "github.com/aryann/difflib"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/go-swagger/go-swagger"
 
 [[constraint]]
   branch = "master"

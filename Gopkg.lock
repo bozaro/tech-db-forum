@@ -149,6 +149,7 @@
   revision = "180bba53b98899f743a112e568bed9e2ef31aa20"
 
 [[projects]]
+  branch = "master"
   name = "github.com/go-swagger/go-swagger"
   packages = [
     "cmd/swagger",
@@ -158,8 +159,7 @@
     "generator",
     "scan"
   ]
-  revision = "b015bda48dfc648fdd95e7bc81dbb5cefc17c975"
-  version = "0.13.0"
+  revision = "f552963ac0dfdec0450f6749aeeeeb2d31cd5544"
 
 [[projects]]
   name = "github.com/gorilla/handlers"
@@ -192,7 +192,10 @@
 
 [[projects]]
   name = "github.com/jteeuwen/go-bindata"
-  packages = ["."]
+  packages = [
+    ".",
+    "go-bindata"
+  ]
   revision = "bbd0c6e271208dce66d8fda4bc536453cd27fc4a"
   version = "v3.0.7"
 
@@ -225,9 +228,13 @@
   name = "github.com/mailru/easyjson"
   packages = [
     ".",
+    "bootstrap",
     "buffer",
+    "easyjson",
+    "gen",
     "jlexer",
-    "jwriter"
+    "jwriter",
+    "parser"
   ]
   revision = "32fa128f234d041f196a9f3e0fea5ac9772c08e1"
 
@@ -423,6 +430,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "20b9425bfe9861a89c8b7dacadd0535a610267baba1c17f4f50567ffd520bb42"
+  inputs-digest = "796e57db01a93607b1e48eefdb412420ae186193416906a19fdd6c5ce411ec39"
   solver-name = "gps-cdcl"
   solver-version = 1

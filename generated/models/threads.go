@@ -36,6 +36,7 @@ func (m Threads) Validate(formats strfmt.Registry) error {
 				}
 				return err
 			}
+
 		}
 
 	}

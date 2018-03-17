@@ -28,133 +28,30 @@ import (
 )
 
 const (
-	iface       = "interface{}"
-	array       = "array"
-	file        = "file"
-	number      = "number"
-	integer     = "integer"
-	boolean     = "boolean"
-	str         = "string"
-	object      = "object"
-	binary      = "binary"
-	xNullable   = "x-nullable"
-	xIsNullable = "x-isnullable"
-	xOmitEmpty  = "x-omitempty"
-	sHTTP       = "http"
-	body        = "body"
+	iface   = "interface{}"
+	array   = "array"
+	file    = "file"
+	number  = "number"
+	integer = "integer"
+	boolean = "boolean"
+	str     = "string"
+	object  = "object"
+	binary  = "binary"
+	sHTTP   = "http"
+	body    = "body"
 )
 
-var zeroes = map[string]string{
-	"string":            "\"\"",
-	"int8":              "0",
-	"int":               "0",
-	"int16":             "0",
-	"int32":             "0",
-	"int64":             "0",
-	"uint":              "0",
-	"uint8":             "0",
-	"uint16":            "0",
-	"uint32":            "0",
-	"uint64":            "0",
-	"bool":              "false",
-	"float32":           "0",
-	"float64":           "0",
-	"strfmt.DateTime":   "strfmt.DateTime{}",
-	"strfmt.Date":       "strfmt.Date{}",
-	"strfmt.URI":        "strfmt.URI(\"\")",
-	"strfmt.Email":      "strfmt.Email(\"\")",
-	"strfmt.Hostname":   "strfmt.Hostname(\"\")",
-	"strfmt.IPv4":       "strfmt.IPv4(\"\")",
-	"strfmt.IPv6":       "strfmt.IPv6(\"\")",
-	"strfmt.UUID":       "strfmt.UUID(\"\")",
-	"strfmt.UUID3":      "strfmt.UUID3(\"\")",
-	"strfmt.UUID4":      "strfmt.UUID4(\"\")",
-	"strfmt.UUID5":      "strfmt.UUID5(\"\")",
-	"strfmt.ISBN":       "strfmt.ISBN(\"\")",
-	"strfmt.ISBN10":     "strfmt.ISBN10(\"\")",
-	"strfmt.ISBN13":     "strfmt.ISBN13(\"\")",
-	"strfmt.CreditCard": "strfmt.CreditCard(\"\")",
-	"strfmt.SSN":        "strfmt.SSN(\"\")",
-	"strfmt.Password":   "strfmt.Password(\"\")",
-	"strfmt.HexColor":   "strfmt.HexColor(\"#000000\")",
-	"strfmt.RGBColor":   "strfmt.RGBColor(\"rgb(0,0,0)\")",
-	"strfmt.Base64":     "nil",
-	"strfmt.Duration":   "0",
-}
-
-var stringConverters = map[string]string{
-	"int8":    "swag.ConvertInt8",
-	"int16":   "swag.ConvertInt16",
-	"int32":   "swag.ConvertInt32",
-	"int64":   "swag.ConvertInt64",
-	"uint8":   "swag.ConvertUint8",
-	"uint16":  "swag.ConvertUint16",
-	"uint32":  "swag.ConvertUint32",
-	"uint64":  "swag.ConvertUint64",
-	"bool":    "swag.ConvertBool",
-	"float32": "swag.ConvertFloat32",
-	"float64": "swag.ConvertFloat64",
-}
-
-var stringFormatters = map[string]string{
-	"int8":    "swag.FormatInt8",
-	"int16":   "swag.FormatInt16",
-	"int32":   "swag.FormatInt32",
-	"int64":   "swag.FormatInt64",
-	"uint8":   "swag.FormatUint8",
-	"uint16":  "swag.FormatUint16",
-	"uint32":  "swag.FormatUint32",
-	"uint64":  "swag.FormatUint64",
-	"bool":    "swag.FormatBool",
-	"float32": "swag.FormatFloat32",
-	"float64": "swag.FormatFloat64",
-}
-
-// typeMapping contains a mapping of format or type name to go type
-var typeMapping = map[string]string{
-	"byte":       "strfmt.Base64",
-	"date":       "strfmt.Date",
-	"datetime":   "strfmt.DateTime",
-	"date-time":  "strfmt.DateTime",
-	"uri":        "strfmt.URI",
-	"email":      "strfmt.Email",
-	"hostname":   "strfmt.Hostname",
-	"ipv4":       "strfmt.IPv4",
-	"ipv6":       "strfmt.IPv6",
-	"mac":        "strfmt.MAC",
-	"uuid":       "strfmt.UUID",
-	"uuid3":      "strfmt.UUID3",
-	"uuid4":      "strfmt.UUID4",
-	"uuid5":      "strfmt.UUID5",
-	"isbn":       "strfmt.ISBN",
-	"isbn10":     "strfmt.ISBN10",
-	"isbn13":     "strfmt.ISBN13",
-	"creditcard": "strfmt.CreditCard",
-	"ssn":        "strfmt.SSN",
-	"hexcolor":   "strfmt.HexColor",
-	"rgbcolor":   "strfmt.RGBColor",
-	"duration":   "strfmt.Duration",
-	"password":   "strfmt.Password",
-	"ObjectId":   "strfmt.ObjectId",
-	"binary":     "io.ReadCloser",
-	"char":       "rune",
-	"int":        "int64",
-	"int8":       "int8",
-	"int16":      "int16",
-	"int32":      "int32",
-	"int64":      "int64",
-	"uint":       "uint64",
-	"uint8":      "uint8",
-	"uint16":     "uint16",
-	"uint32":     "uint32",
-	"uint64":     "uint64",
-	"float":      "float32",
-	"double":     "float64",
-	"number":     "float64",
-	"integer":    "int64",
-	"boolean":    "bool",
-	"file":       "runtime.File",
-}
+// Extensions supported by go-swagger
+const (
+	xClass       = "x-class"         // class name used by discriminator
+	xGoCustomTag = "x-go-custom-tag" // additional tag for serializers on struct fields
+	xGoName      = "x-go-name"       // name of the generated go variable
+	xGoType      = "x-go-type"       // reuse existing type (do not generate)
+	xIsNullable  = "x-isnullable"
+	xNullable    = "x-nullable" // turns the schema into a pointer
+	xOmitEmpty   = "x-omitempty"
+	xSchemes     = "x-schemes" // additional schemes supported for operations (server generation)
+)
 
 // swaggerTypeMapping contains a mapping from go type to swagger type or format
 var swaggerTypeName map[string]string
@@ -170,6 +67,13 @@ func simpleResolvedType(tn, fmt string, items *spec.Items) (result resolvedType)
 	result.SwaggerType = tn
 	result.SwaggerFormat = fmt
 	//_, result.IsPrimitive = primitives[tn]
+
+	if tn == file {
+		result.IsPrimitive = true
+		result.GoType = typeMapping[binary]
+		result.IsStream = true
+		return
+	}
 
 	if fmt != "" {
 		fmtn := strings.Replace(fmt, "-", "", -1)
@@ -232,15 +136,15 @@ func debugLog(format string, args ...interface{}) {
 func knownDefGoType(def string, schema spec.Schema, clear func(string) string) (string, string, string) {
 	debugLog("known def type: %q", def)
 	ext := schema.Extensions
-	if nm, ok := ext.GetString("x-go-name"); ok {
+	if nm, ok := ext.GetString(xGoName); ok {
 		if clear == nil {
-			debugLog("known def type x-go-name no clear: %q", nm)
+			debugLog("known def type %s no clear: %q", xGoName, nm)
 			return nm, "", ""
 		}
-		debugLog("known def type x-go-name clear: %q -> %q", nm, clear(nm))
+		debugLog("known def type %s clear: %q -> %q", xGoName, nm, clear(nm))
 		return clear(nm), "", ""
 	}
-	v, ok := ext["x-go-type"]
+	v, ok := ext[xGoType]
 	if !ok {
 		if clear == nil {
 			debugLog("known def type no clear: %q", def)
@@ -260,7 +164,7 @@ func knownDefGoType(def string, schema spec.Schema, clear func(string) string) (
 	} else {
 		alias = filepath.Base(pkg)
 	}
-	debugLog("known def type x-go-type no clear: %q", alias+"."+t, pkg, alias)
+	debugLog("known def type %s no clear: %q", xGoType, alias+"."+t, pkg, alias)
 	return alias + "." + t, pkg, alias
 }
 
@@ -294,14 +198,8 @@ func (t *typeResolver) resolveSchemaRef(schema *spec.Schema, isRequired bool) (r
 		returns = true
 		var ref *spec.Schema
 		var er error
-		if t.Doc.SpecFilePath() != "" {
-			if Debug {
-				log.Printf("loading with base: %s", t.Doc.SpecFilePath())
-			}
-			ref, er = spec.ResolveRefWithBase(t.Doc.Spec(), &schema.Ref, &spec.ExpandOptions{RelativeBase: t.Doc.SpecFilePath()})
-		} else {
-			ref, er = spec.ResolveRef(t.Doc.Spec(), &schema.Ref)
-		}
+
+		ref, er = spec.ResolveRef(t.Doc.Spec(), &schema.Ref)
 		if er != nil {
 			if Debug {
 				log.Print("error resolving", er)
@@ -364,6 +262,8 @@ func (t *typeResolver) resolveFormat(schema *spec.Schema, isAnonymous bool, isRe
 			result.IsPrimitive = schFmt != binary
 			result.IsStream = schFmt == binary
 			_, result.IsCustomFormatter = customFormatters[tpe]
+			// propagate extensions in resolvedType
+			result.Extensions = schema.Extensions
 
 			switch result.SwaggerType {
 			case str:
@@ -614,14 +514,6 @@ func boolExtension(ext spec.Extensions, key string) *bool {
 	return nil
 }
 
-func logDebug(frmt string, args ...interface{}) {
-	if Debug {
-		_, file, pos, _ := runtime.Caller(2)
-		log.Printf("%s:%d: %s", filepath.Base(file), pos, fmt.Sprintf(frmt, args...))
-	}
-
-}
-
 func (t *typeResolver) ResolveSchema(schema *spec.Schema, isAnonymous, isRequired bool) (result resolvedType, err error) {
 	logDebug("resolving schema (anon: %t, req: %t) %s\n", isAnonymous, isRequired, t.ModelName /*bbb*/)
 	if schema == nil {
@@ -639,6 +531,15 @@ func (t *typeResolver) ResolveSchema(schema *spec.Schema, isAnonymous, isRequire
 			logDebug("not anonymous ref")
 		}
 		logDebug("returning after ref")
+		return
+	}
+
+	if t.firstType(schema) == file {
+		result.SwaggerType = file
+		result.IsPrimitive = true
+		result.IsNullable = false
+		result.GoType = typeMapping[binary]
+		result.IsStream = true
 		return
 	}
 
@@ -737,70 +638,31 @@ type resolvedType struct {
 }
 
 func (rt *resolvedType) Zero() string {
+	// if type is aliased, provide zero from the aliased type
+	if rt.IsAliased {
+		if zr, ok := zeroes[rt.AliasedType]; ok {
+			return rt.GoType + "(" + zr + ")"
+		}
+	}
+	// zero function provided as native or by strfmt function
 	if zr, ok := zeroes[rt.GoType]; ok {
 		return zr
 	}
+	// map and slice initializer
 	if rt.IsMap || rt.IsArray {
 		return "make(" + rt.GoType + ", 0, 50)"
 	}
+	// object initializer
 	if rt.IsTuple || rt.IsComplexObject {
 		if rt.IsNullable {
 			return "new(" + rt.GoType + ")"
 		}
 		return rt.GoType + "{}"
 	}
+	// interface initializer
 	if rt.IsInterface {
 		return "nil"
 	}
 
 	return ""
-}
-
-var primitives = map[string]struct{}{
-	"bool":       struct{}{},
-	"uint":       struct{}{},
-	"uint8":      struct{}{},
-	"uint16":     struct{}{},
-	"uint32":     struct{}{},
-	"uint64":     struct{}{},
-	"int":        struct{}{},
-	"int8":       struct{}{},
-	"int16":      struct{}{},
-	"int32":      struct{}{},
-	"int64":      struct{}{},
-	"float32":    struct{}{},
-	"float64":    struct{}{},
-	"string":     struct{}{},
-	"complex64":  struct{}{},
-	"complex128": struct{}{},
-	"byte":       struct{}{},
-	"[]byte":     struct{}{},
-	"rune":       struct{}{},
-}
-
-var customFormatters = map[string]struct{}{
-	"strfmt.DateTime":   struct{}{},
-	"strfmt.Date":       struct{}{},
-	"strfmt.URI":        struct{}{},
-	"strfmt.Email":      struct{}{},
-	"strfmt.Hostname":   struct{}{},
-	"strfmt.IPv4":       struct{}{},
-	"strfmt.IPv6":       struct{}{},
-	"strfmt.UUID":       struct{}{},
-	"strfmt.UUID3":      struct{}{},
-	"strfmt.UUID4":      struct{}{},
-	"strfmt.UUID5":      struct{}{},
-	"strfmt.ISBN":       struct{}{},
-	"strfmt.ISBN10":     struct{}{},
-	"strfmt.ISBN13":     struct{}{},
-	"strfmt.CreditCard": struct{}{},
-	"strfmt.SSN":        struct{}{},
-	"strfmt.Password":   struct{}{},
-	"strfmt.HexColor":   struct{}{},
-	"strfmt.RGBColor":   struct{}{},
-	"strfmt.Base64":     struct{}{},
-	"strfmt.Duration":   struct{}{},
-	"strfmt.ObjectID":   struct{}{},
-	"io.ReadCloser":     struct{}{},
-	"io.Writer":         struct{}{},
 }

@@ -2,6 +2,7 @@ package generate_test
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -22,6 +23,8 @@ func TestGenerateModel(t *testing.T) {
 		"todolist.simpleheader.yml",
 		"todolist.simplequery.yml",
 	}
+	log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(os.Stdout)
 
 	base := filepath.FromSlash("../../../../")
 	for _, spec := range specs {
@@ -36,7 +39,6 @@ func TestGenerateModel(t *testing.T) {
 			flags.Parse(m)
 			m.Spec = flags.Filename(path)
 			m.Target = flags.Filename(generated)
-			m.NoValidator = true
 
 			if err := m.Execute([]string{}); err != nil {
 				t.Error(err)

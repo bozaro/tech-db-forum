@@ -17,6 +17,11 @@ package generator
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/go-openapi/spec"
@@ -472,8 +477,9 @@ func TestGenParameter_Issue163(t *testing.T) {
 				ff, err := opts.LanguageOpts.FormatContent("get_search_parameters.go", buf.Bytes())
 				if assert.NoError(t, err) {
 					res := string(ff)
-					assertInCode(t, "var stringTypeInQueryDefault string = string(\"qsValue\")", res)
-					assertInCode(t, "o.StringTypeInQuery = &stringTypeInQueryDefault", res)
+					// NOTE(fredbi): removed default values resolution from private details (defaults are resolved in NewXXXParams())
+					assertInCode(t, "stringTypeInQueryDefault = string(\"qsValue\")", res)
+					assertInCode(t, "StringTypeInQuery: &stringTypeInQueryDefault", res)
 				} else {
 					fmt.Println(buf.String())
 				}
@@ -675,7 +681,8 @@ func TestGenParameter_Issue628_Collection(t *testing.T) {
 				ff, err := opts.LanguageOpts.FormatContent("post_models.go", buf.Bytes())
 				if assert.NoError(err) {
 					res := string(ff)
-					assertInCode(t, `workspaceIDI, err := formats.Parse(workspaceIDIV)`, res)
+					assertInCode(t, `value, err := formats.Parse("uuid", workspaceIDIV)`, res) // NOTE(fredbi): added type assertion
+					assertInCode(t, `workspaceIDI := *(value.(*strfmt.UUID))`, res)
 					assertInCode(t, `workspaceIDIR = append(workspaceIDIR, workspaceIDI)`, res)
 				} else {
 					fmt.Println(buf.String())
@@ -875,6 +882,11 @@ func TestGenParameter_Issue1010_Server(t *testing.T) {
 }
 
 func TestGenParameter_Issue710(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
+	defer func() {
+		log.SetOutput(os.Stdout)
+	}()
+
 	assert := assert.New(t)
 
 	gen, err := opBuilder("createTask", "../fixtures/codegen/todolist.allparams.yml")
@@ -899,8 +911,12 @@ func TestGenParameter_Issue710(t *testing.T) {
 
 func TestGenParameter_Issue776_LocalFileRef(t *testing.T) {
 	spec.Debug = true
-	defer func() { spec.Debug = false }()
-	b, err := opBuilder("GetItem", "../fixtures/bugs/776/param.yaml")
+	log.SetOutput(ioutil.Discard)
+	defer func() {
+		spec.Debug = false
+		log.SetOutput(os.Stdout)
+	}()
+	b, err := opBuilderWithFlatten("GetItem", "../fixtures/bugs/776/param.yaml")
 	if assert.NoError(t, err) {
 		op, err := b.MakeOperation()
 		if assert.NoError(t, err) {
@@ -909,19 +925,10 @@ func TestGenParameter_Issue776_LocalFileRef(t *testing.T) {
 			if assert.NoError(t, templates.MustGet("serverParameter").Execute(&buf, op)) {
 				ff, err := opts.LanguageOpts.FormatContent("do_empty_responses.go", buf.Bytes())
 				if assert.NoError(t, err) {
-					assertInCode(t, "Body *GetItemParamsBody", string(ff))
+					assertInCode(t, "Body *models.Item", string(ff))
 					assertNotInCode(t, "type GetItemParamsBody struct", string(ff))
 				} else {
 					fmt.Println(buf.String())
-				}
-			}
-			var buf2 bytes.Buffer
-			if assert.NoError(t, templates.MustGet("serverOperation").Execute(&buf2, op)) {
-				ff, err := opts.LanguageOpts.FormatContent("do_empty_responses.go", buf2.Bytes())
-				if assert.NoError(t, err) {
-					assertInCode(t, "type GetItemParamsBody struct", string(ff))
-				} else {
-					fmt.Println(buf2.String())
 				}
 			}
 		}
@@ -971,6 +978,34 @@ func TestGenParameter_Issue1199(t *testing.T) {
 				if assert.NoError(err) {
 					res := string(ff)
 					assertInCode(t, assertion, res)
+				} else {
+					fmt.Println(buf.String())
+				}
+			}
+		}
+	}
+}
+
+func TestGenParameter_Issue1325(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
+	defer func() {
+		log.SetOutput(os.Stdout)
+	}()
+
+	assert := assert.New(t)
+
+	gen, err := opBuilder("uploadFile", "../fixtures/bugs/1325/swagger.yaml")
+	if assert.NoError(err) {
+		op, err := gen.MakeOperation()
+		if assert.NoError(err) {
+			buf := bytes.NewBuffer(nil)
+			opts := opts()
+			err := templates.MustGet("clientParameter").Execute(buf, op)
+			if assert.NoError(err) {
+				ff, err := opts.LanguageOpts.FormatContent("create_task_parameter.go", buf.Bytes())
+				if assert.NoError(err) {
+					res := string(ff)
+					assertInCode(t, "runtime.NamedReadCloser", res)
 				} else {
 					fmt.Println(buf.String())
 				}
@@ -1109,17 +1144,539 @@ func TestGenParameter_ArrayQueryParameters(t *testing.T) {
 					assertInCode(t, `err := validate.MaxLength(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "siNested", i), ii), iii), "query", siNestedIII, 50)`, res)
 					assertInCode(t, `err := validate.Pattern(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "siNested", i), ii), iii), "query", siNestedIII, `+"`"+`[A-Z][\w-]+`+"`"+`)`, res)
 					assertInCode(t, `siNestedIIIR = append(siNestedIIIR, siNestedIII)`, res)
-					assertInCode(t, `siNestedIIiSize := int64(len(siNestedII))`, res)
+					assertInCode(t, `siNestedIIiSize := int64(len(siNestedIIIC))`, res) // NOTE(fredbi): fixed variable (nested arrays)
 					assertInCode(t, `err := validate.MinItems(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "siNested", i), ii), "query", siNestedIIiSize, 3)`, res)
 					assertInCode(t, `err := validate.MaxItems(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "siNested", i), ii), "query", siNestedIIiSize, 30)`, res)
-					assertInCode(t, `siNestedIIR = append(siNestedIIR, siNestedII)`, res)
-					assertInCode(t, `siNestedISize := int64(len(siNestedI))`, res)
+					assertInCode(t, `siNestedIIR = append(siNestedIIR, siNestedIIIR)`, res) // NOTE(fredbi): fixed variable (nested arrays)
+					assertInCode(t, `siNestedISize := int64(len(siNestedIIC))`, res)        //NOTE(fredbi): fixed variable (nested arrays)
 					assertInCode(t, `err := validate.MinItems(fmt.Sprintf("%s.%v", "siNested", i), "query", siNestedISize, 2)`, res)
 					assertInCode(t, `err := validate.MaxItems(fmt.Sprintf("%s.%v", "siNested", i), "query", siNestedISize, 20)`, res)
-					assertInCode(t, `siNestedIR = append(siNestedIR, siNestedI)`, res)
+					assertInCode(t, `siNestedIR = append(siNestedIR, siNestedIIR)`, res) // NOTE(fredbi): fixed variable (nested arrays)
 					assertInCode(t, `o.SiNested = siNestedIR`, res)
 				} else {
 					fmt.Println(buf.String())
+				}
+			}
+		}
+	}
+}
+
+func TestGenParameter_Issue909(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
+	defer func() {
+		log.SetOutput(os.Stdout)
+	}()
+
+	assert := assert.New(t)
+	fixtureConfig := map[string]map[string][]string{
+		"1": map[string][]string{ // fixture index
+			"serverParameter": []string{ // executed template
+				// expected code lines
+				`strfmt "github.com/go-openapi/strfmt"`,
+				`NotAnOption1 *strfmt.DateTime`,
+				`NotAnOption2 *strfmt.UUID`,
+				`NotAnOption3 *models.ContainerConfig`,
+				`value, err := formats.Parse("date-time", raw)`,
+				`o.NotAnOption1 = (value.(*strfmt.DateTime))`,
+				`if err := o.validateNotAnOption1(formats); err != nil {`,
+				`if err := validate.FormatOf("notAnOption1", "query", "date-time", o.NotAnOption1.String(), formats); err != nil {`,
+				`value, err := formats.Parse("uuid", raw)`,
+				`o.NotAnOption2 = (value.(*strfmt.UUID))`,
+				`if err := o.validateNotAnOption2(formats); err != nil {`,
+				`if err := validate.FormatOf("notAnOption2", "query", "uuid", o.NotAnOption2.String(), formats); err != nil {`,
+			},
+		},
+		"2": map[string][]string{
+			"serverParameter": []string{
+				// expected code lines
+				`"github.com/go-openapi/validate"`,
+				`IsAnOption2 []strfmt.UUID`,
+				`NotAnOption1 []strfmt.DateTime`,
+				`NotAnOption3 *models.ContainerConfig`,
+				`isAnOption2IC := swag.SplitByFormat(qvIsAnOption2, "csv")`,
+				`var isAnOption2IR []strfmt.UUID`,
+				`for i, isAnOption2IV := range isAnOption2IC {`,
+				`value, err := formats.Parse("uuid", isAnOption2IV)`,
+				`isAnOption2I := *(value.(*strfmt.UUID))`,
+				`if err := validate.FormatOf(fmt.Sprintf("%s.%v", "isAnOption2", i), "query", "uuid", isAnOption2I.String(), formats); err != nil {`,
+				`isAnOption2IR = append(isAnOption2IR, isAnOption2I)`,
+				`o.IsAnOption2 = isAnOption2IR`,
+				`return errors.Required("notAnOption1", "query")`,
+				`notAnOption1IC := swag.SplitByFormat(qvNotAnOption1, "csv")`,
+				`var notAnOption1IR []strfmt.DateTime`,
+				`for i, notAnOption1IV := range notAnOption1IC {`,
+				`value, err := formats.Parse("date-time", notAnOption1IV)`,
+				`return errors.InvalidType(fmt.Sprintf("%s.%v", "notAnOption1", i), "query", "strfmt.DateTime", value)`,
+				`notAnOption1I := *(value.(*strfmt.DateTime))`,
+				`if err := validate.FormatOf(fmt.Sprintf("%s.%v", "notAnOption1", i), "query", "date-time", notAnOption1I.String(), formats); err != nil {`,
+				`notAnOption1IR = append(notAnOption1IR, notAnOption1I)`,
+				`o.NotAnOption1 = notAnOption1IR`,
+			},
+		},
+		"3": map[string][]string{
+			"serverParameter": []string{
+				// expected code lines
+				`"github.com/go-openapi/validate"`,
+				`strfmt "github.com/go-openapi/strfmt"`,
+				`IsAnOption2 [][]strfmt.UUID`,
+				`IsAnOption4 [][][]strfmt.UUID`,
+				`IsAnOptionalHeader [][]strfmt.UUID`,
+				`NotAnOption1 [][]strfmt.DateTime`,
+				`NotAnOption3 *models.ContainerConfig`,
+				`isAnOption2IC := swag.SplitByFormat(qvIsAnOption2, "pipes")`,
+				`var isAnOption2IR [][]strfmt.UUID`,
+				`for i, isAnOption2IV := range isAnOption2IC {`,
+				`isAnOption2IIC := swag.SplitByFormat(isAnOption2IV, "")`,
+				`if len(isAnOption2IIC) > 0 {`,
+				`var isAnOption2IIR []strfmt.UUID`,
+				`for ii, isAnOption2IIV := range isAnOption2IIC {`,
+				`value, err := formats.Parse("uuid", isAnOption2IIV)`,
+				`isAnOption2II := *(value.(*strfmt.UUID))`,
+				`if err := validate.FormatOf(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "isAnOption2", i), ii), "query", "uuid", isAnOption2II.String(), formats); err != nil {`,
+				`isAnOption2IIR = append(isAnOption2IIR, isAnOption2II)`,
+				`isAnOption2IR = append(isAnOption2IR, isAnOption2IIR)`,
+				`o.IsAnOption2 = isAnOption2IR`,
+				`isAnOption4IC := swag.SplitByFormat(qvIsAnOption4, "csv")`,
+				`var isAnOption4IR [][][]strfmt.UUID`,
+				`for i, isAnOption4IV := range isAnOption4IC {`,
+				`isAnOption4IIC := swag.SplitByFormat(isAnOption4IV, "")`,
+				`if len(isAnOption4IIC) > 0 {`,
+				`var isAnOption4IIR [][]strfmt.UUID`,
+				`for ii, isAnOption4IIV := range isAnOption4IIC {`,
+				`isAnOption4IIIC := swag.SplitByFormat(isAnOption4IIV, "pipes")`,
+				`if len(isAnOption4IIIC) > 0 {`,
+				`var isAnOption4IIIR []strfmt.UUID`,
+				`for iii, isAnOption4IIIV := range isAnOption4IIIC {`,
+				`value, err := formats.Parse("uuid", isAnOption4IIIV)`,
+				`isAnOption4III := *(value.(*strfmt.UUID))`,
+				`if err := validate.Enum(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "isAnOption4", i), ii), iii), "query", isAnOption4III.String(), []interface{}{"a", "b", "c"}); err != nil {`,
+				`if err := validate.FormatOf(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "isAnOption4", i), ii), iii), "query", "uuid", isAnOption4III.String(), formats); err != nil {`,
+				`isAnOption4IIIR = append(isAnOption4IIIR, isAnOption4III)`,
+				`isAnOption4IIR = append(isAnOption4IIR, isAnOption4IIIR)`,
+				`isAnOption4IIiSize := int64(len(isAnOption4IIIC))`,
+				`if err := validate.MinItems(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "isAnOption4", i), ii), "query", isAnOption4IIiSize, 3); err != nil {`,
+				`if err := validate.UniqueItems(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "isAnOption4", i), ii), "query", isAnOption4IIIC); err != nil {`,
+				`isAnOption4IR = append(isAnOption4IR, isAnOption4IIR)`,
+				`if err := validate.UniqueItems(fmt.Sprintf("%s.%v", "isAnOption4", i), "query", isAnOption4IIC); err != nil {`,
+				`o.IsAnOption4 = isAnOption4IR`,
+				`if err := o.validateIsAnOption4(formats); err != nil {`,
+				`if err := validate.MaxItems("isAnOption4", "query", isAnOption4Size, 4); err != nil {`,
+				`isAnOptionalHeaderIC := swag.SplitByFormat(qvIsAnOptionalHeader, "pipes")`,
+				`var isAnOptionalHeaderIR [][]strfmt.UUID`,
+				`for i, isAnOptionalHeaderIV := range isAnOptionalHeaderIC {`,
+				`isAnOptionalHeaderIIC := swag.SplitByFormat(isAnOptionalHeaderIV, "")`,
+				`if len(isAnOptionalHeaderIIC) > 0 {`,
+				`var isAnOptionalHeaderIIR []strfmt.UUID`,
+				`for ii, isAnOptionalHeaderIIV := range isAnOptionalHeaderIIC {`,
+				`value, err := formats.Parse("uuid", isAnOptionalHeaderIIV)`,
+				`isAnOptionalHeaderII := *(value.(*strfmt.UUID))`,
+				`if err := validate.FormatOf(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "isAnOptionalHeader", i), ii), "header", "uuid", isAnOptionalHeaderII.String(), formats); err != nil {`,
+				`isAnOptionalHeaderIIR = append(isAnOptionalHeaderIIR, isAnOptionalHeaderII)`,
+				`isAnOptionalHeaderIR = append(isAnOptionalHeaderIR, isAnOptionalHeaderIIR)`,
+				`o.IsAnOptionalHeader = isAnOptionalHeaderIR`,
+				`if err := o.validateIsAnOptionalHeader(formats); err != nil {`,
+				`if err := validate.UniqueItems("isAnOptionalHeader", "header", o.IsAnOptionalHeader); err != nil {`,
+				`notAnOption1IC := swag.SplitByFormat(qvNotAnOption1, "csv")`,
+				`var notAnOption1IR [][]strfmt.DateTime`,
+				`for i, notAnOption1IV := range notAnOption1IC {`,
+				`notAnOption1IIC := swag.SplitByFormat(notAnOption1IV, "pipes")`,
+				`if len(notAnOption1IIC) > 0 {`,
+				`var notAnOption1IIR []strfmt.DateTime`,
+				`for ii, notAnOption1IIV := range notAnOption1IIC {`,
+				`value, err := formats.Parse("date-time", notAnOption1IIV)`,
+				`notAnOption1II := *(value.(*strfmt.DateTime))`,
+				`if err := validate.FormatOf(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "notAnOption1", i), ii), "query", "date-time", notAnOption1II.String(), formats); err != nil {`,
+				`notAnOption1IIR = append(notAnOption1IIR, notAnOption1II)`,
+				`notAnOption1IR = append(notAnOption1IR, notAnOption1IIR)`,
+				`o.NotAnOption1 = notAnOption1IR`,
+			},
+		},
+		"4": map[string][]string{
+			"serverParameter": []string{
+				// expected code lines
+				`"github.com/go-openapi/validate"`,
+				`strfmt "github.com/go-openapi/strfmt"`,
+				`IsAnOption2 [][]strfmt.UUID`,
+				`IsAnOption4 [][][]strfmt.UUID`,
+				`NotAnOption1 [][]strfmt.DateTime`,
+				`NotAnOption3 *models.ContainerConfig`,
+				`isAnOption2IC := swag.SplitByFormat(qvIsAnOption2, "")`,
+				`var isAnOption2IR [][]strfmt.UUID`,
+				`for i, isAnOption2IV := range isAnOption2IC {`,
+				`isAnOption2IIC := swag.SplitByFormat(isAnOption2IV, "pipes")`,
+				`if len(isAnOption2IIC) > 0 {`,
+				`var isAnOption2IIR []strfmt.UUID`,
+				`for ii, isAnOption2IIV := range isAnOption2IIC {`,
+				`value, err := formats.Parse("uuid", isAnOption2IIV)`,
+				`isAnOption2II := *(value.(*strfmt.UUID))`,
+				`if err := validate.FormatOf(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "isAnOption2", i), ii), "query", "uuid", isAnOption2II.String(), formats); err != nil {`,
+				`isAnOption2IIR = append(isAnOption2IIR, isAnOption2II)`,
+				`isAnOption2IR = append(isAnOption2IR, isAnOption2IIR)`,
+				`o.IsAnOption2 = isAnOption2IR`,
+				`isAnOption4IC := swag.SplitByFormat(qvIsAnOption4, "")`,
+				`var isAnOption4IR [][][]strfmt.UUID`,
+				`for i, isAnOption4IV := range isAnOption4IC {`,
+				`isAnOption4IIC := swag.SplitByFormat(isAnOption4IV, "pipes")`,
+				`if len(isAnOption4IIC) > 0 {`,
+				`var isAnOption4IIR [][]strfmt.UUID`,
+				`for ii, isAnOption4IIV := range isAnOption4IIC {`,
+				`isAnOption4IIIC := swag.SplitByFormat(isAnOption4IIV, "tsv")`,
+				`if len(isAnOption4IIIC) > 0 {`,
+				`var isAnOption4IIIR []strfmt.UUID`,
+				`for iii, isAnOption4IIIV := range isAnOption4IIIC {`,
+				`value, err := formats.Parse("uuid", isAnOption4IIIV)`,
+				`isAnOption4III := *(value.(*strfmt.UUID))`,
+				`if err := validate.Enum(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "isAnOption4", i), ii), iii), "query", isAnOption4III.String(), []interface{}{"a", "b", "c"}); err != nil {`,
+				`if err := validate.FormatOf(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "isAnOption4", i), ii), iii), "query", "uuid", isAnOption4III.String(), formats); err != nil {`,
+				`isAnOption4IIIR = append(isAnOption4IIIR, isAnOption4III)`,
+				`isAnOption4IIR = append(isAnOption4IIR, isAnOption4IIIR)`,
+				`isAnOption4IIiSize := int64(len(isAnOption4IIIC))`,
+				`if err := validate.MinItems(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "isAnOption4", i), ii), "query", isAnOption4IIiSize, 3); err != nil {`,
+				`if err := validate.UniqueItems(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "isAnOption4", i), ii), "query", isAnOption4IIIC); err != nil {`,
+				`isAnOption4IR = append(isAnOption4IR, isAnOption4IIR)`,
+				`if err := validate.UniqueItems(fmt.Sprintf("%s.%v", "isAnOption4", i), "query", isAnOption4IIC); err != nil {`,
+				`o.IsAnOption4 = isAnOption4IR`,
+				`if err := o.validateIsAnOption4(formats); err != nil {`,
+				`isAnOption4Size := int64(len(o.IsAnOption4))`,
+				`if err := validate.MaxItems("isAnOption4", "query", isAnOption4Size, 4); err != nil {`,
+				`return errors.Required("notAnOption1", "query")`,
+				`notAnOption1IC := swag.SplitByFormat(qvNotAnOption1, "")`,
+				`var notAnOption1IR [][]strfmt.DateTime`,
+				`for i, notAnOption1IV := range notAnOption1IC {`,
+				`notAnOption1IIC := swag.SplitByFormat(notAnOption1IV, "")`,
+				`if len(notAnOption1IIC) > 0 {`,
+				`var notAnOption1IIR []strfmt.DateTime`,
+				`for ii, notAnOption1IIV := range notAnOption1IIC {`,
+				`value, err := formats.Parse("date-time", notAnOption1IIV)`,
+				`notAnOption1II := *(value.(*strfmt.DateTime))`,
+				`if err := validate.FormatOf(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "notAnOption1", i), ii), "query", "date-time", notAnOption1II.String(), formats); err != nil {`,
+				`notAnOption1IIR = append(notAnOption1IIR, notAnOption1II)`,
+				`notAnOption1IR = append(notAnOption1IR, notAnOption1IIR)`,
+				`o.NotAnOption1 = notAnOption1IR`,
+			},
+		},
+		"5": map[string][]string{
+			"serverResponses": []string{
+				// expected code lines
+				`"github.com/go-openapi/strfmt"`,
+				"XIsAnOptionalHeader0 strfmt.DateTime `json:\"x-isAnOptionalHeader0\"`",
+				"XIsAnOptionalHeader1 []strfmt.DateTime `json:\"x-isAnOptionalHeader1\"`",
+				"XIsAnOptionalHeader2 [][]int32 `json:\"x-isAnOptionalHeader2\"`",
+				"XIsAnOptionalHeader3 [][][]strfmt.UUID `json:\"x-isAnOptionalHeader3\"`",
+				`xIsAnOptionalHeader0 := o.XIsAnOptionalHeader0.String()`,
+				`rw.Header().Set("x-isAnOptionalHeader0", xIsAnOptionalHeader0)`,
+				`var xIsAnOptionalHeader1IR []string`,
+				`for _, xIsAnOptionalHeader1I := range o.XIsAnOptionalHeader1 {`,
+				`xIsAnOptionalHeader1IS := xIsAnOptionalHeader1I.String()`,
+				`if xIsAnOptionalHeader1IS != "" {`,
+				`xIsAnOptionalHeader1IR = append(xIsAnOptionalHeader1IR, xIsAnOptionalHeader1IS)`,
+				`xIsAnOptionalHeader1 := swag.JoinByFormat(xIsAnOptionalHeader1IR, "tsv")`,
+				`hv := xIsAnOptionalHeader1[0]`,
+				`rw.Header().Set("x-isAnOptionalHeader1", hv)`,
+				`var xIsAnOptionalHeader2IR []string`,
+				`for _, xIsAnOptionalHeader2I := range o.XIsAnOptionalHeader2 {`,
+				`var xIsAnOptionalHeader2IIR []string`,
+				`for _, xIsAnOptionalHeader2II := range xIsAnOptionalHeader2I {`,
+				`xIsAnOptionalHeader2IIS := swag.FormatInt32(xIsAnOptionalHeader2II)`,
+				`if xIsAnOptionalHeader2IIS != "" {`,
+				`xIsAnOptionalHeader2IIR = append(xIsAnOptionalHeader2IIR, xIsAnOptionalHeader2IIS)`,
+				`xIsAnOptionalHeader2IS := swag.JoinByFormat(xIsAnOptionalHeader2IIR, "pipes")`,
+				`xIsAnOptionalHeader2ISs := xIsAnOptionalHeader2IS[0]`,
+				`if xIsAnOptionalHeader2ISs != "" {`,
+				`xIsAnOptionalHeader2IR = append(xIsAnOptionalHeader2IR, xIsAnOptionalHeader2ISs)`,
+				`xIsAnOptionalHeader2 := swag.JoinByFormat(xIsAnOptionalHeader2IR, "")`,
+				`hv := xIsAnOptionalHeader2[0]`,
+				`rw.Header().Set("x-isAnOptionalHeader2", hv)`,
+				`var xIsAnOptionalHeader3IR []string`,
+				`for _, xIsAnOptionalHeader3I := range o.XIsAnOptionalHeader3 {`,
+				`var xIsAnOptionalHeader3IIR []string`,
+				`for _, xIsAnOptionalHeader3II := range xIsAnOptionalHeader3I {`,
+				`var xIsAnOptionalHeader3IIIR []string`,
+				`for _, xIsAnOptionalHeader3III := range xIsAnOptionalHeader3II {`,
+				`xIsAnOptionalHeader3IIIS := xIsAnOptionalHeader3III.String()`,
+				`if xIsAnOptionalHeader3IIIS != "" {`,
+				`xIsAnOptionalHeader3IIIR = append(xIsAnOptionalHeader3IIIR, xIsAnOptionalHeader3IIIS)`,
+				`xIsAnOptionalHeader3IIS := swag.JoinByFormat(xIsAnOptionalHeader3IIIR, "")`,
+				`xIsAnOptionalHeader3IISs := xIsAnOptionalHeader3IIS[0]`,
+				`if xIsAnOptionalHeader3IISs != "" {`,
+				`xIsAnOptionalHeader3IIR = append(xIsAnOptionalHeader3IIR, xIsAnOptionalHeader3IISs)`,
+				`xIsAnOptionalHeader3IS := swag.JoinByFormat(xIsAnOptionalHeader3IIR, "pipes")`,
+				`xIsAnOptionalHeader3ISs := xIsAnOptionalHeader3IS[0]`,
+				`if xIsAnOptionalHeader3ISs != "" {`,
+				`xIsAnOptionalHeader3IR = append(xIsAnOptionalHeader3IR, xIsAnOptionalHeader3ISs)`,
+				`xIsAnOptionalHeader3 := swag.JoinByFormat(xIsAnOptionalHeader3IR, "")`,
+				`hv := xIsAnOptionalHeader3[0]`,
+				`rw.Header().Set("x-isAnOptionalHeader3", hv)`,
+			},
+		},
+	}
+
+	for fixtureIndex, fixtureContents := range fixtureConfig {
+		fixtureSpec := strings.Join([]string{"fixture-909-", fixtureIndex, ".yaml"}, "")
+		gen, err := opBuilder("getOptional", filepath.Join("..", "fixtures", "bugs", "909", fixtureSpec))
+		if assert.NoError(err) {
+			op, err := gen.MakeOperation()
+			if assert.NoError(err) {
+				opts := opts()
+				for fixtureTemplate, expectedCode := range fixtureContents {
+					buf := bytes.NewBuffer(nil)
+					err := templates.MustGet(fixtureTemplate).Execute(buf, op)
+					if assert.NoError(err, "Expected generation to go well on %s with template %s", fixtureSpec, fixtureTemplate) {
+						ff, err := opts.LanguageOpts.FormatContent("foo.go", buf.Bytes())
+						if assert.NoError(err, "Expected formatting to go well on %s with template %s", fixtureSpec, fixtureTemplate) {
+							res := string(ff)
+							for line, codeLine := range expectedCode {
+								if !assertInCode(t, codeLine, res) {
+									t.Logf("Code expected did not match for fixture %s at line %d", fixtureSpec, line)
+								}
+							}
+						} else {
+							fmt.Println(buf.String())
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// verifies that validation method is called on body param with $ref
+func TestGenParameter_Issue1237(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
+	defer func() {
+		log.SetOutput(os.Stdout)
+	}()
+
+	assert := assert.New(t)
+	fixtureConfig := map[string]map[string][]string{
+		"1": map[string][]string{ // fixture index
+			"serverParameter": []string{ // executed template
+				// expected code lines
+				`var body models.Sg`,
+				`if err := route.Consumer.Consume(r.Body, &body); err != nil {`,
+				`if err == io.EOF {`,
+				`res = append(res, errors.Required("body", "body"))`,
+				`} else {`,
+				`res = append(res, errors.NewParseError("body", "body", "", err))`,
+				`if err := body.Validate(route.Formats); err != nil {`,
+			},
+		},
+	}
+	for _, fixtureContents := range fixtureConfig {
+		fixtureSpec := strings.Join([]string{"fixture-1237", ".json"}, "")
+		gen, err := opBuilder("add sg", filepath.Join("..", "fixtures", "bugs", "1237", fixtureSpec))
+		if assert.NoError(err) {
+			op, err := gen.MakeOperation()
+			if assert.NoError(err) {
+				opts := opts()
+				for fixtureTemplate, expectedCode := range fixtureContents {
+					buf := bytes.NewBuffer(nil)
+					err := templates.MustGet(fixtureTemplate).Execute(buf, op)
+					if assert.NoError(err, "Expected generation to go well on %s with template %s", fixtureSpec, fixtureTemplate) {
+						ff, err := opts.LanguageOpts.FormatContent("foo.go", buf.Bytes())
+						if assert.NoError(err, "Expected formatting to go well on %s with template %s", fixtureSpec, fixtureTemplate) {
+							res := string(ff)
+							for line, codeLine := range expectedCode {
+								if !assertInCode(t, codeLine, res) {
+									t.Logf("Code expected did not match for fixture %s at line %d", fixtureSpec, line)
+								}
+							}
+						} else {
+							fmt.Println(buf.String())
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestGenParameter_Issue1392(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
+	defer func() {
+		log.SetOutput(os.Stdout)
+	}()
+
+	assert := assert.New(t)
+	fixtureConfig := map[string]map[string][]string{
+		"1": map[string][]string{ // fixture index
+			"serverParameter": []string{ // executed template
+				`func (o *PatchSomeResourceParams) BindRequest(r *http.Request, route *middleware.MatchedRoute) error {`,
+				`	var res []error`,
+				`	o.HTTPRequest = r`,
+				`	if runtime.HasBody(r) {`,
+				`		defer r.Body.Close()`,
+				`		var body models.BulkUpdateState`,
+				`		if err := route.Consumer.Consume(r.Body, &body); err != nil {`,
+				`			res = append(res, errors.NewParseError("massUpdate", "body", "", err))`,
+				`		} else {`,
+				`			if err := body.Validate(route.Formats); err != nil {`,
+				`				res = append(res, err)`,
+				`			if len(res) == 0 {`,
+				`				o.MassUpdate = body`,
+				`	if len(res) > 0 {`,
+				`		return errors.CompositeValidationError(res...)`,
+			},
+		},
+		"2": map[string][]string{ // fixture index
+			"serverParameter": []string{ // executed template
+				// expected code lines
+				`func (o *PostBodybuilder20Params) BindRequest(r *http.Request, route *middleware.MatchedRoute) error {`,
+				`	var res []error`,
+				`	o.HTTPRequest = r`,
+				`	if runtime.HasBody(r) {`,
+				`		defer r.Body.Close()`,
+				`		var body []strfmt.URI`,
+				`		if err := route.Consumer.Consume(r.Body, &body); err != nil {`,
+				`			res = append(res, errors.NewParseError("myObject", "body", "", err))`,
+				`		} else {`,
+				`			// validate inline body array`,
+				`			o.MyObject = body`,
+				`			if err := o.validateMyObjectBody(route.Formats); err != nil {`,
+				`				res = append(res, err)`,
+				`	if len(res) > 0 {`,
+				`		return errors.CompositeValidationError(res...)`,
+				`func (o *PostBodybuilder20Params) validateMyObjectBody(formats strfmt.Registry) error {`,
+				`	// uniqueItems: true`,
+				`	if err := validate.UniqueItems("myObject", "body", o.MyObject); err != nil {`,
+				`	myObjectIC := o.MyObject`,
+				`	var myObjectIR []strfmt.URI`,
+				`	for i, myObjectIV := range myObjectIC {`,
+				`		myObjectI := myObjectIV`,
+				`		if err := validate.FormatOf(fmt.Sprintf("%s.%v", "myObject", i), "body", "uri", myObjectI.String(), formats); err != nil {`,
+				`		myObjectIR = append(myObjectIR, myObjectI)`,
+				`	o.MyObject = myObjectIR`,
+			},
+		},
+		"3": map[string][]string{ // fixture index
+			"serverParameter": []string{ // executed template
+				// expected code lines
+				`func (o *PostBodybuilder26Params) BindRequest(r *http.Request, route *middleware.MatchedRoute) error {`,
+				`	var res []error`,
+				`	o.HTTPRequest = r`,
+				`	qs := runtime.Values(r.URL.Query())`,
+				`	if runtime.HasBody(r) {`,
+				`		defer r.Body.Close()`,
+				`		var body strfmt.Date`,
+				`		if err := route.Consumer.Consume(r.Body, &body); err != nil {`,
+				`			res = append(res, errors.NewParseError("myObject", "body", "", err))`,
+				`		} else {`,
+				`			// validate inline body`,
+				`			o.MyObject = body`,
+				`			if err := o.validateMyObjectBody(route.Formats); err != nil {`,
+				`				res = append(res, err)`,
+				`	qMyquery, qhkMyquery, _ := qs.GetOK("myquery")`,
+				`	if err := o.bindMyquery(qMyquery, qhkMyquery, route.Formats); err != nil {`,
+				`		res = append(res, err)`,
+				`	if len(res) > 0 {`,
+				`		return errors.CompositeValidationError(res...)`,
+				`	return nil`,
+				`func (o *PostBodybuilder26Params) validateMyObjectBody(formats strfmt.Registry) error {`,
+				`	if err := validate.Enum("myObject", "body", o.MyObject.String(), []interface{}{"1992-01-01", "2012-01-01"}); err != nil {`,
+				`	if err := validate.FormatOf("myObject", "body", "date", o.MyObject.String(), formats); err != nil {`,
+			},
+		},
+		"4": map[string][]string{ // fixture index
+			"serverParameter": []string{ // executed template
+				// expected code lines
+				`func (o *PostBodybuilder27Params) BindRequest(r *http.Request, route *middleware.MatchedRoute) error {`,
+				`	var res []error`,
+				`	o.HTTPRequest = r`,
+				`	if runtime.HasBody(r) {`,
+				`		defer r.Body.Close()`,
+				`		var body [][]strfmt.Date`,
+				`		if err := route.Consumer.Consume(r.Body, &body); err != nil {`,
+				`			res = append(res, errors.NewParseError("myObject", "body", "", err))`,
+				`		} else {`,
+				`			o.MyObject = body`,
+				`			if err := o.validateMyObjectBody(route.Formats); err != nil {`,
+				`				res = append(res, err)`,
+				`	if len(res) > 0 {`,
+				`		return errors.CompositeValidationError(res...)`,
+				`func (o *PostBodybuilder27Params) validateMyObjectBody(formats strfmt.Registry) error {`,
+				`	if err := validate.Enum("myObject", "body", o.MyObject, []interface{}{[]interface{}{[]interface{}{"1992-01-01", "2012-01-01"}}}); err != nil {`,
+				`		return err`,
+				`	myObjectIC := o.MyObject`,
+				`	var myObjectIR [][]strfmt.Date`,
+				`	for i, myObjectIV := range myObjectIC {`,
+				`		myObjectIIC := myObjectIV`,
+				`		if len(myObjectIIC) > 0 {`,
+				`			var myObjectIIR []strfmt.Date`,
+				`			for ii, myObjectIIV := range myObjectIIC {`,
+				`				myObjectII := myObjectIIV`,
+				`				if err := validate.Enum(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "myObject", i), ii), "", myObjectII.String(), []interface{}{"1992-01-01", "2012-01-01"}); err != nil {`,
+				`					return err`,
+				`				if err := validate.FormatOf(fmt.Sprintf("%s.%v", fmt.Sprintf("%s.%v", "myObject", i), ii), "", "date", myObjectII.String(), formats); err != nil {`,
+				`					return err`,
+				`				myObjectIIR = append(myObjectIIR, myObjectII)`,
+				`			myObjectIR = append(myObjectIR, myObjectIIR)`,
+				`	o.MyObject = myObjectIR`,
+			},
+		},
+		"5": map[string][]string{ // fixture index
+			"serverParameter": []string{ // executed template
+				`func (o *Bodybuilder23Params) BindRequest(r *http.Request, route *middleware.MatchedRoute) error {`,
+				`	var res []error`,
+				`	o.HTTPRequest = r`,
+				`	if runtime.HasBody(r) {`,
+				`		defer r.Body.Close()`,
+				`		var body []models.ASimpleArray`,
+				`		if err := route.Consumer.Consume(r.Body, &body); err != nil {`,
+				`			res = append(res, errors.NewParseError("myObject", "body", "", err))`,
+				`		} else {`,
+				`			o.MyObject = body`,
+				`			myObjectSize := int64(len(o.MyObject))`,
+				`			if err := validate.MinItems("myObject", "body", myObjectSize, 15); err != nil {`,
+				`				return err`,
+				`			for _, io := range o.MyObject {`,
+				`				if err := io.Validate(route.Formats); err != nil {`,
+				`					res = append(res, err)`,
+				`					break`,
+				`			if len(res) == 0 {`,
+				`				o.MyObject = body`,
+				`	if len(res) > 0 {`,
+				`		return errors.CompositeValidationError(res...)`,
+			},
+		},
+	}
+
+	for fixtureIndex, fixtureContents := range fixtureConfig {
+		fixtureSpec := strings.Join([]string{"fixture-1392-", fixtureIndex, ".yaml"}, "")
+		// pick selected operation id in fixture
+		operationToTest := ""
+		switch fixtureIndex {
+		case "1":
+			operationToTest = "PatchSomeResource"
+		case "2":
+			operationToTest = "PostBodybuilder20"
+		case "3":
+			operationToTest = "PostBodybuilder26"
+		case "4":
+			operationToTest = "PostBodybuilder27"
+		case "5":
+			operationToTest = "Bodybuilder23"
+		}
+		gen, err := opBuilder(operationToTest, filepath.Join("..", "fixtures", "bugs", "1392", fixtureSpec))
+		if assert.NoError(err) {
+			op, err := gen.MakeOperation()
+			if assert.NoError(err) {
+				opts := opts()
+				for fixtureTemplate, expectedCode := range fixtureContents {
+					buf := bytes.NewBuffer(nil)
+					err := templates.MustGet(fixtureTemplate).Execute(buf, op)
+					if assert.NoError(err, "Expected generation to go well on %s with template %s", fixtureSpec, fixtureTemplate) {
+						ff, err := opts.LanguageOpts.FormatContent("foo.go", buf.Bytes())
+						if assert.NoError(err, "Expected formatting to go well on %s with template %s", fixtureSpec, fixtureTemplate) {
+							res := string(ff)
+							for line, codeLine := range expectedCode {
+								if !assertInCode(t, codeLine, res) {
+									t.Logf("Code expected did not match for fixture %s at line %d", fixtureSpec, line)
+								}
+							}
+						} else {
+							fmt.Println(buf.String())
+						}
+					}
 				}
 			}
 		}

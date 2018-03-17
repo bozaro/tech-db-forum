@@ -17,7 +17,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/bozaro/tech-db-forum/generated/models"
+	models "github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // NewThreadVoteParams creates a new ThreadVoteParams object

@@ -36,6 +36,7 @@ func (m Posts) Validate(formats strfmt.Registry) error {
 				}
 				return err
 			}
+
 		}
 
 	}

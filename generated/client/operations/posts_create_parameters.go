@@ -17,7 +17,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/bozaro/tech-db-forum/generated/models"
+	models "github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // NewPostsCreateParams creates a new PostsCreateParams object
@@ -142,6 +142,12 @@ func (o *PostsCreateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.R
 		return err
 	}
 	var res []error
+
+	if o.Posts != nil {
+		if err := r.SetBodyParam(o.Posts); err != nil {
+			return err
+		}
+	}
 
 	// path param slug_or_id
 	if err := r.SetPathParam("slug_or_id", o.SlugOrID); err != nil {

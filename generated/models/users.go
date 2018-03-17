@@ -36,6 +36,7 @@ func (m Users) Validate(formats strfmt.Registry) error {
 				}
 				return err
 			}
+
 		}
 
 	}

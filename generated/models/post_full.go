@@ -74,6 +74,7 @@ func (m *PostFull) validateAuthor(formats strfmt.Registry) error {
 			}
 			return err
 		}
+
 	}
 
 	return nil
@@ -93,6 +94,7 @@ func (m *PostFull) validateForum(formats strfmt.Registry) error {
 			}
 			return err
 		}
+
 	}
 
 	return nil
@@ -112,6 +114,7 @@ func (m *PostFull) validatePost(formats strfmt.Registry) error {
 			}
 			return err
 		}
+
 	}
 
 	return nil
@@ -131,6 +134,7 @@ func (m *PostFull) validateThread(formats strfmt.Registry) error {
 			}
 			return err
 		}
+
 	}
 
 	return nil

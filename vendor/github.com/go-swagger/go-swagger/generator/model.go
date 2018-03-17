@@ -74,7 +74,7 @@ func GenerateDefinition(modelNames []string, opts *GenOpts) error {
 		// lookup schema
 		model, ok := specDoc.Spec().Definitions[modelName]
 		if !ok {
-			return fmt.Errorf("model %q not found in definitions in %s", modelName, specPath)
+			return fmt.Errorf("model %q not found in definitions given by %q", modelName, specPath)
 		}
 
 		// generate files
@@ -106,7 +106,7 @@ func (m *definitionGenerator) Generate() error {
 
 	mod, err := makeGenDefinition(m.Name, m.Target, m.Model, m.SpecDoc, m.opts)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not generate definitions for model %s on target %s: %v", m.Name, m.Target, err)
 	}
 
 	if m.opts.DumpData {
@@ -116,8 +116,9 @@ func (m *definitionGenerator) Generate() error {
 	}
 
 	if m.opts.IncludeModel {
+		log.Println("including additional model")
 		if err := m.generateModel(mod); err != nil {
-			return fmt.Errorf("model: %s", err)
+			return fmt.Errorf("could not generate model: %v", err)
 		}
 	}
 	log.Println("generated model", m.Name)
@@ -126,6 +127,9 @@ func (m *definitionGenerator) Generate() error {
 }
 
 func (m *definitionGenerator) generateModel(g *GenDefinition) error {
+	if Debug {
+		log.Printf("rendering definitions for %+v", *g)
+	}
 	return m.opts.renderDefinition(g)
 }
 
@@ -135,7 +139,7 @@ func makeGenDefinition(name, pkg string, schema spec.Schema, specDoc *loads.Docu
 
 func makeGenDefinitionHierarchy(name, pkg, container string, schema spec.Schema, specDoc *loads.Document, opts *GenOpts) (*GenDefinition, error) {
 
-	_, ok := schema.Extensions["x-go-type"]
+	_, ok := schema.Extensions[xGoType]
 	if ok {
 		return nil, nil
 	}
@@ -164,7 +168,7 @@ func makeGenDefinitionHierarchy(name, pkg, container string, schema spec.Schema,
 		IncludeModel:     opts.IncludeModel,
 	}
 	if err := pg.makeGenSchema(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not generate schema for %s: %v", name, err)
 	}
 	dsi, ok := di.Discriminators["#/definitions/"+name]
 	if ok {
@@ -205,11 +209,7 @@ func makeGenDefinitionHierarchy(name, pkg, container string, schema spec.Schema,
 			for ref.String() != "" {
 				var rsch *spec.Schema
 				var err error
-				if specDoc.SpecFilePath() != "" {
-					rsch, err = spec.ResolveRefWithBase(swsp, &ref, &spec.ExpandOptions{RelativeBase: specDoc.SpecFilePath()})
-				} else {
-					rsch, err = spec.ResolveRef(swsp, &ref)
-				}
+				rsch, err = spec.ResolveRef(swsp, &ref)
 				if err != nil {
 					return nil, err
 				}
@@ -277,7 +277,8 @@ func makeGenDefinitionHierarchy(name, pkg, container string, schema spec.Schema,
 
 	return &GenDefinition{
 		GenCommon: GenCommon{
-			Copyright: opts.Copyright,
+			Copyright:        opts.Copyright,
+			TargetImportPath: filepath.ToSlash(opts.LanguageOpts.baseImport(opts.Target)),
 		},
 		Package:        opts.LanguageOpts.MangleName(filepath.Base(pkg), "definitions"),
 		GenSchema:      pg.GenSchema,
@@ -425,7 +426,7 @@ func (sg *schemaGenContext) NewAdditionalItems(schema *spec.Schema) *schemaGenCo
 		pg.Path = pg.Path + "+ \".\" + strconv.Itoa(" + indexVar + mod + ")"
 	}
 	pg.IndexVar = indexVar
-	pg.ValueExpr = sg.ValueExpr + "." + sg.GoName() + "Items[" + indexVar + "]"
+	pg.ValueExpr = sg.ValueExpr + "." + pascalize(sg.GoName()) + "Items[" + indexVar + "]"
 	pg.Schema = spec.Schema{}
 	if schema != nil {
 		pg.Schema = *schema
@@ -630,6 +631,7 @@ func (sg *schemaGenContext) buildProperties() error {
 		if Debug {
 			bbb, _ := json.MarshalIndent(sg.Schema, "", "  ")
 			log.Printf("building property %s[%q] (tup: %t) (BaseType: %t) %s\n", sg.Name, k, sg.IsTuple, sg.GenSchema.IsBaseType, bbb)
+			log.Printf("property %s[%q] (tup: %t) HasValidations: %t)", sg.Name, k, sg.IsTuple, sg.GenSchema.HasValidations)
 		}
 
 		// check if this requires de-anonymizing, if so lift this as a new struct and extra schema
@@ -673,6 +675,7 @@ func (sg *schemaGenContext) buildProperties() error {
 		if err := emprop.makeGenSchema(); err != nil {
 			return err
 		}
+
 		if hasValidation || emprop.GenSchema.HasValidations {
 			emprop.GenSchema.HasValidations = true
 			sg.GenSchema.HasValidations = true
@@ -681,6 +684,9 @@ func (sg *schemaGenContext) buildProperties() error {
 			emprop.GenSchema.NeedsValidation = true
 			sg.GenSchema.NeedsValidation = true
 		}
+		// generates format validation on property, even when not Required
+		emprop.GenSchema.HasValidations = emprop.GenSchema.HasValidations || (tpe.IsCustomFormatter && !tpe.IsStream) || (tpe.IsArray && tpe.ElemType.IsCustomFormatter && !tpe.ElemType.IsStream)
+
 		if emprop.Schema.Ref.String() != "" {
 			ref := emprop.Schema.Ref
 			var sch *spec.Schema
@@ -688,11 +694,7 @@ func (sg *schemaGenContext) buildProperties() error {
 				var rsch *spec.Schema
 				var err error
 				specDoc := sg.TypeResolver.Doc
-				if specDoc.SpecFilePath() != "" {
-					rsch, err = spec.ResolveRefWithBase(specDoc.Spec(), &ref, &spec.ExpandOptions{RelativeBase: specDoc.SpecFilePath()})
-				} else {
-					rsch, err = spec.ResolveRef(specDoc.Spec(), &ref)
-				}
+				rsch, err = spec.ResolveRef(specDoc.Spec(), &ref)
 				if err != nil {
 					return err
 				}
@@ -716,7 +718,7 @@ func (sg *schemaGenContext) buildProperties() error {
 			}
 			var nm = filepath.Base(emprop.Schema.Ref.GetURL().Fragment)
 			var tn string
-			if gn, ok := emprop.Schema.Extensions["x-go-name"]; ok {
+			if gn, ok := emprop.Schema.Extensions[xGoName]; ok {
 				tn = gn.(string)
 			} else {
 				tn = swag.ToGoName(nm)
@@ -732,11 +734,17 @@ func (sg *schemaGenContext) buildProperties() error {
 				emprop.GenSchema.IsAliased = true
 			}
 			nv, hv := hasValidations(sch, false)
+			// include format validation, excluding binary
+			hv = hv || (ttpe.IsCustomFormatter && !ttpe.IsStream) || (ttpe.IsArray && ttpe.ElemType.IsCustomFormatter && !ttpe.ElemType.IsStream)
 			if hv {
 				emprop.GenSchema.HasValidations = true
 			}
 			if nv {
 				emprop.GenSchema.NeedsValidation = true
+			}
+			if ttpe.HasAdditionalItems && sch.AdditionalItems.Schema != nil {
+				// when AdditionalItems specifies a Schema, there is a validation
+				emprop.GenSchema.HasValidations = true
 			}
 		}
 		if sg.Schema.Discriminator == k {
@@ -747,7 +755,7 @@ func (sg *schemaGenContext) buildProperties() error {
 		}
 		sg.MergeResult(emprop, false)
 
-		if customTag, found := emprop.Schema.Extensions["x-go-custom-tag"]; found {
+		if customTag, found := emprop.Schema.Extensions[xGoCustomTag]; found {
 			emprop.GenSchema.CustomTag = customTag.(string)
 		}
 		if emprop.GenSchema.HasDiscriminator {
@@ -761,6 +769,7 @@ func (sg *schemaGenContext) buildProperties() error {
 
 func (sg *schemaGenContext) buildAllOf() error {
 	if len(sg.Schema.AllOf) > 0 {
+		sort.Sort(sg.GenSchema.AllOf)
 		if sg.Container == "" {
 			sg.Container = sg.Name
 		}
@@ -1100,6 +1109,8 @@ func (sg *schemaGenContext) buildArray() error {
 	schemaCopy := elProp.GenSchema
 	schemaCopy.Required = false
 	hv, _ := hasValidations(sg.Schema.Items.Schema, false)
+	// include format validation, excluding binary
+	hv = hv || (schemaCopy.IsCustomFormatter && !schemaCopy.IsStream) || (schemaCopy.IsArray && schemaCopy.ElemType.IsCustomFormatter && !schemaCopy.ElemType.IsStream)
 	schemaCopy.HasValidations = elProp.GenSchema.IsNullable || hv
 	sg.GenSchema.Items = &schemaCopy
 	if sg.Named {
@@ -1110,7 +1121,7 @@ func (sg *schemaGenContext) buildArray() error {
 
 func (sg *schemaGenContext) buildItems() error {
 	presentsAsSingle := sg.Schema.Items != nil && sg.Schema.Items.Schema != nil
-	if presentsAsSingle && sg.Schema.AdditionalItems != nil { // unsure if htis a valid of invalid schema
+	if presentsAsSingle && sg.Schema.AdditionalItems != nil { // unsure if this a valid of invalid schema
 		return fmt.Errorf("single schema (%s) can't have additional items", sg.Name)
 	}
 	if presentsAsSingle {
@@ -1119,6 +1130,7 @@ func (sg *schemaGenContext) buildItems() error {
 	if sg.Schema.Items == nil {
 		return nil
 	}
+
 	// This is a tuple, build a new model that represents this
 	if sg.Named {
 		sg.GenSchema.Name = sg.Name
@@ -1245,6 +1257,8 @@ func (sg *schemaGenContext) shortCircuitNamedRef() (bool, error) {
 	}
 	sg.GenSchema.resolvedType = tpe
 	sg.GenSchema.IsNullable = sg.GenSchema.IsNullable || nullableOverride
+	// prevent format from bubbling up in composed type
+	item.GenSchema.IsCustomFormatter = false
 	sg.MergeResult(item, true)
 	sg.GenSchema.AllOf = append(sg.GenSchema.AllOf, item.GenSchema)
 	return true, nil
@@ -1317,7 +1331,7 @@ func (sg *schemaGenContext) GoName() string {
 }
 
 func goName(sch *spec.Schema, orig string) string {
-	name, _ := sch.Extensions.GetString("x-go-name")
+	name, _ := sch.Extensions.GetString(xGoName)
 	if name != "" {
 		return name
 	}
@@ -1362,7 +1376,7 @@ func (sg *schemaGenContext) makeGenSchema() error {
 		return nil
 	}
 	if Debug {
-		log.Println("after shortcuit named ref")
+		log.Println("after short circuit named ref")
 		b, _ := json.MarshalIndent(sg.Schema, "", "  ")
 		log.Println(string(b))
 	}
@@ -1400,6 +1414,8 @@ func (sg *schemaGenContext) makeGenSchema() error {
 	sg.GenSchema.resolvedType = tpe
 	sg.GenSchema.IsBaseType = tpe.IsBaseType
 	sg.GenSchema.HasDiscriminator = tpe.HasDiscriminator
+	// include format validations, excluding binary
+	sg.GenSchema.HasValidations = sg.GenSchema.HasValidations || (tpe.IsCustomFormatter && !tpe.IsStream) || (tpe.IsArray && tpe.ElemType.IsCustomFormatter && !tpe.ElemType.IsStream)
 	if tpe.IsArray && tpe.ElemType.IsBaseType {
 		sg.GenSchema.ValueExpression += "()"
 	}

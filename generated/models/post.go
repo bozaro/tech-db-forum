@@ -60,6 +60,11 @@ func (m *Post) Validate(formats strfmt.Registry) error {
 		res = append(res, err)
 	}
 
+	if err := m.validateCreated(formats); err != nil {
+		// prop
+		res = append(res, err)
+	}
+
 	if err := m.validateMessage(formats); err != nil {
 		// prop
 		res = append(res, err)
@@ -74,6 +79,19 @@ func (m *Post) Validate(formats strfmt.Registry) error {
 func (m *Post) validateAuthor(formats strfmt.Registry) error {
 
 	if err := validate.RequiredString("author", "body", string(m.Author)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Post) validateCreated(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.Created) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("created", "body", "date-time", m.Created.String(), formats); err != nil {
 		return err
 	}
 

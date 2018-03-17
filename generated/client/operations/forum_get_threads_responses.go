@@ -13,7 +13,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/bozaro/tech-db-forum/generated/models"
+	models "github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // ForumGetThreadsReader is a Reader for the ForumGetThreads structure.

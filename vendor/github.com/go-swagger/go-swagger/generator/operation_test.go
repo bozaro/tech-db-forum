@@ -261,15 +261,73 @@ func methodPathOpBuilder(method, path, fname string) (codeGenOpBuilder, error) {
 	}, nil
 }
 
-func opBuilder(name, fname string) (codeGenOpBuilder, error) {
+func opBuilderWithFlatten(name, fname string) (codeGenOpBuilder, error) {
 	if fname == "" {
 		fname = "../fixtures/codegen/todolist.simple.yml"
+	}
+
+	if !filepath.IsAbs(fname) {
+		cwd, _ := os.Getwd()
+		fname = filepath.Join(cwd, fname)
 	}
 
 	specDoc, err := loads.Spec(fname)
 	if err != nil {
 		return codeGenOpBuilder{}, err
 	}
+	o := &GenOpts{
+		FlattenSpec:  true,
+		ValidateSpec: false,
+		Spec:         fname,
+	}
+	specDoc, err = validateAndFlattenSpec(o, specDoc)
+	if err != nil {
+		return codeGenOpBuilder{}, err
+	}
+
+	analyzed := analysis.New(specDoc.Spec())
+
+	method, path, op, ok := analyzed.OperationForName(name)
+	if !ok {
+		return codeGenOpBuilder{}, errors.New("No operation could be found for " + name)
+	}
+
+	return codeGenOpBuilder{
+		Name:          name,
+		Method:        method,
+		Path:          path,
+		BasePath:      specDoc.BasePath(),
+		APIPackage:    "restapi",
+		ModelsPackage: "models",
+		Principal:     "models.User",
+		Target:        ".",
+		Operation:     *op,
+		Doc:           specDoc,
+		Analyzed:      analyzed,
+		Authed:        false,
+		ExtraSchemas:  make(map[string]GenSchema),
+		GenOpts:       opts(),
+	}, nil
+}
+
+func opBuilder(name, fname string) (codeGenOpBuilder, error) {
+	if fname == "" {
+		fname = "../fixtures/codegen/todolist.simple.yml"
+	}
+
+	if !filepath.IsAbs(fname) {
+		cwd, _ := os.Getwd()
+		fname = filepath.Join(cwd, fname)
+	}
+
+	specDoc, err := loads.Spec(fname)
+	if err != nil {
+		return codeGenOpBuilder{}, err
+	}
+	if err != nil {
+		return codeGenOpBuilder{}, err
+	}
+
 	analyzed := analysis.New(specDoc.Spec())
 
 	method, path, op, ok := analyzed.OperationForName(name)
@@ -324,7 +382,8 @@ func TestDateFormat_Spec1(t *testing.T) {
 			buf := bytes.NewBuffer(nil)
 			opts := opts()
 			opts.defaultsEnsured = false
-			err = opts.EnsureDefaults(true)
+			opts.IsClient = true
+			err = opts.EnsureDefaults()
 			assert.NoError(t, err)
 			err = templates.MustGet("clientParameter").Execute(buf, op)
 			if assert.NoError(t, err) {
@@ -348,7 +407,8 @@ func TestDateFormat_Spec2(t *testing.T) {
 			buf := bytes.NewBuffer(nil)
 			opts := opts()
 			opts.defaultsEnsured = false
-			err = opts.EnsureDefaults(true)
+			opts.IsClient = true
+			err = opts.EnsureDefaults()
 			assert.NoError(t, err)
 			err = templates.MustGet("clientParameter").Execute(buf, op)
 			if assert.NoError(t, err) {
@@ -366,7 +426,7 @@ func TestDateFormat_Spec2(t *testing.T) {
 
 func TestBuilder_Issue287(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
-	defer log.SetOutput(os.Stderr)
+	defer log.SetOutput(os.Stdout)
 	dr, _ := os.Getwd()
 
 	opts := &GenOpts{
@@ -383,7 +443,7 @@ func TestBuilder_Issue287(t *testing.T) {
 		ClientPackage:     "client",
 		Target:            dr,
 	}
-	err := opts.EnsureDefaults(false)
+	err := opts.EnsureDefaults()
 	assert.NoError(t, err)
 	appGen, err := newAppGenerator("plainTexter", nil, nil, opts)
 	if assert.NoError(t, err) {
@@ -406,7 +466,7 @@ func TestBuilder_Issue287(t *testing.T) {
 
 func TestBuilder_Issue465(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
-	defer log.SetOutput(os.Stderr)
+	defer log.SetOutput(os.Stdout)
 	dr, _ := os.Getwd()
 	opts := &GenOpts{
 		Spec:              filepath.FromSlash("../fixtures/bugs/465/swagger.yml"),
@@ -421,8 +481,9 @@ func TestBuilder_Issue465(t *testing.T) {
 		ServerPackage:     "server",
 		ClientPackage:     "client",
 		Target:            dr,
+		IsClient:          true,
 	}
-	err := opts.EnsureDefaults(true)
+	err := opts.EnsureDefaults()
 	assert.NoError(t, err)
 	appGen, err := newAppGenerator("plainTexter", nil, nil, opts)
 	if assert.NoError(t, err) {
@@ -445,7 +506,7 @@ func TestBuilder_Issue465(t *testing.T) {
 
 func TestBuilder_Issue500(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
-	defer log.SetOutput(os.Stderr)
+	defer log.SetOutput(os.Stdout)
 	dr, _ := os.Getwd()
 	opts := &GenOpts{
 		Spec:              filepath.FromSlash("../fixtures/bugs/500/swagger.yml"),
@@ -461,7 +522,7 @@ func TestBuilder_Issue500(t *testing.T) {
 		ClientPackage:     "client",
 		Target:            dr,
 	}
-	err := opts.EnsureDefaults(false)
+	err := opts.EnsureDefaults()
 	assert.NoError(t, err)
 	appGen, err := newAppGenerator("multiTags", nil, nil, opts)
 	if assert.NoError(t, err) {
@@ -491,7 +552,8 @@ func TestGenClient_IllegalBOM(t *testing.T) {
 			buf := bytes.NewBuffer(nil)
 			opts := opts()
 			opts.defaultsEnsured = false
-			err = opts.EnsureDefaults(true)
+			opts.IsClient = true
+			err = opts.EnsureDefaults()
 			assert.NoError(t, err)
 			err = templates.MustGet("clientResponse").Execute(buf, op)
 			assert.NoError(t, err)
@@ -507,7 +569,8 @@ func TestGenClient_CustomFormatPath(t *testing.T) {
 			buf := bytes.NewBuffer(nil)
 			opts := opts()
 			opts.defaultsEnsured = false
-			err = opts.EnsureDefaults(true)
+			opts.IsClient = true
+			err = opts.EnsureDefaults()
 			assert.NoError(t, err)
 			err = templates.MustGet("clientParameter").Execute(buf, op)
 			if assert.NoError(t, err) {
@@ -525,7 +588,8 @@ func TestGenClient_Issue733(t *testing.T) {
 			buf := bytes.NewBuffer(nil)
 			opts := opts()
 			opts.defaultsEnsured = false
-			err = opts.EnsureDefaults(true)
+			opts.IsClient = true
+			err = opts.EnsureDefaults()
 			assert.NoError(t, err)
 			err = templates.MustGet("clientResponse").Execute(buf, op)
 			if assert.NoError(t, err) {
@@ -537,7 +601,7 @@ func TestGenClient_Issue733(t *testing.T) {
 
 func TestGenServerIssue890_ValidationTrueFlatteningTrue(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
-	defer log.SetOutput(os.Stderr)
+	defer log.SetOutput(os.Stdout)
 	dr, _ := os.Getwd()
 	opts := &GenOpts{
 		Spec:              filepath.FromSlash("../fixtures/bugs/890/swagger.yaml"),
@@ -547,17 +611,18 @@ func TestGenServerIssue890_ValidationTrueFlatteningTrue(t *testing.T) {
 		IncludeParameters: true,
 		IncludeResponses:  true,
 		IncludeMain:       true,
-		ValidateSpec:			 true,
-		FlattenSpec:			 true,
+		ValidateSpec:      true,
+		FlattenSpec:       true,
 		APIPackage:        "restapi",
 		ModelPackage:      "model",
 		ServerPackage:     "server",
 		ClientPackage:     "client",
 		Target:            dr,
+		IsClient:          true,
 	}
 
 	//Testing Server Generation
-	err := opts.EnsureDefaults(true)
+	err := opts.EnsureDefaults()
 	assert.NoError(t, err)
 	appGen, err := newAppGenerator("JsonRefOperation", nil, nil, opts)
 	if assert.NoError(t, err) {
@@ -579,9 +644,11 @@ func TestGenServerIssue890_ValidationTrueFlatteningTrue(t *testing.T) {
 }
 
 func TestGenClientIssue890_ValidationTrueFlatteningTrue(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
 	defer func() {
+		log.SetOutput(os.Stdout)
 		dr, _ := os.Getwd()
-		os.RemoveAll(dr+"/restapi/")
+		os.RemoveAll(filepath.Join(filepath.FromSlash(dr), "restapi"))
 	}()
 	opts := testGenOpts()
 	opts.Spec = "../fixtures/bugs/890/swagger.yaml"
@@ -594,7 +661,7 @@ func TestGenClientIssue890_ValidationTrueFlatteningTrue(t *testing.T) {
 
 func TestGenServerIssue890_ValidationFalseFlattenTrue(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
-	defer log.SetOutput(os.Stderr)
+	defer log.SetOutput(os.Stdout)
 	dr, _ := os.Getwd()
 	opts := &GenOpts{
 		Spec:              filepath.FromSlash("../fixtures/bugs/890/swagger.yaml"),
@@ -604,17 +671,17 @@ func TestGenServerIssue890_ValidationFalseFlattenTrue(t *testing.T) {
 		IncludeParameters: true,
 		IncludeResponses:  true,
 		IncludeMain:       true,
-		ValidateSpec:			 false,
-		FlattenSpec:			 true,
+		FlattenSpec:       true,
 		APIPackage:        "restapi",
 		ModelPackage:      "model",
 		ServerPackage:     "server",
 		ClientPackage:     "client",
 		Target:            dr,
+		IsClient:          true,
 	}
 
 	//Testing Server Generation
-	err := opts.EnsureDefaults(true)
+	err := opts.EnsureDefaults()
 	assert.NoError(t, err)
 	appGen, err := newAppGenerator("JsonRefOperation", nil, nil, opts)
 	if assert.NoError(t, err) {
@@ -636,9 +703,11 @@ func TestGenServerIssue890_ValidationFalseFlattenTrue(t *testing.T) {
 }
 
 func TestGenClientIssue890_ValidationFalseFlatteningTrue(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
 	defer func() {
+		log.SetOutput(os.Stdout)
 		dr, _ := os.Getwd()
-		os.RemoveAll(dr+"/restapi/")
+		os.RemoveAll(filepath.Join(filepath.FromSlash(dr), "restapi"))
 	}()
 	opts := testGenOpts()
 	opts.Spec = "../fixtures/bugs/890/swagger.yaml"
@@ -651,7 +720,7 @@ func TestGenClientIssue890_ValidationFalseFlatteningTrue(t *testing.T) {
 
 func TestGenServerIssue890_ValidationFalseFlattenFalse(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
-	defer log.SetOutput(os.Stderr)
+	defer log.SetOutput(os.Stdout)
 	dr, _ := os.Getwd()
 	opts := &GenOpts{
 		Spec:              filepath.FromSlash("../fixtures/bugs/890/swagger.yaml"),
@@ -661,26 +730,30 @@ func TestGenServerIssue890_ValidationFalseFlattenFalse(t *testing.T) {
 		IncludeParameters: true,
 		IncludeResponses:  true,
 		IncludeMain:       true,
-		ValidateSpec:			 false,
+		ValidateSpec:      false,
 		FlattenSpec:       false,
 		APIPackage:        "restapi",
 		ModelPackage:      "model",
 		ServerPackage:     "server",
 		ClientPackage:     "client",
 		Target:            dr,
+		IsClient:          true,
 	}
 
 	//Testing Server Generation
-	err := opts.EnsureDefaults(true)
+	err := opts.EnsureDefaults()
 	assert.NoError(t, err)
 	_, err = newAppGenerator("JsonRefOperation", nil, nil, opts)
-	assert.Error(t, err)
+	// if flatten is not set, expand takes over so this would resume normally
+	assert.NoError(t, err)
 }
 
 func TestGenClientIssue890_ValidationFalseFlattenFalse(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
 	defer func() {
 		dr, _ := os.Getwd()
-		os.RemoveAll(dr+"/restapi/")
+		os.RemoveAll(filepath.Join(filepath.FromSlash(dr), "restapi"))
+		log.SetOutput(os.Stdout)
 	}()
 	opts := testGenOpts()
 	opts.Spec = "../fixtures/bugs/890/swagger.yaml"
@@ -688,12 +761,13 @@ func TestGenClientIssue890_ValidationFalseFlattenFalse(t *testing.T) {
 	opts.FlattenSpec = false
 	// Testing this is enough as there is only one operation which is specified as $ref.
 	// If this doesn't get resolved then there will be an error definitely.
-	assert.Error(t, GenerateClient("foo", nil, nil, &opts))
+	// New: Now if flatten is false, expand takes over so server generation should resume normally
+	assert.NoError(t, GenerateClient("foo", nil, nil, &opts))
 }
 
 func TestGenServerIssue890_ValidationTrueFlattenFalse(t *testing.T) {
 	log.SetOutput(ioutil.Discard)
-	defer log.SetOutput(os.Stderr)
+	defer log.SetOutput(os.Stdout)
 	dr, _ := os.Getwd()
 	opts := &GenOpts{
 		Spec:              filepath.FromSlash("../fixtures/bugs/890/swagger.yaml"),
@@ -703,32 +777,37 @@ func TestGenServerIssue890_ValidationTrueFlattenFalse(t *testing.T) {
 		IncludeParameters: true,
 		IncludeResponses:  true,
 		IncludeMain:       true,
-		ValidateSpec:			 true,
+		ValidateSpec:      true,
 		FlattenSpec:       false,
 		APIPackage:        "restapi",
 		ModelPackage:      "model",
 		ServerPackage:     "server",
 		ClientPackage:     "client",
 		Target:            dr,
+		IsClient:          true,
 	}
 
 	//Testing Server Generation
-	err := opts.EnsureDefaults(true)
+	err := opts.EnsureDefaults()
 	assert.NoError(t, err)
 	_, err = newAppGenerator("JsonRefOperation", nil, nil, opts)
-	assert.Error(t, err)
+	// now if flatten is false, expand takes over so server generation should resume normally
+	assert.NoError(t, err)
 }
 
 func TestGenClientIssue890_ValidationTrueFlattenFalse(t *testing.T) {
+	log.SetOutput(ioutil.Discard)
 	defer func() {
+		log.SetOutput(os.Stdout)
 		dr, _ := os.Getwd()
-		os.RemoveAll(dr+"/restapi/")
+		os.RemoveAll(filepath.Join(filepath.FromSlash(dr), "restapi"))
 	}()
 	opts := testGenOpts()
-	opts.Spec = "../fixtures/bugs/890/swagger.yaml"
+	opts.Spec = filepath.FromSlash("../fixtures/bugs/890/swagger.yaml")
 	opts.ValidateSpec = true
 	opts.FlattenSpec = false
 	// Testing this is enough as there is only one operation which is specified as $ref.
 	// If this doesn't get resolved then there will be an error definitely.
-	assert.Error(t, GenerateClient("foo", nil, nil, &opts))
+	// same here: now if flatten doesn't resume, expand takes over
+	assert.NoError(t, GenerateClient("foo", nil, nil, &opts))
 }
