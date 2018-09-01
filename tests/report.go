@@ -28,7 +28,7 @@ func (self *Report) AddError(err interface{}) {
 		pass := &self.Pass[len(self.Pass)-1]
 		pass.Failure = fmt.Sprintf("%s", err)
 		self.Result = Failed
-		log.Error(err)
+		log.Error("%v", err)
 	}
 }
 
