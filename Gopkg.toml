@@ -20,10 +20,24 @@
 #  name = "github.com/x/y"
 #  version = "2.4.0"
 
+required = [
+  "github.com/mailru/easyjson/easyjson",
+  "github.com/go-swagger/go-swagger/cmd/swagger",
+  "github.com/jteeuwen/go-bindata/go-bindata",
+  "github.com/bronze1man/yaml2json",
+  "github.com/aktau/github-release"
+]
+
+[prune]
+  unused-packages = true
 
 [[constraint]]
   branch = "master"
   name = "github.com/aryann/difflib"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/go-swagger/go-swagger"
 
 [[constraint]]
   branch = "master"

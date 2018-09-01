@@ -8,7 +8,6 @@ package models
 import (
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/go-openapi/errors"
 	"github.com/go-openapi/swag"
 )
 
@@ -16,7 +15,6 @@ import (
 // Пустые параметры остаются без изменений.
 //
 // swagger:model ThreadUpdate
-
 type ThreadUpdate struct {
 
 	// Описание ветки обсуждения.
@@ -26,17 +24,8 @@ type ThreadUpdate struct {
 	Title string `json:"title,omitempty"`
 }
 
-/* polymorph ThreadUpdate message false */
-
-/* polymorph ThreadUpdate title false */
-
 // Validate validates this thread update
 func (m *ThreadUpdate) Validate(formats strfmt.Registry) error {
-	var res []error
-
-	if len(res) > 0 {
-		return errors.CompositeValidationError(res...)
-	}
 	return nil
 }
 

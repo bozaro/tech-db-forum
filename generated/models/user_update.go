@@ -10,37 +10,49 @@ import (
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/swag"
+	"github.com/go-openapi/validate"
 )
 
 // UserUpdate Информация о пользователе.
 //
 // swagger:model UserUpdate
-
 type UserUpdate struct {
 
 	// Описание пользователя.
 	About string `json:"about,omitempty"`
 
 	// Почтовый адрес пользователя (уникальное поле).
+	// Format: email
 	Email strfmt.Email `json:"email,omitempty"`
 
 	// Полное имя пользователя.
 	Fullname string `json:"fullname,omitempty"`
 }
 
-/* polymorph UserUpdate about false */
-
-/* polymorph UserUpdate email false */
-
-/* polymorph UserUpdate fullname false */
-
 // Validate validates this user update
 func (m *UserUpdate) Validate(formats strfmt.Registry) error {
 	var res []error
 
+	if err := m.validateEmail(formats); err != nil {
+		res = append(res, err)
+	}
+
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+func (m *UserUpdate) validateEmail(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.Email) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("email", "body", "email", m.Email.String(), formats); err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -17,7 +17,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/bozaro/tech-db-forum/generated/models"
+	models "github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // NewForumCreateParams creates a new ForumCreateParams object
@@ -127,12 +127,10 @@ func (o *ForumCreateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.R
 	}
 	var res []error
 
-	if o.Forum == nil {
-		o.Forum = new(models.Forum)
-	}
-
-	if err := r.SetBodyParam(o.Forum); err != nil {
-		return err
+	if o.Forum != nil {
+		if err := r.SetBodyParam(o.Forum); err != nil {
+			return err
+		}
 	}
 
 	if len(res) > 0 {

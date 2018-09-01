@@ -15,7 +15,6 @@ import (
 
 // Status status
 // swagger:model Status
-
 type Status struct {
 
 	// Кол-во разделов в базе данных.
@@ -35,35 +34,23 @@ type Status struct {
 	User int32 `json:"user"`
 }
 
-/* polymorph Status forum false */
-
-/* polymorph Status post false */
-
-/* polymorph Status thread false */
-
-/* polymorph Status user false */
-
 // Validate validates this status
 func (m *Status) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateForum(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validatePost(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateThread(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateUser(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 

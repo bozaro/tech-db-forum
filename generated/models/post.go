@@ -16,7 +16,6 @@ import (
 // Post Сообщение внутри ветки обсуждения на форуме.
 //
 // swagger:model Post
-
 type Post struct {
 
 	// Автор, написавший данное сообщение.
@@ -25,6 +24,7 @@ type Post struct {
 
 	// Дата создания сообщения на форуме.
 	// Read Only: true
+	// Format: date-time
 	Created *strfmt.DateTime `json:"created,omitempty"`
 
 	// Идентификатор форума (slug) данного сообещния.
@@ -52,33 +52,19 @@ type Post struct {
 	Thread int32 `json:"thread,omitempty"`
 }
 
-/* polymorph Post author false */
-
-/* polymorph Post created false */
-
-/* polymorph Post forum false */
-
-/* polymorph Post id false */
-
-/* polymorph Post isEdited false */
-
-/* polymorph Post message false */
-
-/* polymorph Post parent false */
-
-/* polymorph Post thread false */
-
 // Validate validates this post
 func (m *Post) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateAuthor(formats); err != nil {
-		// prop
+		res = append(res, err)
+	}
+
+	if err := m.validateCreated(formats); err != nil {
 		res = append(res, err)
 	}
 
 	if err := m.validateMessage(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
@@ -91,6 +77,19 @@ func (m *Post) Validate(formats strfmt.Registry) error {
 func (m *Post) validateAuthor(formats strfmt.Registry) error {
 
 	if err := validate.RequiredString("author", "body", string(m.Author)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Post) validateCreated(formats strfmt.Registry) error {
+
+	if swag.IsZero(m.Created) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("created", "body", "date-time", m.Created.String(), formats); err != nil {
 		return err
 	}
 

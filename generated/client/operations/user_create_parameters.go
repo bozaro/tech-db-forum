@@ -17,7 +17,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/bozaro/tech-db-forum/generated/models"
+	models "github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // NewUserCreateParams creates a new UserCreateParams object
@@ -148,13 +148,10 @@ func (o *UserCreateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Re
 		return err
 	}
 
-	if o.Profile == nil {
-		o.Profile = new(models.User)
-		o.Profile = new(models.User)
-	}
-
-	if err := r.SetBodyParam(o.Profile); err != nil {
-		return err
+	if o.Profile != nil {
+		if err := r.SetBodyParam(o.Profile); err != nil {
+			return err
+		}
 	}
 
 	if len(res) > 0 {

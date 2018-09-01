@@ -16,7 +16,6 @@ import (
 // User Информация о пользователе.
 //
 // swagger:model User
-
 type User struct {
 
 	// Описание пользователя.
@@ -24,6 +23,7 @@ type User struct {
 
 	// Почтовый адрес пользователя (уникальное поле).
 	// Required: true
+	// Format: email
 	Email strfmt.Email `json:"email"`
 
 	// Полное имя пользователя.
@@ -38,25 +38,15 @@ type User struct {
 	Nickname string `json:"nickname,omitempty"`
 }
 
-/* polymorph User about false */
-
-/* polymorph User email false */
-
-/* polymorph User fullname false */
-
-/* polymorph User nickname false */
-
 // Validate validates this user
 func (m *User) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateEmail(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateFullname(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 

@@ -18,7 +18,6 @@ import (
 // Vote Информация о голосовании пользователя.
 //
 // swagger:model Vote
-
 type Vote struct {
 
 	// Идентификатор пользователя.
@@ -27,24 +26,19 @@ type Vote struct {
 
 	// Отданный голос.
 	// Required: true
+	// Enum: [-1 1]
 	Voice int32 `json:"voice"`
 }
-
-/* polymorph Vote nickname false */
-
-/* polymorph Vote voice false */
 
 // Validate validates this vote
 func (m *Vote) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateNickname(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateVoice(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 

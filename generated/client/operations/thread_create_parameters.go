@@ -17,7 +17,7 @@ import (
 
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/bozaro/tech-db-forum/generated/models"
+	models "github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // NewThreadCreateParams creates a new ThreadCreateParams object
@@ -148,12 +148,10 @@ func (o *ThreadCreateParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.
 		return err
 	}
 
-	if o.Thread == nil {
-		o.Thread = new(models.Thread)
-	}
-
-	if err := r.SetBodyParam(o.Thread); err != nil {
-		return err
+	if o.Thread != nil {
+		if err := r.SetBodyParam(o.Thread); err != nil {
+			return err
+		}
 	}
 
 	if len(res) > 0 {

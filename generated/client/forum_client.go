@@ -38,21 +38,22 @@ func NewHTTPClient(formats strfmt.Registry) *Forum {
 // using a customizable transport config.
 func NewHTTPClientWithConfig(formats strfmt.Registry, cfg *TransportConfig) *Forum {
 	// ensure nullable parameters have default
-	if formats == nil {
-		formats = strfmt.Default
-	}
 	if cfg == nil {
 		cfg = DefaultTransportConfig()
 	}
 
 	// create transport and client
 	transport := httptransport.New(cfg.Host, cfg.BasePath, cfg.Schemes)
-	//	transport.Consumers[runtime.JSONMime]=
 	return New(transport, formats)
 }
 
 // New creates a new forum client
 func New(transport runtime.ClientTransport, formats strfmt.Registry) *Forum {
+	// ensure nullable parameters have default
+	if formats == nil {
+		formats = strfmt.Default
+	}
+
 	cli := new(Forum)
 	cli.Transport = transport
 

@@ -8,7 +8,6 @@ package models
 import (
 	strfmt "github.com/go-openapi/strfmt"
 
-	"github.com/go-openapi/errors"
 	"github.com/go-openapi/swag"
 )
 
@@ -16,22 +15,14 @@ import (
 // Пустые параметры остаются без изменений.
 //
 // swagger:model PostUpdate
-
 type PostUpdate struct {
 
 	// Собственно сообщение форума.
 	Message string `json:"message,omitempty"`
 }
 
-/* polymorph PostUpdate message false */
-
 // Validate validates this post update
 func (m *PostUpdate) Validate(formats strfmt.Registry) error {
-	var res []error
-
-	if len(res) > 0 {
-		return errors.CompositeValidationError(res...)
-	}
 	return nil
 }
 
