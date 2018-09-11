@@ -14,7 +14,7 @@ pipeline {
         HOME = "/var/jenkins_home"
         PROJ = "github.com/bozaro/tech-db-forum"
         GOPATH = "/var/jenkins_home/go"
-        PATH = "\$GOPATH/bin:$PATH"
+        PATH = "/var/jenkins_home/go/bin"
     }
 
     stages {
