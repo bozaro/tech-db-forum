@@ -14,6 +14,7 @@ pipeline {
         HOME = "/var/jenkins_home"
         PROJ = "github.com/bozaro/tech-db-forum"
         GOPATH = "/var/jenkins_home/go"
+        PATH = "$GOPATH/bin:$PATH"
     }
 
     stages {
@@ -42,7 +43,7 @@ mkdir -p target/dist
                     steps {
                         sh """
 export PATH=\$GOPATH/bin:\$PATH
-go build -ldflags " -X ${PROJ}/tests.BuildTag=\${BUILD_TAG} -X ${PROJ}/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
+go build -ldflags " -X \$PROJ/tests.BuildTag=\${BUILD_TAG} -X \$PROJ/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
 cd build/\${GOOS}_\${GOARCH}
 zip ../../target/dist/\${GOOS}_\${GOARCH}.zip tech-db-forum\${SUFFIX}
 """
@@ -57,7 +58,7 @@ zip ../../target/dist/\${GOOS}_\${GOARCH}.zip tech-db-forum\${SUFFIX}
                     steps {
                         sh """
 export PATH=\$GOPATH/bin:\$PATH
-go build -ldflags " -X ${PROJ}/tests.BuildTag=\${BUILD_TAG} -X ${PROJ}/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
+go build -ldflags " -X \$PROJ/tests.BuildTag=\${BUILD_TAG} -X \$PROJ/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
 cd build/\${GOOS}_\${GOARCH}
 zip ../../target/dist/\${GOOS}_\${GOARCH}.zip tech-db-forum\${SUFFIX}
 """
@@ -72,7 +73,7 @@ zip ../../target/dist/\${GOOS}_\${GOARCH}.zip tech-db-forum\${SUFFIX}
                     steps {
                         sh """
 export PATH=\$GOPATH/bin:\$PATH
-go build -ldflags " -X ${PROJ}/tests.BuildTag=\${BUILD_TAG} -X ${PROJ}/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
+go build -ldflags " -X \$PROJ/tests.BuildTag=\${BUILD_TAG} -X \$PROJ/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
 cd build/\${GOOS}_\${GOARCH}
 zip ../../target/dist/\${GOOS}_\${GOARCH}.zip tech-db-forum\${SUFFIX}
 """
@@ -87,7 +88,7 @@ zip ../../target/dist/\${GOOS}_\${GOARCH}.zip tech-db-forum\${SUFFIX}
                     steps {
                         sh """
 export PATH=\$GOPATH/bin:\$PATH
-go build -ldflags " -X ${PROJ}/tests.BuildTag=\${BUILD_TAG} -X ${PROJ}/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
+go build -ldflags " -X \$PROJ/tests.BuildTag=\${BUILD_TAG} -X \$PROJ/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
 cd build/\${GOOS}_\${GOARCH}
 zip ../../target/dist/\${GOOS}_\${GOARCH}.zip tech-db-forum\${SUFFIX}
 """
