@@ -21,6 +21,7 @@ pipeline {
         stage('Prepare') {
             steps {
                 sh """
+env | sort
 export PATH=\$GOPATH/bin:\$PATH
 go install -v ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
 go install -v ./vendor/github.com/jteeuwen/go-bindata/go-bindata
