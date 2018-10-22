@@ -149,14 +149,15 @@ func (f *Factory) CreatePosts(c *client.Forum, posts models.Posts, thread *model
 		WithContext(Expected(201, &expected, func(data interface{}) interface{} {
 			posts := data.(*models.Posts)
 
-			var first_time *strfmt.DateTime
+			var first_time *int64
 			same_time := true
 			for _, post := range *posts {
 				if post.Created != nil {
+					nano := time.Time(*post.Created).UnixNano()
 					if first_time == nil {
-						first_time = post.Created
+						first_time = &nano
 					}
-					if *first_time != *post.Created {
+					if *first_time != nano {
 						same_time = false
 					}
 				}
