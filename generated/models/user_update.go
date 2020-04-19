@@ -6,14 +6,14 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	strfmt "github.com/go-openapi/strfmt"
-
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/go-openapi/validate"
 )
 
 // UserUpdate Информация о пользователе.
+//
 //
 // swagger:model UserUpdate
 type UserUpdate struct {
@@ -22,6 +22,7 @@ type UserUpdate struct {
 	About string `json:"about,omitempty"`
 
 	// Почтовый адрес пользователя (уникальное поле).
+	// Format: email
 	Email strfmt.Email `json:"email,omitempty"`
 
 	// Полное имя пользователя.
@@ -33,7 +34,6 @@ func (m *UserUpdate) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateEmail(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 

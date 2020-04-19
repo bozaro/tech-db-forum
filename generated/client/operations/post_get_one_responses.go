@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // PostGetOneReader is a Reader for the PostGetOne structure.
@@ -24,14 +23,12 @@ type PostGetOneReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *PostGetOneReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 200:
 		result := NewPostGetOneOK()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 404:
 		result := NewPostGetOneNotFound()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -62,6 +59,10 @@ func (o *PostGetOneOK) Error() string {
 	return fmt.Sprintf("[GET /post/{id}/details][%d] postGetOneOK  %+v", 200, o.Payload)
 }
 
+func (o *PostGetOneOK) GetPayload() *models.PostFull {
+	return o.Payload
+}
+
 func (o *PostGetOneOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(models.PostFull)
@@ -90,6 +91,10 @@ type PostGetOneNotFound struct {
 
 func (o *PostGetOneNotFound) Error() string {
 	return fmt.Sprintf("[GET /post/{id}/details][%d] postGetOneNotFound  %+v", 404, o.Payload)
+}
+
+func (o *PostGetOneNotFound) GetPayload() *models.Error {
+	return o.Payload
 }
 
 func (o *PostGetOneNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

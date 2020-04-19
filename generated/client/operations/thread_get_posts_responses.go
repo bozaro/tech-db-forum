@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // ThreadGetPostsReader is a Reader for the ThreadGetPosts structure.
@@ -24,14 +23,12 @@ type ThreadGetPostsReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *ThreadGetPostsReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 200:
 		result := NewThreadGetPostsOK()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 404:
 		result := NewThreadGetPostsNotFound()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -62,6 +59,10 @@ func (o *ThreadGetPostsOK) Error() string {
 	return fmt.Sprintf("[GET /thread/{slug_or_id}/posts][%d] threadGetPostsOK  %+v", 200, o.Payload)
 }
 
+func (o *ThreadGetPostsOK) GetPayload() models.Posts {
+	return o.Payload
+}
+
 func (o *ThreadGetPostsOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
@@ -88,6 +89,10 @@ type ThreadGetPostsNotFound struct {
 
 func (o *ThreadGetPostsNotFound) Error() string {
 	return fmt.Sprintf("[GET /thread/{slug_or_id}/posts][%d] threadGetPostsNotFound  %+v", 404, o.Payload)
+}
+
+func (o *ThreadGetPostsNotFound) GetPayload() *models.Error {
+	return o.Payload
 }
 
 func (o *ThreadGetPostsNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // PostUpdateReader is a Reader for the PostUpdate structure.
@@ -24,14 +23,12 @@ type PostUpdateReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *PostUpdateReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 200:
 		result := NewPostUpdateOK()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 404:
 		result := NewPostUpdateNotFound()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -62,6 +59,10 @@ func (o *PostUpdateOK) Error() string {
 	return fmt.Sprintf("[POST /post/{id}/details][%d] postUpdateOK  %+v", 200, o.Payload)
 }
 
+func (o *PostUpdateOK) GetPayload() *models.Post {
+	return o.Payload
+}
+
 func (o *PostUpdateOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(models.Post)
@@ -90,6 +91,10 @@ type PostUpdateNotFound struct {
 
 func (o *PostUpdateNotFound) Error() string {
 	return fmt.Sprintf("[POST /post/{id}/details][%d] postUpdateNotFound  %+v", 404, o.Payload)
+}
+
+func (o *PostUpdateNotFound) GetPayload() *models.Error {
+	return o.Payload
 }
 
 func (o *PostUpdateNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

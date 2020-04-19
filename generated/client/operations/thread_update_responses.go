@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // ThreadUpdateReader is a Reader for the ThreadUpdate structure.
@@ -24,14 +23,12 @@ type ThreadUpdateReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *ThreadUpdateReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 200:
 		result := NewThreadUpdateOK()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 404:
 		result := NewThreadUpdateNotFound()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -62,6 +59,10 @@ func (o *ThreadUpdateOK) Error() string {
 	return fmt.Sprintf("[POST /thread/{slug_or_id}/details][%d] threadUpdateOK  %+v", 200, o.Payload)
 }
 
+func (o *ThreadUpdateOK) GetPayload() *models.Thread {
+	return o.Payload
+}
+
 func (o *ThreadUpdateOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(models.Thread)
@@ -90,6 +91,10 @@ type ThreadUpdateNotFound struct {
 
 func (o *ThreadUpdateNotFound) Error() string {
 	return fmt.Sprintf("[POST /thread/{slug_or_id}/details][%d] threadUpdateNotFound  %+v", 404, o.Payload)
+}
+
+func (o *ThreadUpdateNotFound) GetPayload() *models.Error {
+	return o.Payload
 }
 
 func (o *ThreadUpdateNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

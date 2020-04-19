@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // ForumGetUsersReader is a Reader for the ForumGetUsers structure.
@@ -24,14 +23,12 @@ type ForumGetUsersReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *ForumGetUsersReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 200:
 		result := NewForumGetUsersOK()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 404:
 		result := NewForumGetUsersNotFound()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -62,6 +59,10 @@ func (o *ForumGetUsersOK) Error() string {
 	return fmt.Sprintf("[GET /forum/{slug}/users][%d] forumGetUsersOK  %+v", 200, o.Payload)
 }
 
+func (o *ForumGetUsersOK) GetPayload() models.Users {
+	return o.Payload
+}
+
 func (o *ForumGetUsersOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
@@ -88,6 +89,10 @@ type ForumGetUsersNotFound struct {
 
 func (o *ForumGetUsersNotFound) Error() string {
 	return fmt.Sprintf("[GET /forum/{slug}/users][%d] forumGetUsersNotFound  %+v", 404, o.Payload)
+}
+
+func (o *ForumGetUsersNotFound) GetPayload() *models.Error {
+	return o.Payload
 }
 
 func (o *ForumGetUsersNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

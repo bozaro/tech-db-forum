@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // ThreadVoteReader is a Reader for the ThreadVote structure.
@@ -24,14 +23,12 @@ type ThreadVoteReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *ThreadVoteReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 200:
 		result := NewThreadVoteOK()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 404:
 		result := NewThreadVoteNotFound()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -62,6 +59,10 @@ func (o *ThreadVoteOK) Error() string {
 	return fmt.Sprintf("[POST /thread/{slug_or_id}/vote][%d] threadVoteOK  %+v", 200, o.Payload)
 }
 
+func (o *ThreadVoteOK) GetPayload() *models.Thread {
+	return o.Payload
+}
+
 func (o *ThreadVoteOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(models.Thread)
@@ -90,6 +91,10 @@ type ThreadVoteNotFound struct {
 
 func (o *ThreadVoteNotFound) Error() string {
 	return fmt.Sprintf("[POST /thread/{slug_or_id}/vote][%d] threadVoteNotFound  %+v", 404, o.Payload)
+}
+
+func (o *ThreadVoteNotFound) GetPayload() *models.Error {
+	return o.Payload
 }
 
 func (o *ThreadVoteNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // ThreadCreateReader is a Reader for the ThreadCreate structure.
@@ -24,21 +23,18 @@ type ThreadCreateReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *ThreadCreateReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 201:
 		result := NewThreadCreateCreated()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 404:
 		result := NewThreadCreateNotFound()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return nil, result
-
 	case 409:
 		result := NewThreadCreateConflict()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -68,6 +64,10 @@ type ThreadCreateCreated struct {
 
 func (o *ThreadCreateCreated) Error() string {
 	return fmt.Sprintf("[POST /forum/{slug}/create][%d] threadCreateCreated  %+v", 201, o.Payload)
+}
+
+func (o *ThreadCreateCreated) GetPayload() *models.Thread {
+	return o.Payload
 }
 
 func (o *ThreadCreateCreated) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -100,6 +100,10 @@ func (o *ThreadCreateNotFound) Error() string {
 	return fmt.Sprintf("[POST /forum/{slug}/create][%d] threadCreateNotFound  %+v", 404, o.Payload)
 }
 
+func (o *ThreadCreateNotFound) GetPayload() *models.Error {
+	return o.Payload
+}
+
 func (o *ThreadCreateNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(models.Error)
@@ -129,6 +133,10 @@ type ThreadCreateConflict struct {
 
 func (o *ThreadCreateConflict) Error() string {
 	return fmt.Sprintf("[POST /forum/{slug}/create][%d] threadCreateConflict  %+v", 409, o.Payload)
+}
+
+func (o *ThreadCreateConflict) GetPayload() *models.Thread {
+	return o.Payload
 }
 
 func (o *ThreadCreateConflict) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // PostsCreateReader is a Reader for the PostsCreate structure.
@@ -24,21 +23,18 @@ type PostsCreateReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *PostsCreateReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 201:
 		result := NewPostsCreateCreated()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 404:
 		result := NewPostsCreateNotFound()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return nil, result
-
 	case 409:
 		result := NewPostsCreateConflict()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -70,6 +66,10 @@ func (o *PostsCreateCreated) Error() string {
 	return fmt.Sprintf("[POST /thread/{slug_or_id}/create][%d] postsCreateCreated  %+v", 201, o.Payload)
 }
 
+func (o *PostsCreateCreated) GetPayload() models.Posts {
+	return o.Payload
+}
+
 func (o *PostsCreateCreated) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	// response payload
@@ -96,6 +96,10 @@ type PostsCreateNotFound struct {
 
 func (o *PostsCreateNotFound) Error() string {
 	return fmt.Sprintf("[POST /thread/{slug_or_id}/create][%d] postsCreateNotFound  %+v", 404, o.Payload)
+}
+
+func (o *PostsCreateNotFound) GetPayload() *models.Error {
+	return o.Payload
 }
 
 func (o *PostsCreateNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -126,6 +130,10 @@ type PostsCreateConflict struct {
 
 func (o *PostsCreateConflict) Error() string {
 	return fmt.Sprintf("[POST /thread/{slug_or_id}/create][%d] postsCreateConflict  %+v", 409, o.Payload)
+}
+
+func (o *PostsCreateConflict) GetPayload() *models.Error {
+	return o.Payload
 }
 
 func (o *PostsCreateConflict) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

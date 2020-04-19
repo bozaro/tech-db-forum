@@ -6,9 +6,6 @@ package main
 import (
 	"compress/gzip"
 	"fmt"
-	"github.com/bozaro/tech-db-forum/tests"
-	"github.com/mkideal/cli"
-	"github.com/op/go-logging"
 	"io"
 	"net/http"
 	"net/url"
@@ -17,6 +14,11 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/mkideal/cli"
+	"github.com/op/go-logging"
+
+	"github.com/bozaro/tech-db-forum/tests"
 )
 
 const (
@@ -282,7 +284,6 @@ func main() {
 	// Set the backends to be used.
 	logging.SetBackend(logging.NewBackendFormatter(backend, format))
 
-	cli.RegisterFlagParser("url", newParserUrl)
 	cli.RegisterFlagParser("regexp", newParserRegexp)
 
 	if err := cli.Root(root,

@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // UserCreateReader is a Reader for the UserCreate structure.
@@ -24,14 +23,12 @@ type UserCreateReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *UserCreateReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 201:
 		result := NewUserCreateCreated()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 409:
 		result := NewUserCreateConflict()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -63,6 +60,10 @@ func (o *UserCreateCreated) Error() string {
 	return fmt.Sprintf("[POST /user/{nickname}/create][%d] userCreateCreated  %+v", 201, o.Payload)
 }
 
+func (o *UserCreateCreated) GetPayload() *models.User {
+	return o.Payload
+}
+
 func (o *UserCreateCreated) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(models.User)
@@ -92,6 +93,10 @@ type UserCreateConflict struct {
 
 func (o *UserCreateConflict) Error() string {
 	return fmt.Sprintf("[POST /user/{nickname}/create][%d] userCreateConflict  %+v", 409, o.Payload)
+}
+
+func (o *UserCreateConflict) GetPayload() models.Users {
+	return o.Payload
 }
 
 func (o *UserCreateConflict) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

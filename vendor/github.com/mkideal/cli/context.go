@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -109,6 +110,7 @@ func (ctx *Context) Argv() interface{} {
 	return ctx.argvList[0]
 }
 
+// RootArgv returns parsed root args object
 func (ctx *Context) RootArgv() interface{} {
 	if isEmptyArgvList(ctx.argvList) {
 		return nil
@@ -117,6 +119,7 @@ func (ctx *Context) RootArgv() interface{} {
 	return ctx.argvList[index]
 }
 
+// GetArgvList gets argv objects
 func (ctx *Context) GetArgvList(curr interface{}, parents ...interface{}) error {
 	if isEmptyArgvList(ctx.argvList) {
 		return argvError{isEmpty: true}
@@ -141,6 +144,28 @@ func (ctx *Context) GetArgvList(curr interface{}, parents ...interface{}) error 
 		}
 	}
 	return nil
+}
+
+// GetArgvAt gets the i-th argv object
+func (ctx *Context) GetArgvAt(argv interface{}, i int) error {
+	if isEmptyArgvList(ctx.argvList) {
+		return argvError{isEmpty: true}
+	}
+	if argv == nil {
+		return errors.New("argv is nil")
+	}
+	if i >= len(ctx.argvList) {
+		return argvError{isOutOfRange: true}
+	}
+	if ctx.argvList[i] == nil {
+		return argvError{ith: i, msg: "source is nil"}
+	}
+
+	buf := bytes.NewBufferString("")
+	if err := json.NewEncoder(buf).Encode(ctx.argvList[i]); err != nil {
+		return err
+	}
+	return json.NewDecoder(buf).Decode(argv)
 }
 
 // IsSet determins whether `flag` is set
