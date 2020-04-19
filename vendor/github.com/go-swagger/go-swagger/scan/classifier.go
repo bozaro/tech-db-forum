@@ -1,3 +1,5 @@
+// +build !go1.11
+
 // Copyright 2015 go-swagger maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +20,7 @@ import (
 	"fmt"
 	"go/ast"
 	"log"
+	"regexp"
 
 	"golang.org/x/tools/go/loader"
 )
@@ -27,7 +30,11 @@ type packageFilter struct {
 }
 
 func (pf *packageFilter) Matches(path string) bool {
-	return path == pf.Name
+	matched, err := regexp.MatchString(pf.Name, path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return matched
 }
 
 type packageFilters []packageFilter

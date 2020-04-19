@@ -33,9 +33,10 @@ type Generator struct {
 
 	varCounter int
 
-	noStdMarshalers bool
-	omitEmpty       bool
-	fieldNamer      FieldNamer
+	noStdMarshalers       bool
+	omitEmpty             bool
+	disallowUnknownFields bool
+	fieldNamer            FieldNamer
 
 	// package path to local alias map for tracking imports
 	imports map[string]string
@@ -110,6 +111,11 @@ func (g *Generator) NoStdMarshalers() {
 	g.noStdMarshalers = true
 }
 
+// DisallowUnknownFields instructs not to skip unknown fields in json and return error.
+func (g *Generator) DisallowUnknownFields() {
+	g.disallowUnknownFields = true
+}
+
 // OmitEmpty triggers `json=",omitempty"` behaviour by default.
 func (g *Generator) OmitEmpty() {
 	g.omitEmpty = true
@@ -150,8 +156,9 @@ func (g *Generator) printHeader() {
 	fmt.Println("package ", g.pkgName)
 	fmt.Println()
 
-	byAlias := map[string]string{}
-	var aliases []string
+	byAlias := make(map[string]string, len(g.imports))
+	aliases := make([]string, 0, len(g.imports))
+
 	for path, alias := range g.imports {
 		aliases = append(aliases, alias)
 		byAlias[alias] = path
@@ -284,7 +291,11 @@ func (g *Generator) getType(t reflect.Type) string {
 			lines := make([]string, 0, nf)
 			for i := 0; i < nf; i++ {
 				f := t.Field(i)
-				line := f.Name + " " + g.getType(f.Type)
+				var line string
+				if !f.Anonymous {
+					line = f.Name + " "
+				} // else the field is anonymous (an embedded type)
+				line += g.getType(f.Type)
 				t := f.Tag
 				if t != "" {
 					line += " " + escapeTag(t)
@@ -378,9 +389,9 @@ func (DefaultFieldNamer) GetJSONFieldName(t reflect.Type, f reflect.StructField)
 	jsonName := strings.Split(f.Tag.Get("json"), ",")[0]
 	if jsonName != "" {
 		return jsonName
-	} else {
-		return f.Name
 	}
+
+	return f.Name
 }
 
 // LowerCamelCaseFieldNamer
@@ -417,9 +428,10 @@ func lowerFirst(s string) string {
 	for i := range s {
 		ch := s[i]
 		if isUpper(ch) {
-			if i == 0 {
+			switch {
+			case i == 0:
 				str += string(ch + 32)
-			} else if !foundLower { // Currently just a stream of capitals, eg JSONRESTS[erver]
+			case !foundLower: // Currently just a stream of capitals, eg JSONRESTS[erver]
 				if strlen > (i+1) && isLower(s[i+1]) {
 					// Next char is lower, keep this a capital
 					str += string(ch)
@@ -427,7 +439,7 @@ func lowerFirst(s string) string {
 					// Either at end of string or next char is capital
 					str += string(ch + 32)
 				}
-			} else {
+			default:
 				str += string(ch)
 			}
 		} else {
@@ -443,9 +455,9 @@ func (LowerCamelCaseFieldNamer) GetJSONFieldName(t reflect.Type, f reflect.Struc
 	jsonName := strings.Split(f.Tag.Get("json"), ",")[0]
 	if jsonName != "" {
 		return jsonName
-	} else {
-		return lowerFirst(f.Name)
 	}
+
+	return lowerFirst(f.Name)
 }
 
 // SnakeCaseFieldNamer implements CamelCase to snake_case conversion for fields names.

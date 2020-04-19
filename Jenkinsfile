@@ -2,7 +2,7 @@ pipeline {
     agent {
         dockerfile {
             filename 'Dockerfile.build'
-            customWorkspace "/var/jenkins_home/go/src/github.com/bozaro/tech-db-forum"
+            customWorkspace "workspace/tech-db-forum"
         }
     }
 
@@ -11,20 +11,19 @@ pipeline {
     }
 
     environment {
-        HOME = "/var/jenkins_home"
         PROJ = "github.com/bozaro/tech-db-forum"
-        GOPATH = "/var/jenkins_home/go"
     }
 
     stages {
         stage('Prepare') {
             steps {
                 sh """
+export GOPATH=\$HOME/go
 export PATH=\$GOPATH/bin:\$PATH
-go install -v ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
-go install -v ./vendor/github.com/jteeuwen/go-bindata/go-bindata
-go install -v ./vendor/github.com/mailru/easyjson/easyjson
-go install -v ./vendor/github.com/aktau/github-release
+go install -v github.com/go-swagger/go-swagger/cmd/swagger
+go install -v github.com/jteeuwen/go-bindata/go-bindata
+go install -v github.com/mailru/easyjson/easyjson
+go install -v github.com/aktau/github-release
 go generate -x .
 mkdir -p target/dist
 """
@@ -41,6 +40,7 @@ mkdir -p target/dist
                     }
                     steps {
                         sh """
+export GOPATH=\$HOME/go
 export PATH=\$GOPATH/bin:\$PATH
 go build -ldflags " -X ${PROJ}/tests.BuildTag=\${BUILD_TAG} -X ${PROJ}/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
 cd build/\${GOOS}_\${GOARCH}
@@ -56,6 +56,7 @@ zip ../../target/dist/\${GOOS}_\${GOARCH}.zip tech-db-forum\${SUFFIX}
                     }
                     steps {
                         sh """
+export GOPATH=\$HOME/go
 export PATH=\$GOPATH/bin:\$PATH
 go build -ldflags " -X ${PROJ}/tests.BuildTag=\${BUILD_TAG} -X ${PROJ}/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
 cd build/\${GOOS}_\${GOARCH}
@@ -71,6 +72,7 @@ zip ../../target/dist/\${GOOS}_\${GOARCH}.zip tech-db-forum\${SUFFIX}
                     }
                     steps {
                         sh """
+export GOPATH=\$HOME/go
 export PATH=\$GOPATH/bin:\$PATH
 go build -ldflags " -X ${PROJ}/tests.BuildTag=\${BUILD_TAG} -X ${PROJ}/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
 cd build/\${GOOS}_\${GOARCH}
@@ -86,6 +88,7 @@ zip ../../target/dist/\${GOOS}_\${GOARCH}.zip tech-db-forum\${SUFFIX}
                     }
                     steps {
                         sh """
+export GOPATH=\$HOME/go
 export PATH=\$GOPATH/bin:\$PATH
 go build -ldflags " -X ${PROJ}/tests.BuildTag=\${BUILD_TAG} -X ${PROJ}/tests.GitCommit=\$(git rev-parse HEAD)" -o build/\${GOOS}_\${GOARCH}/tech-db-forum\${SUFFIX}
 cd build/\${GOOS}_\${GOARCH}
@@ -127,6 +130,7 @@ git push -qf https://\${GITHUB_TOKEN}@github.com/bozaro/tech-db-forum.git gh-pag
             steps {
                 withCredentials([[$class: 'StringBinding', credentialsId: 'github_bozaro', variable: 'GITHUB_TOKEN']]) {
                     sh """
+export GOPATH=\$HOME/go
 export PATH=\$GOPATH/bin:\$PATH
 github-release info --tag ${params.TAG_NAME} || github-release release --tag ${params.TAG_NAME} --draft
 for i in target/dist/*.zip; do
