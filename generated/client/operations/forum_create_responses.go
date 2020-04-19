@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // ForumCreateReader is a Reader for the ForumCreate structure.
@@ -24,21 +23,18 @@ type ForumCreateReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *ForumCreateReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 201:
 		result := NewForumCreateCreated()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 404:
 		result := NewForumCreateNotFound()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return nil, result
-
 	case 409:
 		result := NewForumCreateConflict()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -68,6 +64,10 @@ type ForumCreateCreated struct {
 
 func (o *ForumCreateCreated) Error() string {
 	return fmt.Sprintf("[POST /forum/create][%d] forumCreateCreated  %+v", 201, o.Payload)
+}
+
+func (o *ForumCreateCreated) GetPayload() *models.Forum {
+	return o.Payload
 }
 
 func (o *ForumCreateCreated) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -100,6 +100,10 @@ func (o *ForumCreateNotFound) Error() string {
 	return fmt.Sprintf("[POST /forum/create][%d] forumCreateNotFound  %+v", 404, o.Payload)
 }
 
+func (o *ForumCreateNotFound) GetPayload() *models.Error {
+	return o.Payload
+}
+
 func (o *ForumCreateNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(models.Error)
@@ -129,6 +133,10 @@ type ForumCreateConflict struct {
 
 func (o *ForumCreateConflict) Error() string {
 	return fmt.Sprintf("[POST /forum/create][%d] forumCreateConflict  %+v", 409, o.Payload)
+}
+
+func (o *ForumCreateConflict) GetPayload() *models.Forum {
+	return o.Payload
 }
 
 func (o *ForumCreateConflict) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

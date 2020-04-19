@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // ThreadGetOneReader is a Reader for the ThreadGetOne structure.
@@ -24,14 +23,12 @@ type ThreadGetOneReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *ThreadGetOneReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 200:
 		result := NewThreadGetOneOK()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 404:
 		result := NewThreadGetOneNotFound()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -62,6 +59,10 @@ func (o *ThreadGetOneOK) Error() string {
 	return fmt.Sprintf("[GET /thread/{slug_or_id}/details][%d] threadGetOneOK  %+v", 200, o.Payload)
 }
 
+func (o *ThreadGetOneOK) GetPayload() *models.Thread {
+	return o.Payload
+}
+
 func (o *ThreadGetOneOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(models.Thread)
@@ -90,6 +91,10 @@ type ThreadGetOneNotFound struct {
 
 func (o *ThreadGetOneNotFound) Error() string {
 	return fmt.Sprintf("[GET /thread/{slug_or_id}/details][%d] threadGetOneNotFound  %+v", 404, o.Payload)
+}
+
+func (o *ThreadGetOneNotFound) GetPayload() *models.Error {
+	return o.Payload
 }
 
 func (o *ThreadGetOneNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

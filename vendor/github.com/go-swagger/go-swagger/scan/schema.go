@@ -1,3 +1,5 @@
+// +build !go1.11
+
 // Copyright 2015 go-swagger maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +17,7 @@
 package scan
 
 import (
+	"encoding/json"
 	"fmt"
 	"go/ast"
 	"log"
@@ -29,6 +32,14 @@ import (
 
 	"github.com/go-openapi/spec"
 )
+
+func addExtension(ve *spec.VendorExtensible, key string, value interface{}) {
+	if os.Getenv("SWAGGER_GENERATE_EXTENSION") == "false" {
+		return
+	}
+
+	ve.AddExtension(key, value)
+}
 
 type schemaTypable struct {
 	schema *spec.Schema
@@ -70,7 +81,12 @@ func (st schemaTypable) AdditionalProperties() swaggerTypable {
 	st.schema.Typed("object", "")
 	return schemaTypable{st.schema.AdditionalProperties.Schema, st.level + 1}
 }
+
 func (st schemaTypable) Level() int { return st.level }
+
+func (st schemaTypable) WithEnum(values ...interface{}) {
+	st.schema.WithEnum(values...)
+}
 
 type schemaValidations struct {
 	current *spec.Schema
@@ -94,12 +110,7 @@ func (sv schemaValidations) SetUnique(val bool)         { sv.current.UniqueItems
 func (sv schemaValidations) SetDefault(val interface{}) { sv.current.Default = val }
 func (sv schemaValidations) SetExample(val interface{}) { sv.current.Example = val }
 func (sv schemaValidations) SetEnum(val string) {
-	list := strings.Split(val, ",")
-	interfaceSlice := make([]interface{}, len(list))
-	for i, d := range list {
-		interfaceSlice[i] = d
-	}
-	sv.current.Enum = interfaceSlice
+	sv.current.Enum = parseEnum(val, &spec.SimpleSchema{Format: sv.current.Format, Type: sv.current.Type[0]})
 }
 
 type schemaDecl struct {
@@ -242,6 +253,18 @@ func (scp *schemaParser) parseDecl(definitions map[string]spec.Schema, decl *sch
 				return err
 			}
 		}
+		if enumName, ok := enumName(decl.Decl.Doc); ok {
+			var enumValues = getEnumValues(decl.File, enumName)
+			if len(enumValues) > 0 {
+				var typeName = reflect.TypeOf(enumValues[0]).String()
+				prop.WithEnum(enumValues...)
+
+				err := swaggerSchemaForType(typeName, prop)
+				if err != nil {
+					return fmt.Errorf("file %s, error is: %v", decl.File.Name, err)
+				}
+			}
+		}
 	case *ast.SelectorExpr:
 		prop := &schemaTypable{schPtr, 0}
 		if strfmtName, ok := strfmtName(decl.Decl.Doc); ok {
@@ -278,13 +301,13 @@ func (scp *schemaParser) parseDecl(definitions map[string]spec.Schema, decl *sch
 
 	if schPtr.Ref.String() == "" {
 		if decl.Name != decl.GoName {
-			schPtr.AddExtension("x-go-name", decl.GoName)
+			addExtension(&schPtr.VendorExtensible, "x-go-name", decl.GoName)
 		}
 		for _, pkgInfo := range scp.program.AllPackages {
 			if pkgInfo.Importable {
 				for _, fil := range pkgInfo.Files {
 					if fil.Pos() == decl.File.Pos() {
-						schPtr.AddExtension("x-go-package", pkgInfo.Pkg.Path())
+						addExtension(&schPtr.VendorExtensible, "x-go-package", pkgInfo.Pkg.Path())
 					}
 				}
 			}
@@ -508,7 +531,7 @@ func (scp *schemaParser) parseInterfaceType(gofile *ast.File, bschema *spec.Sche
 							if ml > 1 {
 								mv := matches[ml-1]
 								if mv != "" {
-									bschema.AddExtension("x-class", mv)
+									addExtension(&bschema.VendorExtensible, "x-class", mv)
 								}
 							}
 						}
@@ -564,7 +587,7 @@ func (scp *schemaParser) parseInterfaceType(gofile *ast.File, bschema *spec.Sche
 			}
 
 			if ps.Ref.String() == "" && nm != gnm {
-				ps.AddExtension("x-go-name", gnm)
+				addExtension(&ps.VendorExtensible, "x-go-name", gnm)
 			}
 			seenProperties[nm] = gnm
 			schema.Properties[nm] = ps
@@ -592,7 +615,12 @@ func (scp *schemaParser) parseStructType(gofile *ast.File, bschema *spec.Schema,
 
 	for _, fld := range tpe.Fields.List {
 		if len(fld.Names) == 0 {
-			_, ignore, err := parseJSONTag(fld)
+			// if the field is annotated with swagger:ignore, ignore it
+			if ignored(fld.Doc) {
+				continue
+			}
+
+			_, ignore, _, err := parseJSONTag(fld)
 			if err != nil {
 				return err
 			}
@@ -624,7 +652,7 @@ func (scp *schemaParser) parseStructType(gofile *ast.File, bschema *spec.Schema,
 							if ml > 1 {
 								mv := matches[ml-1]
 								if mv != "" {
-									bschema.AddExtension("x-class", mv)
+									addExtension(&bschema.VendorExtensible, "x-class", mv)
 								}
 							}
 						}
@@ -656,8 +684,13 @@ func (scp *schemaParser) parseStructType(gofile *ast.File, bschema *spec.Schema,
 	schema.Typed("object", "")
 	for _, fld := range tpe.Fields.List {
 		if len(fld.Names) > 0 && fld.Names[0] != nil && fld.Names[0].IsExported() {
+			// if the field is annotated with swagger:ignore, ignore it
+			if ignored(fld.Doc) {
+				continue
+			}
+
 			gnm := fld.Names[0].Name
-			nm, ignore, err := parseJSONTag(fld)
+			nm, ignore, isString, err := parseJSONTag(fld)
 			if err != nil {
 				return err
 			}
@@ -675,6 +708,10 @@ func (scp *schemaParser) parseStructType(gofile *ast.File, bschema *spec.Schema,
 			if err := parseProperty(scp, gofile, fld.Type, schemaTypable{&ps, 0}); err != nil {
 				return err
 			}
+			if isString {
+				ps.Typed("string", ps.Format)
+				ps.Ref = spec.Ref{}
+			}
 			if strfmtName, ok := strfmtName(fld.Doc); ok {
 				ps.Typed("string", strfmtName)
 				ps.Ref = spec.Ref{}
@@ -685,7 +722,7 @@ func (scp *schemaParser) parseStructType(gofile *ast.File, bschema *spec.Schema,
 			}
 
 			if ps.Ref.String() == "" && nm != gnm {
-				ps.AddExtension("x-go-name", gnm)
+				addExtension(&ps.VendorExtensible, "x-go-name", gnm)
 			}
 			// we have 2 cases:
 			// 1. field with different name override tag
@@ -704,6 +741,23 @@ func (scp *schemaParser) parseStructType(gofile *ast.File, bschema *spec.Schema,
 		}
 	}
 	return nil
+}
+
+func schemaVendorExtensibleSetter(meta *spec.Schema) func(json.RawMessage) error {
+	return func(jsonValue json.RawMessage) error {
+		var jsonData spec.Extensions
+		err := json.Unmarshal(jsonValue, &jsonData)
+		if err != nil {
+			return err
+		}
+		for k := range jsonData {
+			if !rxAllowedExtensions.MatchString(k) {
+				return fmt.Errorf("invalid schema extension name, should start from `x-`: %s", k)
+			}
+		}
+		meta.Extensions = jsonData
+		return nil
+	}
 }
 
 func (scp *schemaParser) createParser(nm string, schema, ps *spec.Schema, fld *ast.Field) *sectionedParser {
@@ -733,6 +787,7 @@ func (scp *schemaParser) createParser(nm string, schema, ps *spec.Schema, fld *a
 			newSingleLineTagParser("required", &setRequiredSchema{schema, nm}),
 			newSingleLineTagParser("readOnly", &setReadOnlySchema{ps}),
 			newSingleLineTagParser("discriminator", &setDiscriminator{schema, nm}),
+			newMultiLineTagParser("YAMLExtensionsBlock", newYamlParser(rxExtensions, schemaVendorExtensibleSetter(ps)), true),
 		}
 
 		itemsTaggers := func(items *spec.Schema, level int) []tagParser {
@@ -987,8 +1042,15 @@ func (scp *schemaParser) parseIdentProperty(pkg *loader.PackageInfo, expr *ast.I
 	}
 
 	if enumName, ok := enumName(gd.Doc); ok {
-		log.Println(enumName)
-		return nil
+		var enumValues = getEnumValues(file, enumName)
+		if len(enumValues) > 0 {
+			prop.WithEnum(enumValues...)
+			var typeName = reflect.TypeOf(enumValues[0]).String()
+			err := swaggerSchemaForType(typeName, prop)
+			if err != nil {
+				return fmt.Errorf("file %s, error is: %v", file.Name, err)
+			}
+		}
 	}
 
 	if defaultName, ok := defaultName(gd.Doc); ok {
@@ -997,7 +1059,7 @@ func (scp *schemaParser) parseIdentProperty(pkg *loader.PackageInfo, expr *ast.I
 	}
 
 	if typeName, ok := typeName(gd.Doc); ok {
-		swaggerSchemaForType(typeName, prop)
+		_ = swaggerSchemaForType(typeName, prop)
 		return nil
 	}
 
@@ -1107,6 +1169,19 @@ func strfmtName(comments *ast.CommentGroup) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func ignored(comments *ast.CommentGroup) bool {
+	if comments != nil {
+		for _, cmt := range comments.List {
+			for _, ln := range strings.Split(cmt.Text, "\n") {
+				if rxIgnoreOverride.MatchString(ln) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func enumName(comments *ast.CommentGroup) (string, bool) {
@@ -1236,25 +1311,50 @@ func parseProperty(scp *schemaParser, gofile *ast.File, fld ast.Expr, prop swagg
 	return nil
 }
 
-func parseJSONTag(field *ast.Field) (name string, ignore bool, err error) {
+func parseJSONTag(field *ast.Field) (name string, ignore bool, isString bool, err error) {
 	if len(field.Names) > 0 {
 		name = field.Names[0].Name
 	}
 	if field.Tag != nil && len(strings.TrimSpace(field.Tag.Value)) > 0 {
 		tv, err := strconv.Unquote(field.Tag.Value)
 		if err != nil {
-			return name, false, err
+			return name, false, false, err
 		}
 
 		if strings.TrimSpace(tv) != "" {
 			st := reflect.StructTag(tv)
-			jsonName := strings.Split(st.Get("json"), ",")[0]
+			jsonParts := strings.Split(st.Get("json"), ",")
+			jsonName := jsonParts[0]
+
+			if len(jsonParts) > 1 && jsonParts[1] == "string" {
+				isString = isFieldStringable(field.Type)
+			}
+
 			if jsonName == "-" {
-				return name, true, nil
+				return name, true, isString, nil
 			} else if jsonName != "" {
-				return jsonName, false, nil
+				return jsonName, false, isString, nil
 			}
 		}
 	}
-	return name, false, nil
+	return name, false, false, nil
+}
+
+// isFieldStringable check if the field type is a scalar. If the field type is
+// *ast.StarExpr and is pointer type, check if it refers to a scalar.
+// Otherwise, the ",string" directive doesn't apply.
+func isFieldStringable(tpe ast.Expr) bool {
+	if ident, ok := tpe.(*ast.Ident); ok {
+		switch ident.Name {
+		case "int", "int8", "int16", "int32", "int64",
+			"uint", "uint8", "uint16", "uint32", "uint64",
+			"float64", "string", "bool":
+			return true
+		}
+	} else if starExpr, ok := tpe.(*ast.StarExpr); ok {
+		return isFieldStringable(starExpr.X)
+	} else {
+		return false
+	}
+	return false
 }

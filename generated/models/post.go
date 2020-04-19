@@ -6,14 +6,14 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	strfmt "github.com/go-openapi/strfmt"
-
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/go-openapi/validate"
 )
 
 // Post Сообщение внутри ветки обсуждения на форуме.
+//
 //
 // swagger:model Post
 type Post struct {
@@ -24,6 +24,7 @@ type Post struct {
 
 	// Дата создания сообщения на форуме.
 	// Read Only: true
+	// Format: date-time
 	Created *strfmt.DateTime `json:"created,omitempty"`
 
 	// Идентификатор форума (slug) данного сообещния.
@@ -56,17 +57,14 @@ func (m *Post) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateAuthor(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateCreated(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateMessage(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 

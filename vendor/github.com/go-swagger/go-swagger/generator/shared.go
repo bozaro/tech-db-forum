@@ -16,205 +16,45 @@ package generator
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
 	"text/template"
 
-	swaggererrors "github.com/go-openapi/errors"
-
 	"github.com/go-openapi/analysis"
 	"github.com/go-openapi/loads"
+	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/spec"
-	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
-	"github.com/go-openapi/validate"
-	"golang.org/x/tools/imports"
 )
 
-//go:generate go-bindata -mode 420 -modtime 1482416923 -pkg=generator -ignore=.*\.sw? ./templates/...
+//go:generate go-bindata -mode 420 -modtime 1482416923 -pkg=generator -ignore=.*\.sw? -ignore=.*\.md ./templates/...
 
-// LanguageOpts to describe a language to the code generator
-type LanguageOpts struct {
-	ReservedWords    []string
-	BaseImportFunc   func(string) string `json:"-"`
-	reservedWordsSet map[string]struct{}
-	initialized      bool
-	formatFunc       func(string, []byte) ([]byte, error)
-}
+const (
+	// default generation targets structure
+	defaultModelsTarget     = "models"
+	defaultServerTarget     = "restapi"
+	defaultClientTarget     = "client"
+	defaultOperationsTarget = "operations"
+	defaultClientName       = "rest"
+	defaultServerName       = "swagger"
+	defaultScheme           = "http"
+)
 
-// Init the language option
-func (l *LanguageOpts) Init() {
-	if !l.initialized {
-		l.initialized = true
-		l.reservedWordsSet = make(map[string]struct{})
-		for _, rw := range l.ReservedWords {
-			l.reservedWordsSet[rw] = struct{}{}
-		}
-	}
-}
-
-// MangleName makes sure a reserved word gets a safe name
-func (l *LanguageOpts) MangleName(name, suffix string) string {
-	if _, ok := l.reservedWordsSet[swag.ToFileName(name)]; !ok {
-		return name
-	}
-	return strings.Join([]string{name, suffix}, "_")
-}
-
-// MangleVarName makes sure a reserved word gets a safe name
-func (l *LanguageOpts) MangleVarName(name string) string {
-	nm := swag.ToVarName(name)
-	if _, ok := l.reservedWordsSet[nm]; !ok {
-		return nm
-	}
-	return nm + "Var"
-}
-
-// FormatContent formats a file with a language specific formatter
-func (l *LanguageOpts) FormatContent(name string, content []byte) ([]byte, error) {
-	if l.formatFunc != nil {
-		return l.formatFunc(name, content)
-	}
-	return content, nil
-}
-
-func (l *LanguageOpts) baseImport(tgt string) string {
-	if l.BaseImportFunc != nil {
-		return l.BaseImportFunc(tgt)
-	}
-	return ""
-}
-
-var golang = GoLangOpts()
-
-// GoLangOpts for rendering items as golang code
-func GoLangOpts() *LanguageOpts {
-	opts := new(LanguageOpts)
-	opts.ReservedWords = []string{
-		"break", "default", "func", "interface", "select",
-		"case", "defer", "go", "map", "struct",
-		"chan", "else", "goto", "package", "switch",
-		"const", "fallthrough", "if", "range", "type",
-		"continue", "for", "import", "return", "var",
-	}
-	opts.formatFunc = func(ffn string, content []byte) ([]byte, error) {
-		opts := new(imports.Options)
-		opts.TabIndent = true
-		opts.TabWidth = 2
-		opts.Fragment = true
-		opts.Comments = true
-		return imports.Process(ffn, content, opts)
-	}
-	opts.BaseImportFunc = func(tgt string) string {
-		// On Windows, filepath.Abs("") behaves differently than on Unix.
-		// Windows: yields an error, since Abs() does not know the volume.
-		// UNIX: returns current working directory
-		if tgt == "" {
-			tgt = "."
-		}
-		tgtAbsPath, err := filepath.Abs(tgt)
-		if err != nil {
-			log.Fatalf("could not evaluate base import path with target \"%s\": %v", tgt, err)
-		}
-		var tgtAbsPathExtended string
-		tgtAbsPathExtended, err = filepath.EvalSymlinks(tgtAbsPath)
-		if err != nil {
-			log.Fatalf("could not evaluate base import path with target \"%s\" (with symlink resolution): %v", tgtAbsPath, err)
-		}
-
-		gopath := os.Getenv("GOPATH")
-		if gopath == "" {
-			gopath = filepath.Join(os.Getenv("HOME"), "go")
-		}
-
-		var pth string
-		for _, gp := range filepath.SplitList(gopath) {
-			// EvalSymLinks also calls the Clean
-			gopathExtended, err := filepath.EvalSymlinks(gp)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			gopathExtended = filepath.Join(gopathExtended, "src")
-			gp = filepath.Join(gp, "src")
-
-			// At this stage we have expanded and unexpanded target path. GOPATH is fully expanded.
-			// Expanded means symlink free.
-			// We compare both types of targetpath<s> with gopath.
-			// If any one of them coincides with gopath , it is imperative that
-			// target path lies inside gopath. How?
-			// 		- Case 1: Irrespective of symlinks paths coincide. Both non-expanded paths.
-			// 		- Case 2: Symlink in target path points to location inside GOPATH. (Expanded Target Path)
-			//    - Case 3: Symlink in target path points to directory outside GOPATH (Unexpanded target path)
-
-			// Case 1: - Do nothing case. If non-expanded paths match just genrate base import path as if
-			//				   there are no symlinks.
-
-			// Case 2: - Symlink in target path points to location inside GOPATH. (Expanded Target Path)
-			//					 First if will fail. Second if will succeed.
-
-			// Case 3: - Symlink in target path points to directory outside GOPATH (Unexpanded target path)
-			// 					 First if will succeed and break.
-
-			//compares non expanded path for both
-			if ok, relativepath := checkPrefixAndFetchRelativePath(tgtAbsPath, gp); ok {
-				pth = relativepath
-				break
-			}
-
-			// Compares non-expanded target path
-			if ok, relativepath := checkPrefixAndFetchRelativePath(tgtAbsPath, gopathExtended); ok {
-				pth = relativepath
-				break
-			}
-
-			// Compares expanded target path.
-			if ok, relativepath := checkPrefixAndFetchRelativePath(tgtAbsPathExtended, gopathExtended); ok {
-				pth = relativepath
-				break
-			}
-
-		}
-
-		if pth == "" {
-			log.Fatalln("target must reside inside a location in the $GOPATH/src")
-		}
-		return pth
-	}
-	opts.Init()
-	return opts
-}
-
-func findSwaggerSpec(nm string) (string, error) {
-	specs := []string{"swagger.json", "swagger.yml", "swagger.yaml"}
-	if nm != "" {
-		specs = []string{nm}
-	}
-	var name string
-	for _, nn := range specs {
-		f, err := os.Stat(nn)
-		if err != nil && !os.IsNotExist(err) {
-			return "", err
-		}
-		if err != nil && os.IsNotExist(err) {
-			continue
-		}
-		if f.IsDir() {
-			return "", fmt.Errorf("%s is a directory", nn)
-		}
-		name = nn
-		break
-	}
-	if name == "" {
-		return "", errors.New("couldn't find a swagger spec")
-	}
-	return name, nil
+func init() {
+	// all initializations for the generator package
+	debugOptions()
+	initLanguage()
+	initTemplateRepo()
+	initTypes()
 }
 
 // DefaultSectionOpts for a given opts, this is used when no config file is passed
@@ -226,7 +66,7 @@ func DefaultSectionOpts(gen *GenOpts) {
 			{
 				Name:     "definition",
 				Source:   "asset:model",
-				Target:   "{{ joinFilePath .Target .ModelPackage }}",
+				Target:   "{{ joinFilePath .Target (toPackagePath .ModelPackage) }}",
 				FileName: "{{ (snakize (pascalize .Name)) }}.go",
 			},
 		}
@@ -238,24 +78,23 @@ func DefaultSectionOpts(gen *GenOpts) {
 				{
 					Name:     "parameters",
 					Source:   "asset:clientParameter",
-					Target:   "{{ joinFilePath .Target .ClientPackage .Package }}",
+					Target:   "{{ joinFilePath .Target (toPackagePath .ClientPackage) (toPackagePath .Package) }}",
 					FileName: "{{ (snakize (pascalize .Name)) }}_parameters.go",
 				},
 				{
 					Name:     "responses",
 					Source:   "asset:clientResponse",
-					Target:   "{{ joinFilePath .Target .ClientPackage .Package }}",
+					Target:   "{{ joinFilePath .Target (toPackagePath .ClientPackage) (toPackagePath .Package) }}",
 					FileName: "{{ (snakize (pascalize .Name)) }}_responses.go",
 				},
 			}
-
 		} else {
 			ops := []TemplateOpts{}
 			if gen.IncludeParameters {
 				ops = append(ops, TemplateOpts{
 					Name:     "parameters",
 					Source:   "asset:serverParameter",
-					Target:   "{{ if eq (len .Tags) 1 }}{{ joinFilePath .Target .ServerPackage .APIPackage .Package  }}{{ else }}{{ joinFilePath .Target .ServerPackage .Package  }}{{ end }}",
+					Target:   "{{ if .UseTags }}{{ joinFilePath .Target (toPackagePath .ServerPackage) (toPackagePath .APIPackage) (toPackagePath .Package)  }}{{ else }}{{ joinFilePath .Target (toPackagePath .ServerPackage) (toPackagePath .Package) }}{{ end }}",
 					FileName: "{{ (snakize (pascalize .Name)) }}_parameters.go",
 				})
 			}
@@ -263,7 +102,7 @@ func DefaultSectionOpts(gen *GenOpts) {
 				ops = append(ops, TemplateOpts{
 					Name:     "urlbuilder",
 					Source:   "asset:serverUrlbuilder",
-					Target:   "{{ if eq (len .Tags) 1 }}{{ joinFilePath .Target .ServerPackage .APIPackage .Package  }}{{ else }}{{ joinFilePath .Target .ServerPackage .Package  }}{{ end }}",
+					Target:   "{{ if .UseTags }}{{ joinFilePath .Target (toPackagePath .ServerPackage) (toPackagePath .APIPackage) (toPackagePath .Package) }}{{ else }}{{ joinFilePath .Target (toPackagePath .ServerPackage) (toPackagePath .Package) }}{{ end }}",
 					FileName: "{{ (snakize (pascalize .Name)) }}_urlbuilder.go",
 				})
 			}
@@ -271,7 +110,7 @@ func DefaultSectionOpts(gen *GenOpts) {
 				ops = append(ops, TemplateOpts{
 					Name:     "responses",
 					Source:   "asset:serverResponses",
-					Target:   "{{ if eq (len .Tags) 1 }}{{ joinFilePath .Target .ServerPackage .APIPackage .Package  }}{{ else }}{{ joinFilePath .Target .ServerPackage .Package  }}{{ end }}",
+					Target:   "{{ if .UseTags }}{{ joinFilePath .Target (toPackagePath .ServerPackage) (toPackagePath .APIPackage) (toPackagePath .Package) }}{{ else }}{{ joinFilePath .Target (toPackagePath .ServerPackage) (toPackagePath .Package) }}{{ end }}",
 					FileName: "{{ (snakize (pascalize .Name)) }}_responses.go",
 				})
 			}
@@ -279,7 +118,7 @@ func DefaultSectionOpts(gen *GenOpts) {
 				ops = append(ops, TemplateOpts{
 					Name:     "handler",
 					Source:   "asset:serverOperation",
-					Target:   "{{ if eq (len .Tags) 1 }}{{ joinFilePath .Target .ServerPackage .APIPackage .Package  }}{{ else }}{{ joinFilePath .Target .ServerPackage .Package  }}{{ end }}",
+					Target:   "{{ if .UseTags }}{{ joinFilePath .Target (toPackagePath .ServerPackage) (toPackagePath .APIPackage) (toPackagePath .Package) }}{{ else }}{{ joinFilePath .Target (toPackagePath .ServerPackage) (toPackagePath .Package) }}{{ end }}",
 					FileName: "{{ (snakize (pascalize .Name)) }}.go",
 				})
 			}
@@ -293,7 +132,7 @@ func DefaultSectionOpts(gen *GenOpts) {
 				{
 					Name:     "client",
 					Source:   "asset:clientClient",
-					Target:   "{{ joinFilePath .Target .ClientPackage .Name }}",
+					Target:   "{{ joinFilePath .Target (toPackagePath .ClientPackage) (toPackagePath .Name)}}",
 					FileName: "{{ (snakize (pascalize .Name)) }}_client.go",
 				},
 			}
@@ -308,8 +147,8 @@ func DefaultSectionOpts(gen *GenOpts) {
 				{
 					Name:     "facade",
 					Source:   "asset:clientFacade",
-					Target:   "{{ joinFilePath .Target .ClientPackage }}",
-					FileName: "{{ .Name }}Client.go",
+					Target:   "{{ joinFilePath .Target (toPackagePath .ClientPackage) }}",
+					FileName: "{{ snakize .Name }}Client.go",
 				},
 			}
 		} else {
@@ -317,38 +156,38 @@ func DefaultSectionOpts(gen *GenOpts) {
 				{
 					Name:       "configure",
 					Source:     "asset:serverConfigureapi",
-					Target:     "{{ joinFilePath .Target .ServerPackage }}",
+					Target:     "{{ joinFilePath .Target (toPackagePath .ServerPackage) }}",
 					FileName:   "configure_{{ (snakize (pascalize .Name)) }}.go",
-					SkipExists: true,
+					SkipExists: !gen.RegenerateConfigureAPI,
 				},
 				{
 					Name:     "main",
 					Source:   "asset:serverMain",
-					Target:   "{{ joinFilePath .Target \"cmd\" (dasherize (pascalize .Name)) }}-server",
+					Target:   "{{ joinFilePath .Target \"cmd\" .MainPackage }}",
 					FileName: "main.go",
 				},
 				{
 					Name:     "embedded_spec",
 					Source:   "asset:swaggerJsonEmbed",
-					Target:   "{{ joinFilePath .Target .ServerPackage }}",
+					Target:   "{{ joinFilePath .Target (toPackagePath .ServerPackage) }}",
 					FileName: "embedded_spec.go",
 				},
 				{
 					Name:     "server",
 					Source:   "asset:serverServer",
-					Target:   "{{ joinFilePath .Target .ServerPackage }}",
+					Target:   "{{ joinFilePath .Target (toPackagePath .ServerPackage) }}",
 					FileName: "server.go",
 				},
 				{
 					Name:     "builder",
 					Source:   "asset:serverBuilder",
-					Target:   "{{ joinFilePath .Target .ServerPackage .Package }}",
+					Target:   "{{ joinFilePath .Target (toPackagePath .ServerPackage) (toPackagePath .APIPackage) }}",
 					FileName: "{{ snakize (pascalize .Name) }}_api.go",
 				},
 				{
 					Name:     "doc",
 					Source:   "asset:serverDoc",
-					Target:   "{{ joinFilePath .Target .ServerPackage }}",
+					Target:   "{{ joinFilePath .Target (toPackagePath .ServerPackage) }}",
 					FileName: "doc.go",
 				},
 			}
@@ -358,7 +197,7 @@ func DefaultSectionOpts(gen *GenOpts) {
 
 }
 
-// TemplateOpts allows
+// TemplateOpts allows for codegen customization
 type TemplateOpts struct {
 	Name       string `mapstructure:"name"`
 	Source     string `mapstructure:"source"`
@@ -378,99 +217,143 @@ type SectionOpts struct {
 
 // GenOpts the options for the generator
 type GenOpts struct {
-	IncludeModel       bool
-	IncludeValidator   bool
-	IncludeHandler     bool
-	IncludeParameters  bool
-	IncludeResponses   bool
-	IncludeURLBuilder  bool
-	IncludeMain        bool
-	IncludeSupport     bool
-	ExcludeSpec        bool
-	DumpData           bool
-	WithContext        bool
-	ValidateSpec       bool
-	FlattenSpec        bool
-	FlattenDefinitions bool
-	IsClient           bool
-	defaultsEnsured    bool
+	IncludeModel               bool
+	IncludeValidator           bool
+	IncludeHandler             bool
+	IncludeParameters          bool
+	IncludeResponses           bool
+	IncludeURLBuilder          bool
+	IncludeMain                bool
+	IncludeSupport             bool
+	ExcludeSpec                bool
+	DumpData                   bool
+	ValidateSpec               bool
+	FlattenOpts                *analysis.FlattenOpts
+	IsClient                   bool
+	defaultsEnsured            bool
+	PropertiesSpecOrder        bool
+	StrictAdditionalProperties bool
+	AllowTemplateOverride      bool
 
-	Spec              string
-	APIPackage        string
-	ModelPackage      string
-	ServerPackage     string
-	ClientPackage     string
-	Principal         string
-	Target            string
-	Sections          SectionOpts
-	LanguageOpts      *LanguageOpts
-	TypeMapping       map[string]string
-	Imports           map[string]string
-	DefaultScheme     string
-	DefaultProduces   string
-	DefaultConsumes   string
-	TemplateDir       string
-	Operations        []string
-	Models            []string
-	Tags              []string
-	Name              string
-	FlagStrategy      string
-	CompatibilityMode string
-	ExistingModels    string
-	Copyright         string
+	Spec                   string
+	APIPackage             string
+	ModelPackage           string
+	ServerPackage          string
+	ClientPackage          string
+	Principal              string
+	Target                 string
+	Sections               SectionOpts
+	LanguageOpts           *LanguageOpts
+	TypeMapping            map[string]string
+	Imports                map[string]string
+	DefaultScheme          string
+	DefaultProduces        string
+	DefaultConsumes        string
+	TemplateDir            string
+	Template               string
+	RegenerateConfigureAPI bool
+	Operations             []string
+	Models                 []string
+	Tags                   []string
+	Name                   string
+	FlagStrategy           string
+	CompatibilityMode      string
+	ExistingModels         string
+	Copyright              string
+	SkipTagPackages        bool
+	MainPackage            string
+	IgnoreOperations       bool
 }
 
-// TargetPath returns the target generation path relative to the server package
-// Method used by templates, e.g. with {{ .TargetPath }}
-// Errors are not fatal: an empty string is returned instead
+// CheckOpts carries out some global consistency checks on options.
+func (g *GenOpts) CheckOpts() error {
+	if g == nil {
+		return errors.New("gen opts are required")
+	}
+
+	if !filepath.IsAbs(g.Target) {
+		if _, err := filepath.Abs(g.Target); err != nil {
+			return fmt.Errorf("could not locate target %s: %v", g.Target, err)
+		}
+	}
+
+	if filepath.IsAbs(g.ServerPackage) {
+		return fmt.Errorf("you shouldn't specify an absolute path in --server-package: %s", g.ServerPackage)
+	}
+
+	if strings.HasPrefix(g.Spec, "http://") || strings.HasPrefix(g.Spec, "https://") {
+		return nil
+	}
+
+	pth, err := findSwaggerSpec(g.Spec)
+	if err != nil {
+		return err
+	}
+
+	// ensure spec path is absolute
+	g.Spec, err = filepath.Abs(pth)
+	if err != nil {
+		return fmt.Errorf("could not locate spec: %s", g.Spec)
+	}
+
+	return nil
+}
+
+// TargetPath returns the target generation path relative to the server package.
+// This method is used by templates, e.g. with {{ .TargetPath }}
+//
+// Errors cases are prevented by calling CheckOpts beforehand.
+//
+// Example:
+// Target: ${PWD}/tmp
+// ServerPackage: abc/efg
+//
+// Server is generated in ${PWD}/tmp/abc/efg
+// relative TargetPath returned: ../../../tmp
+//
 func (g *GenOpts) TargetPath() string {
-	tgtAbs, err := filepath.Abs(g.Target)
-	if err != nil {
-		log.Printf("could not evaluate target generation path \"%s\": you must create the target directory beforehand: %v", g.Target, err)
-		return ""
+	var tgt string
+	if g.Target == "" {
+		tgt = "." // That's for windows
+	} else {
+		tgt = g.Target
 	}
-	tgtAbs = filepath.ToSlash(tgtAbs)
-	srvrAbs, err := filepath.Abs(g.ServerPackage)
-	if err != nil {
-		log.Printf("could not evaluate target server path \"%s\": %v", g.ServerPackage, err)
-		return ""
-	}
-	srvrAbs = filepath.ToSlash(srvrAbs)
-	tgtRel, err := filepath.Rel(srvrAbs, tgtAbs)
-	if err != nil {
-		log.Printf("Target path \"%s\" and server path \"%s\" are not related. You shouldn't specify an absolute path in --server-package: %v", g.Target, g.ServerPackage, err)
-		return ""
-	}
-	tgtRel = filepath.ToSlash(tgtRel)
+	tgtAbs, _ := filepath.Abs(tgt)
+	srvPkg := filepath.FromSlash(g.LanguageOpts.ManglePackagePath(g.ServerPackage, "server"))
+	srvrAbs := filepath.Join(tgtAbs, srvPkg)
+	tgtRel, _ := filepath.Rel(srvrAbs, filepath.Dir(tgtAbs))
+	tgtRel = filepath.Join(tgtRel, filepath.Base(tgtAbs))
 	return tgtRel
 }
 
-// SpecPath returns the path to the spec relative to the server package
-// Method used by templates, e.g. with {{ .SpecPath }}
-// Errors are not fatal: an empty string is returned instead
+// SpecPath returns the path to the spec relative to the server package.
+// If the spec is remote keep this absolute location.
+//
+// If spec is not relative to server (e.g. lives on a different drive on windows),
+// then the resolved path is absolute.
+//
+// This method is used by templates, e.g. with {{ .SpecPath }}
+//
+// Errors cases are prevented by calling CheckOpts beforehand.
 func (g *GenOpts) SpecPath() string {
 	if strings.HasPrefix(g.Spec, "http://") || strings.HasPrefix(g.Spec, "https://") {
 		return g.Spec
 	}
 	// Local specifications
-	specAbs, err := filepath.Abs(g.Spec)
-	if err != nil {
-		log.Printf("could not evaluate target generation path \"%s\": you must create the target directory beforehand: %v", g.Spec, err)
-		return ""
+	specAbs, _ := filepath.Abs(g.Spec)
+	var tgt string
+	if g.Target == "" {
+		tgt = "." // That's for windows
+	} else {
+		tgt = g.Target
 	}
-	specAbs = filepath.ToSlash(specAbs)
-	srvrAbs, err := filepath.Abs(g.ServerPackage)
+	tgtAbs, _ := filepath.Abs(tgt)
+	srvPkg := filepath.FromSlash(g.LanguageOpts.ManglePackagePath(g.ServerPackage, "server"))
+	srvAbs := filepath.Join(tgtAbs, srvPkg)
+	specRel, err := filepath.Rel(srvAbs, specAbs)
 	if err != nil {
-		log.Printf("could not evaluate target server path \"%s\": %v", g.ServerPackage, err)
-		return ""
+		return specAbs
 	}
-	srvrAbs = filepath.ToSlash(srvrAbs)
-	specRel, err := filepath.Rel(srvrAbs, specAbs)
-	if err != nil {
-		log.Printf("Specification path \"%s\" and server path \"%s\" are not related. You shouldn't specify an absolute path in --server-package: %v", g.Spec, g.ServerPackage, err)
-		return ""
-	}
-	specRel = filepath.ToSlash(specRel)
 	return specRel
 }
 
@@ -479,10 +362,38 @@ func (g *GenOpts) EnsureDefaults() error {
 	if g.defaultsEnsured {
 		return nil
 	}
-	DefaultSectionOpts(g)
+
 	if g.LanguageOpts == nil {
-		g.LanguageOpts = GoLangOpts()
+		g.LanguageOpts = DefaultLanguageFunc()
 	}
+
+	DefaultSectionOpts(g)
+
+	// set defaults for flattening options
+	if g.FlattenOpts == nil {
+		g.FlattenOpts = &analysis.FlattenOpts{
+			Minimal:      true,
+			Verbose:      true,
+			RemoveUnused: false,
+			Expand:       false,
+		}
+	}
+
+	if g.DefaultScheme == "" {
+		g.DefaultScheme = defaultScheme
+	}
+
+	if g.DefaultConsumes == "" {
+		g.DefaultConsumes = runtime.JSONMime
+	}
+
+	if g.DefaultProduces == "" {
+		g.DefaultProduces = runtime.JSONMime
+	}
+
+	// always include validator with models
+	g.IncludeValidator = g.IncludeModel
+
 	g.defaultsEnsured = true
 	return nil
 }
@@ -509,19 +420,29 @@ func (g *GenOpts) location(t *TemplateOpts, data interface{}) (string, string, e
 		tags = tagsF.Interface().([]string)
 	}
 
-	pthTpl, err := template.New(t.Name + "-target").Funcs(FuncMap).Parse(t.Target)
+	var useTags bool
+	useTagsF := v.FieldByName("UseTags")
+	if useTagsF.IsValid() {
+		useTags = useTagsF.Interface().(bool)
+	}
+
+	funcMap := FuncMapFunc(g.LanguageOpts)
+
+	pthTpl, err := template.New(t.Name + "-target").Funcs(funcMap).Parse(t.Target)
 	if err != nil {
 		return "", "", err
 	}
 
-	fNameTpl, err := template.New(t.Name + "-filename").Funcs(FuncMap).Parse(t.FileName)
+	fNameTpl, err := template.New(t.Name + "-filename").Funcs(funcMap).Parse(t.FileName)
 	if err != nil {
 		return "", "", err
 	}
 
 	d := struct {
-		Name, Package, APIPackage, ServerPackage, ClientPackage, ModelPackage, Target string
-		Tags                                                                          []string
+		Name, Package, APIPackage, ServerPackage, ClientPackage, ModelPackage, MainPackage, Target string
+		Tags                                                                                       []string
+		UseTags                                                                                    bool
+		Context                                                                                    interface{}
 	}{
 		Name:          name,
 		Package:       pkg,
@@ -529,11 +450,13 @@ func (g *GenOpts) location(t *TemplateOpts, data interface{}) (string, string, e
 		ServerPackage: g.ServerPackage,
 		ClientPackage: g.ClientPackage,
 		ModelPackage:  g.ModelPackage,
+		MainPackage:   g.MainPackage,
 		Target:        g.Target,
 		Tags:          tags,
+		UseTags:       useTags,
+		Context:       data,
 	}
 
-	// pretty.Println(data)
 	var pthBuf bytes.Buffer
 	if e := pthTpl.Execute(&pthBuf, d); e != nil {
 		return "", "", e
@@ -579,7 +502,7 @@ func (g *GenOpts) render(t *TemplateOpts, data interface{}) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error while opening %s template file: %v", templateFile, err)
 		}
-		tt, err := template.New(t.Source).Funcs(FuncMap).Parse(string(content))
+		tt, err := template.New(t.Source).Funcs(FuncMapFunc(g.LanguageOpts)).Parse(string(content))
 		if err != nil {
 			return nil, fmt.Errorf("template parsing failed on template %s: %v", t.Name, err)
 		}
@@ -594,9 +517,7 @@ func (g *GenOpts) render(t *TemplateOpts, data interface{}) ([]byte, error) {
 	if err := templ.Execute(&tBuf, data); err != nil {
 		return nil, fmt.Errorf("template execution failed for template %s: %v", t.Name, err)
 	}
-	//if Debug {
 	log.Printf("executed template %s", t.Source)
-	//}
 
 	return tBuf.Bytes(), nil
 }
@@ -604,7 +525,7 @@ func (g *GenOpts) render(t *TemplateOpts, data interface{}) ([]byte, error) {
 // Render template and write generated source code
 // generated code is reformatted ("linted"), which gives an
 // additional level of checking. If this step fails, the generated
-// is still dumped, for template debugging purposes.
+// code is still dumped, for template debugging purposes.
 func (g *GenOpts) write(t *TemplateOpts, data interface{}) error {
 	dir, fname, err := g.location(t, data)
 	if err != nil {
@@ -612,9 +533,8 @@ func (g *GenOpts) write(t *TemplateOpts, data interface{}) error {
 	}
 
 	if t.SkipExists && fileExists(dir, fname) {
-		if Debug {
-			log.Printf("skipping generation of %s because it already exists and skip_exist directive is set for %s", filepath.Join(dir, fname), t.Name)
-		}
+		debugLog("skipping generation of %s because it already exists and skip_exist directive is set for %s",
+			filepath.Join(dir, fname), t.Name)
 		return nil
 	}
 
@@ -627,9 +547,7 @@ func (g *GenOpts) write(t *TemplateOpts, data interface{}) error {
 	if dir != "" {
 		_, exists := os.Stat(dir)
 		if os.IsNotExist(exists) {
-			if Debug {
-				log.Printf("creating directory %q for \"%s\"", dir, t.Name)
-			}
+			debugLog("creating directory %q for \"%s\"", dir, t.Name)
 			// Directory settings consistent with file privileges.
 			// Environment's umask may alter this setup
 			if e := os.MkdirAll(dir, 0755); e != nil {
@@ -643,7 +561,7 @@ func (g *GenOpts) write(t *TemplateOpts, data interface{}) error {
 	var writeerr error
 
 	if !t.SkipFormat {
-		formatted, err = g.LanguageOpts.FormatContent(fname, content)
+		formatted, err = g.LanguageOpts.FormatContent(filepath.Join(dir, fname), content)
 		if err != nil {
 			log.Printf("source formatting failed on template-generated source (%q for %s). Check that your template produces valid code", filepath.Join(dir, fname), t.Name)
 			writeerr = ioutil.WriteFile(filepath.Join(dir, fname), content, 0644)
@@ -737,42 +655,54 @@ func (g *GenOpts) renderDefinition(gg *GenDefinition) error {
 	return nil
 }
 
-func validateSpec(path string, doc *loads.Document) (err error) {
-	if doc == nil {
-		if path, doc, err = loadSpec(path); err != nil {
+func (g *GenOpts) setTemplates() error {
+	templates.LoadDefaults()
+
+	if g.Template != "" {
+		// set contrib templates
+		if err := templates.LoadContrib(g.Template); err != nil {
 			return err
 		}
 	}
 
-	result := validate.Spec(doc, strfmt.Default)
-	if result == nil {
-		return nil
-	}
+	templates.SetAllowOverride(g.AllowTemplateOverride)
 
-	str := fmt.Sprintf("The swagger spec at %q is invalid against swagger specification %s. see errors :\n", path, doc.Version())
-	for _, desc := range result.(*swaggererrors.CompositeError).Errors {
-		str += fmt.Sprintf("- %s\n", desc)
-	}
-	return errors.New(str)
-}
-
-func loadSpec(specFile string) (string, *loads.Document, error) {
-	// find swagger spec document, verify it exists
-	specPath := specFile
-	var err error
-	if !strings.HasPrefix(specPath, "http") {
-		specPath, err = findSwaggerSpec(specFile)
-		if err != nil {
-			return "", nil, err
+	if g.TemplateDir != "" {
+		// set custom templates
+		if err := templates.LoadDir(g.TemplateDir); err != nil {
+			return err
 		}
 	}
+	return nil
+}
 
-	// load swagger spec
-	specDoc, err := loads.Spec(specPath)
-	if err != nil {
-		return "", nil, err
+// defaultImports produces a default map for imports with models
+func (g *GenOpts) defaultImports() map[string]string {
+	baseImport := g.LanguageOpts.baseImport(g.Target)
+	defaultImports := make(map[string]string, 50)
+
+	if g.ExistingModels == "" {
+		importPath := path.Join(
+			baseImport,
+			g.LanguageOpts.ManglePackagePath(g.ModelPackage, defaultModelsTarget))
+		defaultImports[g.LanguageOpts.ManglePackageName(g.ModelPackage, defaultModelsTarget)] = importPath
+	} else {
+		// TODO(fredbi): mangle existing model pkg aliases
+		importPath := g.LanguageOpts.ManglePackagePath(g.ExistingModels, "")
+		defaultImports[importAlias(importPath)] = importPath
 	}
-	return specPath, specDoc, nil
+	return defaultImports
+}
+
+// initImports produces a default map for import with the specified root for operations
+func (g *GenOpts) initImports(operationsPackage string) map[string]string {
+	baseImport := g.LanguageOpts.baseImport(g.Target)
+
+	imports := make(map[string]string, 50)
+	imports[g.LanguageOpts.ManglePackageName(operationsPackage, defaultOperationsTarget)] = path.Join(
+		baseImport,
+		g.LanguageOpts.ManglePackagePath(operationsPackage, defaultOperationsTarget))
+	return imports
 }
 
 func fileExists(target, name string) bool {
@@ -809,7 +739,8 @@ func gatherModels(specDoc *loads.Document, modelNames []string) (map[string]spec
 	return models, nil
 }
 
-func appNameOrDefault(specDoc *loads.Document, name, defaultName string) string {
+// titleOrDefault infers a name for the app from the title of the spec
+func titleOrDefault(specDoc *loads.Document, name, defaultName string) string {
 	if strings.TrimSpace(name) == "" {
 		if specDoc.Spec().Info != nil && strings.TrimSpace(specDoc.Spec().Info.Title) != "" {
 			name = specDoc.Spec().Info.Title
@@ -817,16 +748,17 @@ func appNameOrDefault(specDoc *loads.Document, name, defaultName string) string 
 			name = defaultName
 		}
 	}
-	return strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(swag.ToGoName(name), "Test"), "API"), "Test")
+	return swag.ToGoName(name)
 }
 
-func containsString(names []string, name string) bool {
-	for _, nm := range names {
-		if nm == name {
-			return true
-		}
-	}
-	return false
+func mainNameOrDefault(specDoc *loads.Document, name, defaultName string) string {
+	// _test won't do as main server name
+	return strings.TrimSuffix(titleOrDefault(specDoc, name, defaultName), "Test")
+}
+
+func appNameOrDefault(specDoc *loads.Document, name, defaultName string) string {
+	// _test_api, _api_test, _test, _api won't do as app names
+	return strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(titleOrDefault(specDoc, name, defaultName), "Test"), "API"), "Test")
 }
 
 type opRef struct {
@@ -848,10 +780,9 @@ func gatherOperations(specDoc *analysis.Spec, operationIDs []string) map[string]
 
 	for method, pathItem := range specDoc.Operations() {
 		for path, operation := range pathItem {
-			// nm := ensureUniqueName(operation.ID, method, path, operations)
 			vv := *operation
 			oprefs = append(oprefs, opRef{
-				Key:    swag.ToGoName(strings.ToLower(method) + " " + path),
+				Key:    swag.ToGoName(strings.ToLower(method) + " " + strings.Title(path)),
 				Method: method,
 				Path:   path,
 				ID:     vv.ID,
@@ -873,7 +804,7 @@ func gatherOperations(specDoc *analysis.Spec, operationIDs []string) map[string]
 		if found && oo.Method != opr.Method && oo.Path != opr.Path {
 			nm = opr.Key
 		}
-		if len(operationIDs) == 0 || containsString(operationIDs, opr.ID) || containsString(operationIDs, nm) {
+		if len(operationIDs) == 0 || swag.ContainsStrings(operationIDs, opr.ID) || swag.ContainsStrings(operationIDs, nm) {
 			opr.ID = nm
 			opr.Op.ID = nm
 			operations[nm] = opr
@@ -881,20 +812,6 @@ func gatherOperations(specDoc *analysis.Spec, operationIDs []string) map[string]
 	}
 
 	return operations
-}
-
-func pascalize(arg string) string {
-	if len(arg) == 0 || arg[0] > '9' {
-		return swag.ToGoName(arg)
-	}
-	if arg[0] == '+' {
-		return swag.ToGoName("Plus " + arg[1:])
-	}
-	if arg[0] == '-' {
-		return swag.ToGoName("Minus " + arg[1:])
-	}
-
-	return swag.ToGoName("Nr " + arg)
 }
 
 func pruneEmpty(in []string) (out []string) {
@@ -910,49 +827,109 @@ func trimBOM(in string) string {
 	return strings.Trim(in, "\xef\xbb\xbf")
 }
 
-func validateAndFlattenSpec(opts *GenOpts, specDoc *loads.Document) (*loads.Document, error) {
-
-	var err error
-
-	// Validate if needed
-	if opts.ValidateSpec {
-		if err := validateSpec(opts.Spec, specDoc); err != nil {
-			return specDoc, err
+// gatherSecuritySchemes produces a sorted representation from a map of spec security schemes
+func gatherSecuritySchemes(securitySchemes map[string]spec.SecurityScheme, appName, principal, receiver string) (security GenSecuritySchemes) {
+	for scheme, req := range securitySchemes {
+		isOAuth2 := strings.ToLower(req.Type) == "oauth2"
+		var scopes []string
+		if isOAuth2 {
+			for k := range req.Scopes {
+				scopes = append(scopes, k)
+			}
 		}
-	}
+		sort.Strings(scopes)
 
-	// Restore spec to original
-	opts.Spec, specDoc, err = loadSpec(opts.Spec)
-	if err != nil {
-		return nil, err
-	}
-
-	absBasePath := specDoc.SpecFilePath()
-	if !filepath.IsAbs(absBasePath) {
-		cwd, _ := os.Getwd()
-		absBasePath = filepath.Join(cwd, absBasePath)
-	}
-
-	/********************************************************************************************/
-	/* Either flatten or expand should be called here before moving on the code generation part */
-	/********************************************************************************************/
-	if opts.FlattenSpec {
-		flattenOpts := analysis.FlattenOpts{
-			Expand: false,
-			// BasePath must be absolute. This is guaranteed because opts.Spec is absolute
-			BasePath: absBasePath,
-			Spec:     analysis.New(specDoc.Spec()),
-		}
-		err = analysis.Flatten(flattenOpts)
-	} else {
-		err = spec.ExpandSpec(specDoc.Spec(), &spec.ExpandOptions{
-			RelativeBase: absBasePath,
-			SkipSchemas:  false,
+		security = append(security, GenSecurityScheme{
+			AppName:      appName,
+			ID:           scheme,
+			ReceiverName: receiver,
+			Name:         req.Name,
+			IsBasicAuth:  strings.ToLower(req.Type) == "basic",
+			IsAPIKeyAuth: strings.ToLower(req.Type) == "apikey",
+			IsOAuth2:     isOAuth2,
+			Scopes:       scopes,
+			Principal:    principal,
+			Source:       req.In,
+			// from original spec
+			Description:      req.Description,
+			Type:             strings.ToLower(req.Type),
+			In:               req.In,
+			Flow:             req.Flow,
+			AuthorizationURL: req.AuthorizationURL,
+			TokenURL:         req.TokenURL,
+			Extensions:       req.Extensions,
 		})
 	}
-	if err != nil {
-		return nil, err
-	}
+	sort.Sort(security)
+	return
+}
 
-	return specDoc, nil
+// gatherExtraSchemas produces a sorted list of extra schemas.
+//
+// ExtraSchemas are inlined types rendered in the same model file.
+func gatherExtraSchemas(extraMap map[string]GenSchema) (extras GenSchemaList) {
+	var extraKeys []string
+	for k := range extraMap {
+		extraKeys = append(extraKeys, k)
+	}
+	sort.Strings(extraKeys)
+	for _, k := range extraKeys {
+		// figure out if top level validations are needed
+		p := extraMap[k]
+		p.HasValidations = shallowValidationLookup(p)
+		extras = append(extras, p)
+	}
+	return
+}
+
+func sharedValidationsFromSimple(v spec.CommonValidations, isRequired bool) (sh sharedValidations) {
+	sh = sharedValidations{
+		Required:         isRequired,
+		Maximum:          v.Maximum,
+		ExclusiveMaximum: v.ExclusiveMaximum,
+		Minimum:          v.Minimum,
+		ExclusiveMinimum: v.ExclusiveMinimum,
+		MaxLength:        v.MaxLength,
+		MinLength:        v.MinLength,
+		Pattern:          v.Pattern,
+		MaxItems:         v.MaxItems,
+		MinItems:         v.MinItems,
+		UniqueItems:      v.UniqueItems,
+		MultipleOf:       v.MultipleOf,
+		Enum:             v.Enum,
+	}
+	return
+}
+
+func sharedValidationsFromSchema(v spec.Schema, isRequired bool) (sh sharedValidations) {
+	sh = sharedValidations{
+		Required:         isRequired,
+		Maximum:          v.Maximum,
+		ExclusiveMaximum: v.ExclusiveMaximum,
+		Minimum:          v.Minimum,
+		ExclusiveMinimum: v.ExclusiveMinimum,
+		MaxLength:        v.MaxLength,
+		MinLength:        v.MinLength,
+		Pattern:          v.Pattern,
+		MaxItems:         v.MaxItems,
+		MinItems:         v.MinItems,
+		UniqueItems:      v.UniqueItems,
+		MultipleOf:       v.MultipleOf,
+		Enum:             v.Enum,
+	}
+	return
+}
+
+func dumpData(data interface{}) error {
+	bb, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(os.Stdout, string(bb))
+	return nil
+}
+
+func importAlias(pkg string) string {
+	_, k := path.Split(pkg)
+	return k
 }

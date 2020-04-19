@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // StatusReader is a Reader for the Status structure.
@@ -24,7 +23,6 @@ type StatusReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *StatusReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 200:
 		result := NewStatusOK()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -53,6 +51,10 @@ type StatusOK struct {
 
 func (o *StatusOK) Error() string {
 	return fmt.Sprintf("[GET /service/status][%d] statusOK  %+v", 200, o.Payload)
+}
+
+func (o *StatusOK) GetPayload() *models.Status {
+	return o.Payload
 }
 
 func (o *StatusOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {

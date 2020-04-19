@@ -1,3 +1,5 @@
+// +build !go1.11
+
 // Copyright 2015 go-swagger maintainers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,6 +38,10 @@ func (pt paramTypable) Level() int { return 0 }
 
 func (pt paramTypable) Typed(tpe, format string) {
 	pt.param.Typed(tpe, format)
+}
+
+func (pt paramTypable) WithEnum(values ...interface{}) {
+	pt.param.WithEnum(values...)
 }
 
 func (pt paramTypable) SetRef(ref spec.Ref) {
@@ -81,6 +87,10 @@ func (pt itemsTypable) SetRef(ref spec.Ref) {
 	pt.items.Ref = ref
 }
 
+func (pt itemsTypable) WithEnum(values ...interface{}) {
+	pt.items.WithEnum(values...)
+}
+
 func (pt itemsTypable) Schema() *spec.Schema {
 	return nil
 }
@@ -114,12 +124,7 @@ func (sv paramValidations) SetPattern(val string)          { sv.current.Pattern 
 func (sv paramValidations) SetUnique(val bool)             { sv.current.UniqueItems = val }
 func (sv paramValidations) SetCollectionFormat(val string) { sv.current.CollectionFormat = val }
 func (sv paramValidations) SetEnum(val string) {
-	list := strings.Split(val, ",")
-	interfaceSlice := make([]interface{}, len(list))
-	for i, d := range list {
-		interfaceSlice[i] = d
-	}
-	sv.current.Enum = interfaceSlice
+	sv.current.Enum = parseEnum(val, &spec.SimpleSchema{Type: sv.current.Type, Format: sv.current.Format})
 }
 func (sv paramValidations) SetDefault(val interface{}) { sv.current.Default = val }
 func (sv paramValidations) SetExample(val interface{}) { sv.current.Example = val }
@@ -145,12 +150,7 @@ func (sv itemsValidations) SetPattern(val string)          { sv.current.Pattern 
 func (sv itemsValidations) SetUnique(val bool)             { sv.current.UniqueItems = val }
 func (sv itemsValidations) SetCollectionFormat(val string) { sv.current.CollectionFormat = val }
 func (sv itemsValidations) SetEnum(val string) {
-	list := strings.Split(val, ",")
-	interfaceSlice := make([]interface{}, len(list))
-	for i, d := range list {
-		interfaceSlice[i] = d
-	}
-	sv.current.Enum = interfaceSlice
+	sv.current.Enum = parseEnum(val, &spec.SimpleSchema{Type: sv.current.Type, Format: sv.current.Format})
 }
 func (sv itemsValidations) SetDefault(val interface{}) { sv.current.Default = val }
 func (sv itemsValidations) SetExample(val interface{}) { sv.current.Example = val }
@@ -169,7 +169,6 @@ func (sd *paramDecl) inferOperationIDs() (opids []string) {
 	}
 
 	if sd.Decl.Doc != nil {
-	DECLS:
 		for _, cmt := range sd.Decl.Doc.List {
 			for _, ln := range strings.Split(cmt.Text, "\n") {
 				matches := rxParametersOverride.FindStringSubmatch(ln)
@@ -180,12 +179,11 @@ func (sd *paramDecl) inferOperationIDs() (opids []string) {
 							opids = append(opids, tr)
 						}
 					}
-					break DECLS
 				}
 			}
 		}
 	}
-	sd.OperationIDs = opids
+	sd.OperationIDs = append(sd.OperationIDs, opids...)
 	return
 }
 
@@ -202,19 +200,41 @@ type paramStructParser struct {
 	scp       *schemaParser
 }
 
+// Parse will traverse a file and look for parameters.
 func (pp *paramStructParser) Parse(gofile *ast.File, target interface{}) error {
 	tgt := target.(map[string]*spec.Operation)
 	for _, decl := range gofile.Decls {
-		gd, ok := decl.(*ast.GenDecl)
-		if !ok {
-			continue
-		}
-		for _, spc := range gd.Specs {
-			if ts, ok := spc.(*ast.TypeSpec); ok {
-				sd := paramDecl{gofile, gd, ts, nil}
-				sd.inferOperationIDs()
-				if err := pp.parseDecl(tgt, sd); err != nil {
-					return err
+		switch x1 := decl.(type) {
+		// Check for parameters at the package level.
+		case *ast.GenDecl:
+			for _, spc := range x1.Specs {
+				switch x2 := spc.(type) {
+				case *ast.TypeSpec:
+					sd := paramDecl{gofile, x1, x2, nil}
+					sd.inferOperationIDs()
+					if err := pp.parseDecl(tgt, sd); err != nil {
+						return err
+					}
+				}
+			}
+		// Check for parameters inside functions.
+		case *ast.FuncDecl:
+			for _, b := range x1.Body.List {
+				switch x2 := b.(type) {
+				case *ast.DeclStmt:
+					switch x3 := x2.Decl.(type) {
+					case *ast.GenDecl:
+						for _, spc := range x3.Specs {
+							switch x4 := spc.(type) {
+							case *ast.TypeSpec:
+								sd := paramDecl{gofile, x3, x4, nil}
+								sd.inferOperationIDs()
+								if err := pp.parseDecl(tgt, sd); err != nil {
+									return err
+								}
+							}
+						}
+					}
 				}
 			}
 		}
@@ -309,7 +329,7 @@ func (pp *paramStructParser) parseStructType(gofile *ast.File, operation *spec.O
 		for _, fld := range tpe.Fields.List {
 			if len(fld.Names) > 0 && fld.Names[0] != nil && fld.Names[0].IsExported() {
 				gnm := fld.Names[0].Name
-				nm, ignore, err := parseJSONTag(fld)
+				nm, ignore, _, err := parseJSONTag(fld)
 				if err != nil {
 					return err
 				}
@@ -461,7 +481,7 @@ func (pp *paramStructParser) parseStructType(gofile *ast.File, operation *spec.O
 				}
 
 				if nm != gnm {
-					ps.AddExtension("x-go-name", gnm)
+					addExtension(&ps.VendorExtensible, "x-go-name", gnm)
 				}
 				pt[nm] = ps
 				sequence = append(sequence, nm)

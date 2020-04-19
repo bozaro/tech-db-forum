@@ -6,13 +6,13 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	strfmt "github.com/go-openapi/strfmt"
-
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 )
 
 // PostFull Полная информация о сообщении, включая связанные объекты.
+//
 //
 // swagger:model PostFull
 type PostFull struct {
@@ -35,22 +35,18 @@ func (m *PostFull) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateAuthor(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateForum(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validatePost(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateThread(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
@@ -67,14 +63,12 @@ func (m *PostFull) validateAuthor(formats strfmt.Registry) error {
 	}
 
 	if m.Author != nil {
-
 		if err := m.Author.Validate(formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("author")
 			}
 			return err
 		}
-
 	}
 
 	return nil
@@ -87,14 +81,12 @@ func (m *PostFull) validateForum(formats strfmt.Registry) error {
 	}
 
 	if m.Forum != nil {
-
 		if err := m.Forum.Validate(formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("forum")
 			}
 			return err
 		}
-
 	}
 
 	return nil
@@ -107,14 +99,12 @@ func (m *PostFull) validatePost(formats strfmt.Registry) error {
 	}
 
 	if m.Post != nil {
-
 		if err := m.Post.Validate(formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("post")
 			}
 			return err
 		}
-
 	}
 
 	return nil
@@ -127,14 +117,12 @@ func (m *PostFull) validateThread(formats strfmt.Registry) error {
 	}
 
 	if m.Thread != nil {
-
 		if err := m.Thread.Validate(formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {
 				return ve.ValidateName("thread")
 			}
 			return err
 		}
-
 	}
 
 	return nil

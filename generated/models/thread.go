@@ -6,14 +6,14 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	strfmt "github.com/go-openapi/strfmt"
-
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/go-openapi/validate"
 )
 
 // Thread Ветка обсуждения на форуме.
+//
 //
 // swagger:model Thread
 type Thread struct {
@@ -23,6 +23,7 @@ type Thread struct {
 	Author string `json:"author"`
 
 	// Дата создания ветки на форуме.
+	// Format: date-time
 	Created *strfmt.DateTime `json:"created,omitempty"`
 
 	// Форум, в котором расположена данная ветка обсуждения.
@@ -58,27 +59,22 @@ func (m *Thread) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateAuthor(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateCreated(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateMessage(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateSlug(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateTitle(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 

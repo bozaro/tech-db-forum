@@ -6,14 +6,13 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	strfmt "github.com/go-openapi/strfmt"
-
-	"github.com/go-openapi/errors"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 )
 
 // ThreadUpdate Сообщение для обновления ветки обсуждения на форуме.
 // Пустые параметры остаются без изменений.
+//
 //
 // swagger:model ThreadUpdate
 type ThreadUpdate struct {
@@ -27,11 +26,6 @@ type ThreadUpdate struct {
 
 // Validate validates this thread update
 func (m *ThreadUpdate) Validate(formats strfmt.Registry) error {
-	var res []error
-
-	if len(res) > 0 {
-		return errors.CompositeValidationError(res...)
-	}
 	return nil
 }
 

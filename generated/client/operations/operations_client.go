@@ -6,13 +6,14 @@ package operations
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	"github.com/go-openapi/runtime"
+	"fmt"
 
-	strfmt "github.com/go-openapi/strfmt"
+	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 )
 
 // New creates a new operations API client.
-func New(transport runtime.ClientTransport, formats strfmt.Registry) *Client {
+func New(transport runtime.ClientTransport, formats strfmt.Registry) ClientService {
 	return &Client{transport: transport, formats: formats}
 }
 
@@ -24,10 +25,49 @@ type Client struct {
 	formats   strfmt.Registry
 }
 
-/*
-Clear очисткаs всех данных в базе
+// ClientService is the interface for Client methods
+type ClientService interface {
+	Clear(params *ClearParams) (*ClearOK, error)
 
-Безвозвратное удаление всей пользовательской информации из базы данных.
+	ForumCreate(params *ForumCreateParams) (*ForumCreateCreated, error)
+
+	ForumGetOne(params *ForumGetOneParams) (*ForumGetOneOK, error)
+
+	ForumGetThreads(params *ForumGetThreadsParams) (*ForumGetThreadsOK, error)
+
+	ForumGetUsers(params *ForumGetUsersParams) (*ForumGetUsersOK, error)
+
+	PostGetOne(params *PostGetOneParams) (*PostGetOneOK, error)
+
+	PostUpdate(params *PostUpdateParams) (*PostUpdateOK, error)
+
+	PostsCreate(params *PostsCreateParams) (*PostsCreateCreated, error)
+
+	Status(params *StatusParams) (*StatusOK, error)
+
+	ThreadCreate(params *ThreadCreateParams) (*ThreadCreateCreated, error)
+
+	ThreadGetOne(params *ThreadGetOneParams) (*ThreadGetOneOK, error)
+
+	ThreadGetPosts(params *ThreadGetPostsParams) (*ThreadGetPostsOK, error)
+
+	ThreadUpdate(params *ThreadUpdateParams) (*ThreadUpdateOK, error)
+
+	ThreadVote(params *ThreadVoteParams) (*ThreadVoteOK, error)
+
+	UserCreate(params *UserCreateParams) (*UserCreateCreated, error)
+
+	UserGetOne(params *UserGetOneParams) (*UserGetOneOK, error)
+
+	UserUpdate(params *UserUpdateParams) (*UserUpdateOK, error)
+
+	SetTransport(transport runtime.ClientTransport)
+}
+
+/*
+  Clear очисткаs всех данных в базе
+
+  Безвозвратное удаление всей пользовательской информации из базы данных.
 
 */
 func (a *Client) Clear(params *ClearParams) (*ClearOK, error) {
@@ -51,14 +91,20 @@ func (a *Client) Clear(params *ClearParams) (*ClearOK, error) {
 	if err != nil {
 		return nil, err
 	}
-	return result.(*ClearOK), nil
-
+	success, ok := result.(*ClearOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for clear: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-ForumCreate созданиеs форума
+  ForumCreate созданиеs форума
 
-Создание нового форума.
+  Создание нового форума.
 
 */
 func (a *Client) ForumCreate(params *ForumCreateParams) (*ForumCreateCreated, error) {
@@ -82,14 +128,20 @@ func (a *Client) ForumCreate(params *ForumCreateParams) (*ForumCreateCreated, er
 	if err != nil {
 		return nil, err
 	}
-	return result.(*ForumCreateCreated), nil
-
+	success, ok := result.(*ForumCreateCreated)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for forumCreate: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-ForumGetOne получениеs информации о форуме
+  ForumGetOne получениеs информации о форуме
 
-Получение информации о форуме по его идентификаторе.
+  Получение информации о форуме по его идентификаторе.
 
 */
 func (a *Client) ForumGetOne(params *ForumGetOneParams) (*ForumGetOneOK, error) {
@@ -113,14 +165,20 @@ func (a *Client) ForumGetOne(params *ForumGetOneParams) (*ForumGetOneOK, error) 
 	if err != nil {
 		return nil, err
 	}
-	return result.(*ForumGetOneOK), nil
-
+	success, ok := result.(*ForumGetOneOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for forumGetOne: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-ForumGetThreads списокs ветвей обсужления форума
+  ForumGetThreads списокs ветвей обсужления форума
 
-Получение списка ветвей обсужления данного форума.
+  Получение списка ветвей обсужления данного форума.
 
 Ветви обсуждения выводятся отсортированные по дате создания.
 
@@ -146,14 +204,20 @@ func (a *Client) ForumGetThreads(params *ForumGetThreadsParams) (*ForumGetThread
 	if err != nil {
 		return nil, err
 	}
-	return result.(*ForumGetThreadsOK), nil
-
+	success, ok := result.(*ForumGetThreadsOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for forumGetThreads: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-ForumGetUsers пользователиs данного форума
+  ForumGetUsers пользователиs данного форума
 
-Получение списка пользователей, у которых есть пост или ветка обсуждения в данном форуме.
+  Получение списка пользователей, у которых есть пост или ветка обсуждения в данном форуме.
 
 Пользователи выводятся отсортированные по nickname в порядке возрастания.
 Порядок сотрировки должен соответсвовать побайтовому сравнение в нижнем регистре.
@@ -180,14 +244,20 @@ func (a *Client) ForumGetUsers(params *ForumGetUsersParams) (*ForumGetUsersOK, e
 	if err != nil {
 		return nil, err
 	}
-	return result.(*ForumGetUsersOK), nil
-
+	success, ok := result.(*ForumGetUsersOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for forumGetUsers: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-PostGetOne получениеs информации о ветке обсуждения
+  PostGetOne получениеs информации о ветке обсуждения
 
-Получение информации о ветке обсуждения по его имени.
+  Получение информации о ветке обсуждения по его имени.
 
 */
 func (a *Client) PostGetOne(params *PostGetOneParams) (*PostGetOneOK, error) {
@@ -211,14 +281,20 @@ func (a *Client) PostGetOne(params *PostGetOneParams) (*PostGetOneOK, error) {
 	if err != nil {
 		return nil, err
 	}
-	return result.(*PostGetOneOK), nil
-
+	success, ok := result.(*PostGetOneOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for postGetOne: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-PostUpdate изменениеs сообщения
+  PostUpdate изменениеs сообщения
 
-Изменение сообщения на форуме.
+  Изменение сообщения на форуме.
 
 Если сообщение поменяло текст, то оно должно получить отметку `isEdited`.
 
@@ -244,14 +320,20 @@ func (a *Client) PostUpdate(params *PostUpdateParams) (*PostUpdateOK, error) {
 	if err != nil {
 		return nil, err
 	}
-	return result.(*PostUpdateOK), nil
-
+	success, ok := result.(*PostUpdateOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for postUpdate: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-PostsCreate созданиеs новых постов
+  PostsCreate созданиеs новых постов
 
-Добавление новых постов в ветку обсуждения на форум.
+  Добавление новых постов в ветку обсуждения на форум.
 
 Все посты, созданные в рамках одного вызова данного метода должны иметь одинаковую дату создания (Post.Created).
 
@@ -277,14 +359,20 @@ func (a *Client) PostsCreate(params *PostsCreateParams) (*PostsCreateCreated, er
 	if err != nil {
 		return nil, err
 	}
-	return result.(*PostsCreateCreated), nil
-
+	success, ok := result.(*PostsCreateCreated)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for postsCreate: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-Status получениеs инфомарции о базе данных
+  Status получениеs инфомарции о базе данных
 
-Получение инфомарции о базе данных.
+  Получение инфомарции о базе данных.
 
 */
 func (a *Client) Status(params *StatusParams) (*StatusOK, error) {
@@ -308,14 +396,20 @@ func (a *Client) Status(params *StatusParams) (*StatusOK, error) {
 	if err != nil {
 		return nil, err
 	}
-	return result.(*StatusOK), nil
-
+	success, ok := result.(*StatusOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for status: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-ThreadCreate созданиеs ветки
+  ThreadCreate созданиеs ветки
 
-Добавление новой ветки обсуждения на форум.
+  Добавление новой ветки обсуждения на форум.
 
 */
 func (a *Client) ThreadCreate(params *ThreadCreateParams) (*ThreadCreateCreated, error) {
@@ -339,14 +433,20 @@ func (a *Client) ThreadCreate(params *ThreadCreateParams) (*ThreadCreateCreated,
 	if err != nil {
 		return nil, err
 	}
-	return result.(*ThreadCreateCreated), nil
-
+	success, ok := result.(*ThreadCreateCreated)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for threadCreate: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-ThreadGetOne получениеs информации о ветке обсуждения
+  ThreadGetOne получениеs информации о ветке обсуждения
 
-Получение информации о ветке обсуждения по его имени.
+  Получение информации о ветке обсуждения по его имени.
 
 */
 func (a *Client) ThreadGetOne(params *ThreadGetOneParams) (*ThreadGetOneOK, error) {
@@ -370,14 +470,20 @@ func (a *Client) ThreadGetOne(params *ThreadGetOneParams) (*ThreadGetOneOK, erro
 	if err != nil {
 		return nil, err
 	}
-	return result.(*ThreadGetOneOK), nil
-
+	success, ok := result.(*ThreadGetOneOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for threadGetOne: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-ThreadGetPosts сообщенияs данной ветви обсуждения
+  ThreadGetPosts сообщенияs данной ветви обсуждения
 
-Получение списка сообщений в данной ветке форуме.
+  Получение списка сообщений в данной ветке форуме.
 
 Сообщения выводятся отсортированные по дате создания.
 
@@ -403,14 +509,20 @@ func (a *Client) ThreadGetPosts(params *ThreadGetPostsParams) (*ThreadGetPostsOK
 	if err != nil {
 		return nil, err
 	}
-	return result.(*ThreadGetPostsOK), nil
-
+	success, ok := result.(*ThreadGetPostsOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for threadGetPosts: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-ThreadUpdate обновлениеs ветки
+  ThreadUpdate обновлениеs ветки
 
-Обновление ветки обсуждения на форуме.
+  Обновление ветки обсуждения на форуме.
 
 */
 func (a *Client) ThreadUpdate(params *ThreadUpdateParams) (*ThreadUpdateOK, error) {
@@ -434,14 +546,20 @@ func (a *Client) ThreadUpdate(params *ThreadUpdateParams) (*ThreadUpdateOK, erro
 	if err != nil {
 		return nil, err
 	}
-	return result.(*ThreadUpdateOK), nil
-
+	success, ok := result.(*ThreadUpdateOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for threadUpdate: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-ThreadVote проголосоватьs за ветвь обсуждения
+  ThreadVote проголосоватьs за ветвь обсуждения
 
-Изменение голоса за ветвь обсуждения.
+  Изменение голоса за ветвь обсуждения.
 
 Один пользователь учитывается только один раз и может изменить своё
 мнение.
@@ -468,14 +586,20 @@ func (a *Client) ThreadVote(params *ThreadVoteParams) (*ThreadVoteOK, error) {
 	if err != nil {
 		return nil, err
 	}
-	return result.(*ThreadVoteOK), nil
-
+	success, ok := result.(*ThreadVoteOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for threadVote: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-UserCreate созданиеs нового пользователя
+  UserCreate созданиеs нового пользователя
 
-Создание нового пользователя в базе данных.
+  Создание нового пользователя в базе данных.
 
 */
 func (a *Client) UserCreate(params *UserCreateParams) (*UserCreateCreated, error) {
@@ -499,14 +623,20 @@ func (a *Client) UserCreate(params *UserCreateParams) (*UserCreateCreated, error
 	if err != nil {
 		return nil, err
 	}
-	return result.(*UserCreateCreated), nil
-
+	success, ok := result.(*UserCreateCreated)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for userCreate: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-UserGetOne получениеs информации о пользователе
+  UserGetOne получениеs информации о пользователе
 
-Получение информации о пользователе форума по его имени.
+  Получение информации о пользователе форума по его имени.
 
 */
 func (a *Client) UserGetOne(params *UserGetOneParams) (*UserGetOneOK, error) {
@@ -530,14 +660,20 @@ func (a *Client) UserGetOne(params *UserGetOneParams) (*UserGetOneOK, error) {
 	if err != nil {
 		return nil, err
 	}
-	return result.(*UserGetOneOK), nil
-
+	success, ok := result.(*UserGetOneOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for userGetOne: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 /*
-UserUpdate изменениеs данных о пользователе
+  UserUpdate изменениеs данных о пользователе
 
-Изменение информации в профиле пользователя.
+  Изменение информации в профиле пользователя.
 
 */
 func (a *Client) UserUpdate(params *UserUpdateParams) (*UserUpdateOK, error) {
@@ -561,8 +697,14 @@ func (a *Client) UserUpdate(params *UserUpdateParams) (*UserUpdateOK, error) {
 	if err != nil {
 		return nil, err
 	}
-	return result.(*UserUpdateOK), nil
-
+	success, ok := result.(*UserUpdateOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	// safeguard: normally, absent a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for userUpdate: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
 }
 
 // SetTransport changes the transport on the client

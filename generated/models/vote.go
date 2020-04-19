@@ -6,16 +6,16 @@ package models
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
-	"encoding/json"
-
-	strfmt "github.com/go-openapi/strfmt"
+	json "encoding/json"
 
 	"github.com/go-openapi/errors"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/go-openapi/validate"
 )
 
 // Vote Информация о голосовании пользователя.
+//
 //
 // swagger:model Vote
 type Vote struct {
@@ -26,6 +26,7 @@ type Vote struct {
 
 	// Отданный голос.
 	// Required: true
+	// Enum: [-1 1]
 	Voice int32 `json:"voice"`
 }
 
@@ -34,12 +35,10 @@ func (m *Vote) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateNickname(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 
 	if err := m.validateVoice(formats); err != nil {
-		// prop
 		res = append(res, err)
 	}
 

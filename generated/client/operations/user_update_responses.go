@@ -10,10 +10,9 @@ import (
 	"io"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 
-	strfmt "github.com/go-openapi/strfmt"
-
-	models "github.com/bozaro/tech-db-forum/generated/models"
+	"github.com/bozaro/tech-db-forum/generated/models"
 )
 
 // UserUpdateReader is a Reader for the UserUpdate structure.
@@ -24,21 +23,18 @@ type UserUpdateReader struct {
 // ReadResponse reads a server response into the received o.
 func (o *UserUpdateReader) ReadResponse(response runtime.ClientResponse, consumer runtime.Consumer) (interface{}, error) {
 	switch response.Code() {
-
 	case 200:
 		result := NewUserUpdateOK()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return result, nil
-
 	case 404:
 		result := NewUserUpdateNotFound()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
 		return nil, result
-
 	case 409:
 		result := NewUserUpdateConflict()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -67,6 +63,10 @@ type UserUpdateOK struct {
 
 func (o *UserUpdateOK) Error() string {
 	return fmt.Sprintf("[POST /user/{nickname}/profile][%d] userUpdateOK  %+v", 200, o.Payload)
+}
+
+func (o *UserUpdateOK) GetPayload() *models.User {
+	return o.Payload
 }
 
 func (o *UserUpdateOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
@@ -99,6 +99,10 @@ func (o *UserUpdateNotFound) Error() string {
 	return fmt.Sprintf("[POST /user/{nickname}/profile][%d] userUpdateNotFound  %+v", 404, o.Payload)
 }
 
+func (o *UserUpdateNotFound) GetPayload() *models.Error {
+	return o.Payload
+}
+
 func (o *UserUpdateNotFound) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(models.Error)
@@ -127,6 +131,10 @@ type UserUpdateConflict struct {
 
 func (o *UserUpdateConflict) Error() string {
 	return fmt.Sprintf("[POST /user/{nickname}/profile][%d] userUpdateConflict  %+v", 409, o.Payload)
+}
+
+func (o *UserUpdateConflict) GetPayload() *models.Error {
+	return o.Payload
 }
 
 func (o *UserUpdateConflict) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
