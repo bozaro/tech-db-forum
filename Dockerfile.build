@@ -1,6 +1,13 @@
 FROM ubuntu:18.04
+ARG GO=1.14.2
 
-RUN apt update
-RUN apt install -y zip golang-go ghp-import git python-pkg-resources
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+  apt-get install -y zip ghp-import git python-pkg-resources && \
+  rm -rf /var/lib/apt/lists/*
+
+COPY --from=golang /usr/local/go /usr/local/go
+ENV GOROOT=/usr/local/go
+ENV PATH=$GOROOT/bin:$PATH
 
 ENV HOME=/var/jenkins_home
